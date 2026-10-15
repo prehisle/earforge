@@ -82,3 +82,25 @@ export function resolutionPath(note: number, tonic: number, mode: ModeDef = MAJO
 export function resolutionEvents(note: number, tonic: number, mode: ModeDef = MAJOR): NoteEvent[] {
   return melodyEvents(resolutionPath(note, tonic, mode), 0.38);
 }
+
+/** 事件整体后移 by 秒。 */
+export function shiftEvents(events: NoteEvent[], by: number): NoteEvent[] {
+  return events.map((e) => ({ ...e, time: e.time + by }));
+}
+
+/** 事件序列的结束时刻（秒）。 */
+export function eventsEnd(events: NoteEvent[]): number {
+  return events.reduce((m, e) => Math.max(m, e.time + e.dur), 0);
+}
+
+/** 单音 + 它到 do 的解决（对比试听用；do 本身不再重复）。 */
+export function noteWithResolution(note: number, tonic: number, mode: ModeDef = MAJOR): NoteEvent[] {
+  const head: NoteEvent[] = [{ notes: [note], time: 0, dur: 1.4 }];
+  const res = resolutionEvents(note, tonic, mode);
+  return res.length > 1 ? [...head, ...shiftEvents(res, eventsEnd(head) + 0.1)] : head;
+}
+
+/** 按相对主音的音级把 MIDI 音映射到选项（不区分八度）；选项 id 形如 'd4' / 'minor:d3'。 */
+export function degreeMidiAnswer(choiceIds: string[], tonic: number): (midi: number) => string | null {
+  return (midi) => choiceIds.find((id) => Number(bareItem(id).slice(1)) === mod(midi - tonic, 12)) ?? null;
+}

@@ -1,6 +1,15 @@
 import type { ExerciseDef, Level } from '../engine/types';
 import { DEGREES, keyName, mod, type ModeDef } from '../music/theory';
-import { MODE_OPTION, chooseTonic, cadenceEvents, degreeLevels, melodyEvents, modeItem, modeOf } from './common';
+import {
+  MODE_OPTION,
+  chooseTonic,
+  cadenceEvents,
+  degreeLevels,
+  degreeMidiAnswer,
+  melodyEvents,
+  modeItem,
+  modeOf,
+} from './common';
 import { CHROMATIC, degreeChoices, degreeLabel, semi } from './degrees';
 
 /** 旋律听写的级别：按音阶顺序 do re mi → +4、5 级 → +6、7 级 → 变化音。 */
@@ -71,13 +80,18 @@ export const dictation: ExerciseDef = {
     const idOf = new Map(items.map((it) => [semi(it), it]));
     const mel = makeMelody([...idOf.keys()], semi(item), Number(ctx.options.len));
     const answer = mel.map((d) => idOf.get(d)!);
+    const play = (degs: number[]) =>
+      melodyEvents(
+        degs.map((d) => tonic + d),
+        0.62,
+      );
     return {
       item,
       prelude: cadenceEvents(tonic, mode),
-      events: melodyEvents(
-        mel.map((d) => tonic + d),
-        0.62,
-      ),
+      events: play(mel),
+      // 把第 step 个音换成所选音级后的整段旋律
+      choiceEvents: (id, step = 0) => play(mel.map((d, i) => (i === step ? semi(id) : d))),
+      midiAnswer: degreeMidiAnswer(items, tonic),
       choices: degreeChoices(items, ctx.settings, tonicPc),
       answer,
       stepItems: answer,

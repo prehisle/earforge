@@ -1,3 +1,4 @@
+import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
 import { INTERVALS, INTERVAL_SONGS, noteName, pick, randInt } from '../music/theory';
 
@@ -37,13 +38,18 @@ export const intervals: ExerciseDef = {
     const low = randInt(52, 72 - iv.semitones);
     const high = low + iv.semitones;
     const [a, b] = dir === 'down' ? [high, low] : [low, high];
-    const events =
-      dir === 'harm'
-        ? [{ notes: [a, b], time: 0, dur: 1.6 }]
+    // 从第一个音 a 出发、同一方向上的音程（和声音程 a 为低音）
+    const sign = dir === 'down' ? -1 : 1;
+    const build = (semitones: number): NoteEvent[] => {
+      const to = a + sign * semitones;
+      return dir === 'harm'
+        ? [{ notes: [a, to], time: 0, dur: 1.6 }]
         : [
             { notes: [a], time: 0, dur: 0.75 },
-            { notes: [b], time: 0.8, dur: 1.0 },
+            { notes: [to], time: 0.8, dur: 1.0 },
           ];
+    };
+    const events = build(iv.semitones);
     const song = INTERVAL_SONGS[item];
     const dirLabel = dir === 'up' ? '上行' : dir === 'down' ? '下行' : '和声';
     return {
@@ -51,6 +57,9 @@ export const intervals: ExerciseDef = {
       events,
       choices: ctx.items.map((id) => ({ id, label: byId[id].name, sub: byId[id].short })),
       answer: [item],
+      choiceEvents: (id) => build(byId[id].semitones),
+      // 弹出第二个音：按它相对第一个音的方向与半音数作答（和声音程弹上方的音）；弹第一个音本身不算作答
+      midiAnswer: (m) => ctx.items.find((id) => byId[id].semitones > 0 && byId[id].semitones === sign * (m - a)) ?? null,
       prompt: `这是什么音程？（${dirLabel}）`,
       explain: `${noteName(a)} → ${noteName(b)}，${iv.semitones} 个半音${song ? `。记忆：${song}` : ''}`,
     };

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
+import { midi } from '../audio/midi';
 import {
   activeItems,
   canLevelUp,
@@ -17,6 +18,7 @@ import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
+import { useMidiStatus } from './useMidi';
 
 const GAP = 0.45; // 前奏与题目之间的间隔（秒）
 
@@ -71,6 +73,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const [cur, setCur] = useState<{ ex: ExerciseDef; q: Question } | null>(null);
   const [step, setStep] = useState(0);
   const [wrong, setWrong] = useState<Set<string>>(new Set()); // 当前步骤点错的选项
+  const [misses, setMisses] = useState<string[][]>([]); // 每一步点错过的选项（按先后），用于答完后对比
+  const [cmpStep, setCmpStep] = useState<number | null>(null); // 多步题答完后选中对比的步骤
   const [stepResults, setStepResults] = useState<boolean[]>([]);
   const [done, setDone] = useState(false);
   const [session, setSession] = useState({ n: 0, c: 0 });
@@ -80,6 +84,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const [qid, setQid] = useState(0);
   const nextRef = useRef<() => void>(() => {});
   const timer = useRef<number | undefined>(undefined);
+  const holdNext = useRef(false); // 答完后点了试听：取消本题的自动跳题
+  const midiStatus = useMidiStatus();
   const latest = useRef({ source, onResult, onComplete });
   latest.current = { source, onResult, onComplete };
   const q = cur?.q ?? null;
@@ -109,6 +115,9 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     setCur({ ex: d.ex, q: question });
     setStep(0);
     setWrong(new Set());
+    setMisses([]);
+    setCmpStep(null);
+    holdNext.current = false;
     setStepResults([]);
     setDone(false);
     setLevelUp(null);
@@ -170,11 +179,30 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     void (async () => {
       let wait = 1.1;
       if (question.resolution && question.resolution.length > 1) wait += await play(question, 'resolution');
-      if (allRight && store.settings.autoNext && !question.sing) {
+      if (allRight && store.settings.autoNext && !question.sing && !holdNext.current) {
         timer.current = window.setTimeout(() => nextRef.current(), wait * 1000);
       }
     })();
   };
+
+  /** 对比试听：所选选项代入本题（多步题代入第 at 步）后的声音。 */
+  const playChoice = (id: string, at: number) => {
+    if (q?.choiceEvents) void audio.play(q.choiceEvents(id, at));
+  };
+
+  // 答完后对比的步骤：缺省为第一个答错的步骤，否则为最后一步
+  const firstMiss = misses.findIndex((m) => m?.length);
+  const cmpAt = cmpStep ?? (firstMiss >= 0 ? firstMiss : (q?.answer.length ?? 1) - 1);
+
+  /** 答完后试听选项：不计分，并取消自动跳题。 */
+  const preview = (id: string) => {
+    window.clearTimeout(timer.current);
+    holdNext.current = true;
+    playChoice(id, cmpAt);
+  };
+
+  /** 是否可以试听该选项：答完后全部可以；作答中只能重听已点错的选项（避免靠试听找答案）。 */
+  const canPreview = (id: string) => !!q?.choiceEvents && (done || wrong.has(id));
 
   const answer = (id: string) => {
     if (!q || done) return;
@@ -182,8 +210,37 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       finishStep(q, step, wrong.size === 0);
     } else if (!wrong.has(id)) {
       setWrong(new Set([...wrong, id]));
+      setMisses((m) => {
+        const out = [...m];
+        out[step] = [...(out[step] ?? []), id];
+        return out;
+      });
+      // 答错：立刻听听所选答案是什么声音
+      playChoice(id, step);
     }
   };
+
+  /** 选项的简短名称（节奏谱选项按序号称呼） */
+  const choiceName = (id: string) => {
+    const i = q?.choices.findIndex((c) => c.id === id) ?? -1;
+    const c = q?.choices[i];
+    return c?.rhythm ? `第 ${i + 1} 个节奏` : (c?.label ?? id);
+  };
+
+  const onChoice = (id: string) => {
+    if (done) preview(id);
+    else if (wrong.has(id)) playChoice(id, step);
+    else answer(id);
+  };
+
+  // MIDI 键盘作答（琴键发声由 useMidiInput 负责）
+  const onMidi = useRef<(note: number) => void>(() => {});
+  onMidi.current = (note) => {
+    if (!q?.midiAnswer || q.sing || done) return;
+    const id = q.midiAnswer(note);
+    if (id && q.choices.some((c) => c.id === id)) answer(id);
+  };
+  useEffect(() => midi.onNote((note) => onMidi.current(note)), []);
 
   // 键盘快捷键
   useEffect(() => {
@@ -200,7 +257,15 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
         e.preventDefault();
         void play(q, 'all');
       } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
-        if (done) next();
+        // 阻止回车同时「点击」获得焦点的选项按钮（答完后选项可点，否则会立刻答下一题）
+        if (done) {
+          e.preventDefault();
+          next();
+        }
+      } else if (e.shiftKey && /^(Digit|Numpad)[1-9]$/.test(e.code)) {
+        // Shift + 数字：试听该选项
+        const c = q.choices[Number(e.code.slice(-1)) - 1];
+        if (c && canPreview(c.id)) onChoice(c.id);
       } else if (/^[1-9]$/.test(e.key)) {
         const c = q.choices[Number(e.key) - 1];
         if (c) answer(c.id);
@@ -235,6 +300,14 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
             <button onClick={() => play(q, 'prelude')}>终止式</button>
           </>
         )}
+        {store.settings.midi && midiStatus.devices.length > 0 && !q.sing && (
+          <span
+            className={q.midiAnswer ? 'midi-badge' : 'midi-badge off'}
+            title={`${midiStatus.devices.join('、')}${q.midiAnswer ? ' · 可以直接弹琴键作答' : ' · 本题型不支持琴键作答'}`}
+          >
+            🎹 已连接
+          </span>
+        )}
       </div>
 
       {q.answer.length > 1 && !q.sing && (
@@ -242,8 +315,15 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
           {q.answer.map((a, i) => {
             const label = q.choices.find((c) => c.id === a)?.label ?? a;
             const state = i < step || (done && i === step) ? (stepResults[i] ? 'ok' : 'fix') : i === step ? 'cur' : '';
+            // 答完后点击某一步，选项按钮就试听这一步
+            const pickable = done && !!q.choiceEvents;
             return (
-              <span key={i} className={`slot ${state}`}>
+              <span
+                key={i}
+                className={`slot ${state}${pickable ? ' pick' : ''}${pickable && i === cmpAt ? ' sel' : ''}`}
+                onClick={pickable ? () => setCmpStep(i) : undefined}
+                title={pickable ? '选中这一步，再点选项试听对比' : undefined}
+              >
                 {i < step || done ? label : '?'}
               </span>
             );
@@ -264,10 +344,18 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
         /* ───── 选项按钮 ───── */
         <div className={`choices n${Math.min(q.choices.length, 8)}`}>
           {q.choices.map((c, i) => {
-            const isAnswer = done && c.id === q.answer[q.answer.length - 1] && q.answer.length === 1;
-            const cls = wrong.has(c.id) ? 'choice bad' : isAnswer ? 'choice good' : 'choice';
+            // 答完后按对比步骤标出正确与点错的选项（多步题可切换步骤）
+            const isAnswer = done && c.id === q.answer[cmpAt] && (q.answer.length === 1 || !!q.choiceEvents);
+            const isBad = done ? !!misses[cmpAt]?.includes(c.id) : wrong.has(c.id);
+            const listen = canPreview(c.id);
+            const cls = `choice${isBad ? ' bad' : isAnswer ? ' good' : ''}${done && listen ? ' listen' : ''}`;
             return (
-              <button key={c.id} className={cls} onClick={() => answer(c.id)} disabled={done}>
+              <button
+                key={c.id}
+                className={cls}
+                onClick={() => onChoice(c.id)}
+                title={listen ? `点击试听（Shift+${i + 1}）` : undefined}
+              >
                 {c.rhythm ? (
                   <RhythmNotation rhythm={c.rhythm} label={c.label} />
                 ) : (
@@ -275,11 +363,24 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
                 )}
                 {c.sub && <span className="choice-sub">{c.sub}</span>}
                 {i < 9 && <kbd className="choice-key">{i + 1}</kbd>}
+                {listen && <span className="choice-listen">🔊 试听</span>}
               </button>
             );
           })}
         </div>
       )}
+
+      {done && q.choiceEvents && misses[cmpAt]?.length ? (
+        <div className="compare-row">
+          {q.answer.length > 1 && <span className="muted">第 {cmpAt + 1} 步</span>}
+          <button onClick={() => preview(misses[cmpAt][0])}>
+            ▶ 你的答案 · {choiceName(misses[cmpAt][0])}
+          </button>
+          <button onClick={() => preview(q.answer[cmpAt])}>
+            ▶ 正确答案 · {choiceName(q.answer[cmpAt])}
+          </button>
+        </div>
+      ) : null}
 
       {done && (
         <div className={stepResults.every(Boolean) ? 'feedback good' : 'feedback bad'}>

@@ -4,6 +4,7 @@ import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
 import { Practice } from './ui/Practice';
 import { SettingsPage } from './ui/Settings';
+import { useMidiInput } from './ui/useMidi';
 import { StatsPage } from './ui/Stats';
 import { useStore } from './ui/useStore';
 
@@ -18,6 +19,7 @@ export default function App() {
   const [store, update] = useStore();
   const [route, setRoute] = useState<Route>({ page: 'home' });
   const home = () => setRoute({ page: 'home' });
+  useMidiInput(store.settings.midi);
 
   return (
     <div className="app">

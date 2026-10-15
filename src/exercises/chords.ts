@@ -1,5 +1,6 @@
+import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
-import { CHORDS, chordNotes, noteName, pitchClassName, randInt } from '../music/theory';
+import { CHORDS, chordNotes, noteName, pitchClassName, randInt, type ChordDef } from '../music/theory';
 
 const byId = Object.fromEntries(CHORDS.map((c) => [c.id, c]));
 
@@ -42,20 +43,25 @@ export const chords: ExerciseDef = {
     const c = byId[item];
     const root = randInt(48, 62);
     const inv = ctx.options.inv === 'any' ? randInt(0, c.intervals.length - 1) : 0;
-    const notes = chordNotes(root, c, inv);
-    const arp = notes.map((n, i) => ({ notes: [n], time: i * 0.32, dur: 0.3 }));
-    const arpEnd = notes.length * 0.32 + 0.2;
-    const events =
-      ctx.options.voicing === 'block'
+    // 同一个根音、同样的转位与演奏方式（三和弦没有第三转位，按最高转位处理）
+    const build = (def: ChordDef): NoteEvent[] => {
+      const notes = chordNotes(root, def, Math.min(inv, def.intervals.length - 1));
+      const arp = notes.map((n, i) => ({ notes: [n], time: i * 0.32, dur: 0.3 }));
+      const arpEnd = notes.length * 0.32 + 0.2;
+      return ctx.options.voicing === 'block'
         ? [{ notes, time: 0, dur: 1.8 }]
         : ctx.options.voicing === 'arp'
           ? [...arp.slice(0, -1), { ...arp[arp.length - 1], dur: 1.2 }]
           : [...arp, { notes, time: arpEnd, dur: 1.8 }];
+    };
+    const notes = chordNotes(root, c, inv);
+    const events = build(c);
     return {
       item,
       events,
       choices: ctx.items.map((id) => ({ id, label: byId[id].name })),
       answer: [item],
+      choiceEvents: (id) => build(byId[id]),
       prompt: '这是什么和弦？',
       explain: `${pitchClassName(root)}${c.symbol}：${notes.map((n) => noteName(n)).join(' ')}`,
     };
