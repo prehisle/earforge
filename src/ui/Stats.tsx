@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { EXERCISES } from '../exercises';
 import { itemStat, streak, type Store } from '../engine/progress';
+import { weakItems } from '../engine/planner';
 
 interface Props {
   store: Store;
   onBack(): void;
+  /** 用指定考点临时专练 */
+  onFocus(id: string, items: string[]): void;
 }
 
 function lastDays(n: number): string[] {
@@ -18,7 +21,7 @@ function lastDays(n: number): string[] {
   return out;
 }
 
-export function StatsPage({ store, onBack }: Props) {
+export function StatsPage({ store, onBack, onFocus }: Props) {
   const days = lastDays(30);
   const rows = days.map((d) => ({ d, ...(store.daily[d] ?? { n: 0, c: 0 }) }));
   const max = Math.max(10, ...rows.map((r) => r.n));
@@ -96,11 +99,23 @@ export function StatsPage({ store, onBack }: Props) {
         const items = [...new Set(ex.levels.flatMap((l) => l.items))].filter((it) => p.items[it]);
         // 最弱的排前面，方便针对性练习
         items.sort((a, b) => itemStat(p, a).acc - itemStat(p, b).acc);
+        const weak = weakItems(ex, p);
         return (
           <section className="panel" key={ex.id}>
-            <h2 className="chart-title">
-              {ex.icon} {ex.title} · 掌握度（由弱到强）
-            </h2>
+            <div className="panel-head">
+              <h2 className="chart-title">
+                {ex.icon} {ex.title} · 掌握度（由弱到强）
+              </h2>
+              {weak.length >= 2 && (
+                <button
+                  className="weak-btn"
+                  onClick={() => onFocus(ex.id, weak)}
+                  title={`专练：${weak.map((it) => ex.itemLabel(it, store.settings)).join('、')}`}
+                >
+                  专练薄弱点
+                </button>
+              )}
+            </div>
             <ul className="mastery">
               {items.map((it) => {
                 const st = itemStat(p, it);

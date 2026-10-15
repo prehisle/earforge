@@ -46,6 +46,10 @@ export interface Settings {
   keyMode: 'C' | 'random';
   autoNext: boolean;
   voice: 'low' | 'high';
+  /** 每日目标题数 */
+  dailyGoal: number;
+  /** 今日训练每组题数 */
+  mixSize: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -55,6 +59,8 @@ export const DEFAULT_SETTINGS: Settings = {
   keyMode: 'random',
   autoNext: true,
   voice: 'low',
+  dailyGoal: 30,
+  mixSize: 20,
 };
 
 export interface GenContext {

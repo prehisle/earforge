@@ -26,8 +26,8 @@ export interface Store {
 
 const KEY = 'earforge:v1';
 const ALPHA = 0.3; // 新结果权重
-const MASTERY_ACC = 0.85;
-const MASTERY_N = 5;
+export const MASTERY_ACC = 0.85;
+export const MASTERY_N = 5;
 
 export function loadStore(): Store {
   try {

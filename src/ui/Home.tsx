@@ -1,20 +1,32 @@
-import { EXERCISES } from '../exercises';
 import { activeItems, getProgress, mastery, streak, today, type Store } from '../engine/progress';
+import { STARTER_IDS, planModules, rankItems } from '../engine/planner';
+import { EXERCISES as ALL, exerciseById } from '../exercises';
 
 interface Props {
   store: Store;
   onOpen(id: string): void;
+  onMix(): void;
   onStats(): void;
   onSettings(): void;
 }
 
 const GROUPS = ['调性听觉', '基础', '视唱练耳'] as const;
 
-export function Home({ store, onOpen, onStats, onSettings }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
   const t = store.daily[today()];
   const days = streak(store);
   // 只读取，不写回：getProgress 对新练习会创建默认值
   const snapshot = structuredClone(store);
+  const n = t?.n ?? 0;
+  const goal = store.settings.dailyGoal;
+  const reached = n >= goal;
+  // 今日训练预览：涉及的模块与最需要练的考点
+  const mods = planModules(store, ALL);
+  const fresh = mods.every((ex) => STARTER_IDS.includes(ex.id) && !Object.keys(store.exercises[ex.id]?.items ?? {}).length);
+  const focus = rankItems(store, ALL)
+    .filter((c) => c.strength > 0)
+    .slice(0, 3)
+    .map((c) => exerciseById[c.exId].itemLabel(c.item, store.settings));
 
   return (
     <main className="page">
@@ -36,10 +48,36 @@ export function Home({ store, onOpen, onStats, onSettings }: Props) {
         </nav>
       </header>
 
+      <section className="today">
+        <div className="today-body">
+          <h2>🎯 今日训练</h2>
+          <p className="today-sub">
+            {store.settings.mixSize} 题混合练习 · {mods.map((ex) => ex.title).join(' · ')}
+          </p>
+          <p className="muted today-focus">
+            {fresh
+              ? '从「调内音级」和「音程识别」第 1 级开始，自动挑选最需要练的考点。'
+              : focus.length > 0
+                ? `重点：${focus.join('、')}；掌握好的考点按间隔复习。`
+                : '自动挑选掌握度最低、最久没练的考点。'}
+          </p>
+        </div>
+        <button className="primary big" onClick={onMix}>
+          开始今日训练
+        </button>
+      </section>
+
       <section className="tiles">
-        <div className="tile">
+        <div className={reached ? 'tile goal done' : 'tile goal'}>
           <span className="tile-label">今日练习</span>
-          <span className="tile-value">{t?.n ?? 0}</span>
+          <span className="tile-value">
+            {n}
+            <span className="tile-of">/{goal}</span>
+          </span>
+          <span className="meter" title={`每日目标 ${goal} 题`}>
+            <span className="meter-fill" style={{ width: `${Math.min(1, n / goal) * 100}%` }} />
+          </span>
+          {reached && <span className="goal-cheer">🎉 今日目标达成</span>}
         </div>
         <div className="tile">
           <span className="tile-label">今日正确率</span>
@@ -55,7 +93,7 @@ export function Home({ store, onOpen, onStats, onSettings }: Props) {
         <section key={g}>
           <h2 className="group-title">{g}</h2>
           <div className="cards">
-            {EXERCISES.filter((e) => e.group === g).map((ex) => {
+            {ALL.filter((e) => e.group === g).map((ex) => {
               const p = getProgress(snapshot, ex);
               const m = mastery(p, activeItems(ex, p));
               return (
