@@ -81,10 +81,13 @@ export const progressions: ExerciseDef = {
       const seq = [tonicItem];
       const slot = 1 + Math.floor(Math.random() * 3);
       for (let i = 1; i < 4; i++) seq.push(i === slot ? item : pick(ctx.items));
+      const play = (ids: string[]) => ids.map((id, i) => ({ notes: voicing(tonic, BY_ITEM[id]), time: i * 1.1, dur: 1.05 }));
       return {
         item,
         prelude: cadenceEvents(tonic, mode),
-        events: seq.map((id, i) => ({ notes: voicing(tonic, BY_ITEM[id]), time: i * 1.1, dur: 1.05 })),
+        events: play(seq),
+        // 把第 step 个和弦换成所选和弦后的进行
+        choiceEvents: (id, step = 0) => play(seq.map((s, i) => (i === step ? id : s))),
         choices,
         answer: seq,
         stepItems: seq,
@@ -92,10 +95,12 @@ export const progressions: ExerciseDef = {
         explain: seq.map((id) => BY_ITEM[id].roman).join(' → '),
       };
     }
+    const single = (id: string) => [{ notes: voicing(tonic, BY_ITEM[id]), time: 0, dur: 1.8 }];
     return {
       item,
       prelude: cadenceEvents(tonic, mode),
-      events: [{ notes: voicing(tonic, BY_ITEM[item]), time: 0, dur: 1.8 }],
+      events: single(item),
+      choiceEvents: single,
       choices,
       answer: [item],
       prompt: `${key} · 这是哪个级数和弦？`,

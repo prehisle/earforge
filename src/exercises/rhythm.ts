@@ -127,6 +127,25 @@ function mutate(bars: Bar[], pool: string[]): Bar[] {
 
 const describe = (bars: Bar[]) => bars.map((b) => b.flat().map((u) => UNITS[u].name).join(' · ')).join(' ｜ ');
 
+/** 节奏型的音频：一小节预备拍，然后节奏型（木鱼）+ 轻声节拍器。durs 为时值序列（见 UNITS）。 */
+export function rhythmEvents(durs: number[], bpm: number): NoteEvent[] {
+  const beat = 60 / bpm;
+  const nBeats = Math.ceil(durs.reduce((s, d) => s + Math.abs(d), 0) / TPQ);
+  const events: NoteEvent[] = [];
+  for (let i = 0; i < 4; i++)
+    events.push({ kind: 'click', notes: [], time: i * beat, dur: 0.05, accent: i === 0, velocity: 0.9 });
+  const start = 4 * beat;
+  for (let i = 0; i < nBeats; i++)
+    events.push({ kind: 'click', notes: [], time: start + i * beat, dur: 0.05, accent: i % 4 === 0, velocity: 0.35 });
+  let t = 0;
+  for (const d of durs) {
+    const len = (Math.abs(d) / TPQ) * beat;
+    if (d > 0) events.push({ kind: 'perc', notes: [], time: start + (t / TPQ) * beat, dur: len, velocity: 0.85 });
+    t += Math.abs(d);
+  }
+  return events.sort((a, b) => a.time - b.time);
+}
+
 const SPEED: Record<string, number> = { slow: 60, mid: 80, fast: 100 };
 
 export const rhythm: ExerciseDef = {
@@ -190,27 +209,12 @@ export const rhythm: ExerciseDef = {
     const choices: Choice[] = options.map((b, i) => ({ id: `r${i}`, label: describe(b), rhythm: flatten(b) }));
     const answer = choices[options.indexOf(bars)].id;
 
-    // 音频：一小节预备拍，然后节奏型 + 轻声节拍器
-    const beat = 60 / bpm;
-    const events: NoteEvent[] = [];
-    for (let i = 0; i < 4; i++)
-      events.push({ kind: 'click', notes: [], time: i * beat, dur: 0.05, accent: i === 0, velocity: 0.9 });
-    const start = 4 * beat;
-    for (let i = 0; i < nBars * 4; i++)
-      events.push({ kind: 'click', notes: [], time: start + i * beat, dur: 0.05, accent: i % 4 === 0, velocity: 0.35 });
-    let t = 0;
-    for (const d of flatten(bars)) {
-      const len = (Math.abs(d) / TPQ) * beat;
-      if (d > 0) events.push({ kind: 'perc', notes: [], time: start + (t / TPQ) * beat, dur: len, velocity: 0.85 });
-      t += Math.abs(d);
-    }
-    events.sort((a, b) => a.time - b.time);
-
     return {
       item,
-      events,
+      events: rhythmEvents(flatten(bars), bpm),
       choices,
       answer: [answer],
+      choiceEvents: (id) => rhythmEvents(choices.find((c) => c.id === id)?.rhythm ?? [], bpm),
       prompt: `听到的是哪个节奏？（♩ = ${bpm}，先听一小节预备拍）`,
       explain: `${describe(bars)}${hasRest(item) ? '。休止处是静音，注意和长音区分' : ''}`,
     };

@@ -5,6 +5,7 @@ import type { Store } from '../engine/progress';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/types';
 import { NAMING_LABELS, type NamingSystem } from '../music/theory';
 import { SamplerStatus } from './SamplerStatus';
+import { MidiSection } from './MidiSection';
 
 interface Props {
   store: Store;
@@ -199,6 +200,8 @@ export function SettingsPage({ store, update, onBack }: Props) {
           />
         </div>
       </section>
+
+      <MidiSection on={s.midi} onToggle={(v) => set('midi', v)} />
     </main>
   );
 }

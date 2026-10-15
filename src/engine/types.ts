@@ -28,6 +28,13 @@ export interface Question {
   stepItems?: string[];
   prompt: string;
   explain?: string;
+  /**
+   * 对比试听：假如答案是 choiceId，题目听起来是什么样（同一个调、起始音与演奏方式）。
+   * 多步题针对第 step 步，返回把这一步替换成该选项后的序列。缺省表示不支持试听。
+   */
+  choiceEvents?(choiceId: string, step?: number): NoteEvent[];
+  /** MIDI 键盘作答：把按下的音映射到选项 id，无对应选项时返回 null。缺省表示不支持。 */
+  midiAnswer?(midi: number): string | null;
   /** 唱歌题：目标 MIDI 与显示文字 */
   sing?: { targets: number[]; display: string[]; showDisplay: boolean };
 }
@@ -57,6 +64,8 @@ export interface Settings {
   dailyGoal: number;
   /** 今日训练每组题数 */
   mixSize: number;
+  /** MIDI 键盘作答 */
+  midi: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -68,6 +77,7 @@ export const DEFAULT_SETTINGS: Settings = {
   voice: 'low',
   dailyGoal: 30,
   mixSize: 20,
+  midi: false,
 };
 
 export interface GenContext {
