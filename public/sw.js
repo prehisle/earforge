@@ -44,7 +44,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          caches.open(CACHE).then((c) => c.put('/', res.clone()));
+          // 必须同步 clone：返回后响应体会被页面读取
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put('/', copy));
+          }
           return res;
         })
         .catch(() => caches.match('/')),
