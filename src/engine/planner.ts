@@ -5,7 +5,9 @@ import {
   MASTERY_ACC,
   MASTERY_N,
   activeItems,
+  getProgress,
   itemStat,
+  levelsOf,
   type ExerciseProgress,
   type ItemStat,
   type Store,
@@ -27,12 +29,36 @@ export interface Candidate extends PlanEntry {
   strength: number;
 }
 
-/** 只读取进度：没有记录时返回默认值（不写回 store）。 */
+/** 只读取进度：在副本上规范化（补全选项、级别不越界），不写回 store。 */
 export function peekProgress(store: Store, ex: ExerciseDef): ExerciseProgress {
-  const p = store.exercises[ex.id] ?? { level: 0, custom: null, items: {}, options: {} };
-  const options = { ...p.options };
-  for (const o of ex.options ?? []) options[o.id] ??= o.default;
-  return { ...p, options };
+  const p = store.exercises[ex.id];
+  const copy: Store = { ...store, exercises: p ? { [ex.id]: structuredClone(p) } : {} };
+  return getProgress(copy, ex);
+}
+
+/** 当前选项下的全部考点。 */
+export function allItemsOf(ex: ExerciseDef, options: Record<string, string>): string[] {
+  return [...new Set(levelsOf(ex, options).flatMap((l) => l.items))];
+}
+
+/**
+ * 出这些考点要用的选项：当前选项能覆盖就用当前的；
+ * 否则在 scoped 选项（如调式）的各取值里找能覆盖的那个（如 minor:d3 → 自然小调）。
+ */
+export function optionsFor(ex: ExerciseDef, p: ExerciseProgress, items: string[]): Record<string, string> {
+  const covers = (opts: Record<string, string>) => {
+    const all = new Set(allItemsOf(ex, opts));
+    return items.every((it) => all.has(it));
+  };
+  if (covers(p.options)) return p.options;
+  for (const o of ex.options ?? []) {
+    if (!o.scoped) continue;
+    for (const v of o.values) {
+      const opts = { ...p.options, [o.id]: v.id };
+      if (covers(opts)) return opts;
+    }
+  }
+  return p.options;
 }
 
 /** 掌握强度 0..1：滑动正确率 × 练习量置信度 */
@@ -159,14 +185,18 @@ export function shuffleNoRepeat(list: PlanEntry[], rng: () => number): PlanEntry
   return a;
 }
 
-/** 某模块的薄弱点：已练考点按正确率由低到高，取未掌握的 2~4 个（不足 2 个时用次弱/未练考点补足）。 */
-export function weakItems(ex: ExerciseDef, p: ExerciseProgress): string[] {
-  const all = [...new Set(ex.levels.flatMap((l) => l.items))];
-  const practiced = all
+/**
+ * 某模块的薄弱点：已练考点按正确率由低到高，取未掌握的 2~4 个（不足 2 个时用次弱/未练考点补足）。
+ * pool 为候选考点（如统计页某个调式分组），缺省为当前选项下的全部考点；结果都在同一个调式内。
+ */
+export function weakItems(ex: ExerciseDef, p: ExerciseProgress, pool = allItemsOf(ex, p.options)): string[] {
+  const inPool = new Set(pool);
+  const practiced = pool
     .filter((it) => (p.items[it]?.n ?? 0) > 0)
     .sort((a, b) => itemStat(p, a).acc - itemStat(p, b).acc || itemStat(p, a).n - itemStat(p, b).n);
   const out = practiced.filter((it) => itemStat(p, it).acc < MASTERY_ACC).slice(0, 4);
-  for (const it of [...practiced, ...activeItems(ex, p)]) {
+  const active = activeItems(ex, p).filter((it) => inPool.has(it));
+  for (const it of [...practiced, ...active, ...pool]) {
     if (out.length >= 2) break;
     if (!out.includes(it)) out.push(it);
   }

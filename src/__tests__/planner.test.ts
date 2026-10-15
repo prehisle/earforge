@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { activeItems, type ExerciseProgress, type ItemStat, type Store } from '../engine/progress';
-import { allocate, peekProgress, planSession, priority, rankItems, weakItems, type PlanEntry } from '../engine/planner';
+import { activeItems, levelsOf, type ExerciseProgress, type ItemStat, type Store } from '../engine/progress';
+import {
+  allocate,
+  optionsFor,
+  peekProgress,
+  planSession,
+  priority,
+  rankItems,
+  weakItems,
+  type PlanEntry,
+} from '../engine/planner';
 import { DEFAULT_SETTINGS } from '../engine/types';
 import { EXERCISES, exerciseById } from '../exercises';
 
@@ -159,5 +168,54 @@ describe('薄弱点', () => {
   it('全都掌握时也至少给出 2 个最弱的', () => {
     const p = prog(0, { d0: st(0.95, 20), d4: st(0.9, 20), d7: st(0.97, 20) });
     expect(weakItems(exerciseById.degrees, p)).toEqual(['d4', 'd0']);
+  });
+});
+
+describe('调式与节奏', () => {
+  const degrees = exerciseById.degrees;
+  const minorItems = levelsOf(degrees, { mode: 'minor' }).flatMap((l) => l.items);
+
+  it('小调模式下今日训练只选小调的考点，出题选项能覆盖', () => {
+    const minor0 = levelsOf(degrees, { mode: 'minor' })[0].items;
+    const s = store({
+      degrees: {
+        level: 0,
+        custom: null,
+        options: { mode: 'minor' },
+        // 大调记录很弱，但当前是小调，不应选到
+        items: { d4: st(0.1, 10), [minor0[0]]: st(0.4, 8), [minor0[1]]: st(0.9, 8) },
+        scoped: { 'mode:major': { level: 2, custom: null } },
+      },
+      intervals: prog(0, { P5: st(0.9, 8), P8: st(0.9, 8) }),
+    });
+    for (let seed = 1; seed <= 10; seed++) {
+      const plan = planSession(s, EXERCISES, { size: 20, now: NOW, rng: seeded(seed) });
+      expectUnlocked(s, plan);
+      for (const e of plan.filter((x) => x.exId === 'degrees')) expect(minor0).toContain(e.item);
+    }
+  });
+
+  it('专练薄弱点：按分组取考点，并推出对应调式的选项', () => {
+    const [a, b, c] = minorItems;
+    const p = peekProgress(
+      store({ degrees: prog(1, { d4: st(0.2, 10), [a]: st(0.3, 10), [b]: st(0.5, 10), [c]: st(0.95, 10) }) }),
+      degrees,
+    );
+    expect(p.options.mode).toBe('major');
+    const weak = weakItems(degrees, p, minorItems);
+    expect(weak).toEqual([a, b]);
+    expect(optionsFor(degrees, p, weak).mode).toBe('minor');
+    // 当前调式的考点用当前选项
+    expect(optionsFor(degrees, p, ['d0', 'd4'])).toBe(p.options);
+  });
+
+  it('节奏练习开始过就会进入今日训练', () => {
+    const s = store({
+      rhythm: prog(0, { q: st(0.4, 6), h: st(0.6, 6) }),
+      degrees: prog(0, { d0: st(0.9, 8) }),
+    });
+    const plan = planSession(s, EXERCISES, { size: 20, now: NOW, rng: seeded() });
+    expect(plan.some((e) => e.exId === 'rhythm')).toBe(true);
+    expectUnlocked(s, plan);
   });
 });

@@ -1,7 +1,21 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
-import { activeItems, canLevelUp, getProgress, itemStat, pickItem, record, today, type Store } from '../engine/progress';
+import {
+  activeItems,
+  canLevelUp,
+  currentLevel,
+  getProgress,
+  itemStat,
+  levelsOf,
+  pickItem,
+  record,
+  setOption as applyOption,
+  today,
+  type Store,
+} from '../engine/progress';
+import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
+import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
 
 const GAP = 0.45; // 前奏与题目之间的间隔（秒）
@@ -132,7 +146,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       hit = before < s.settings.dailyGoal && before + 1 >= s.settings.dailyGoal;
       if (idx === question.answer.length - 1 && canLevelUp(ex, p)) {
         p.level++;
-        leveled = ex.levels[p.level].name;
+        leveled = currentLevel(ex, p).name;
       }
     });
     if (hit) setGoalHit(true);
@@ -254,7 +268,11 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
             const cls = wrong.has(c.id) ? 'choice bad' : isAnswer ? 'choice good' : 'choice';
             return (
               <button key={c.id} className={cls} onClick={() => answer(c.id)} disabled={done}>
-                <span className="choice-label">{c.label}</span>
+                {c.rhythm ? (
+                  <RhythmNotation rhythm={c.rhythm} label={c.label} />
+                ) : (
+                  <span className="choice-label">{c.label}</span>
+                )}
                 {c.sub && <span className="choice-sub">{c.sub}</span>}
                 {i < 9 && <kbd className="choice-key">{i + 1}</kbd>}
               </button>
@@ -304,10 +322,19 @@ interface Props {
 }
 
 export function Practice({ ex, store, update, onBack, focus }: Props) {
-  const progress = store.exercises[ex.id] ?? getProgress(structuredClone(store), ex);
+  // 在副本上规范化（补全选项、级别不越界），不写回
+  const progress = useMemo(() => getProgress(structuredClone(store), ex), [store, ex]);
   const [temp, setTemp] = useState<string[] | null>(focus && focus.length > 0 ? focus : null);
   const items = temp ?? activeItems(ex, progress);
+  // 临时专练的考点可能属于别的调式：用能覆盖它们的选项出题
+  const opts = temp ? optionsFor(ex, progress, temp) : progress.options;
+  const levels = levelsOf(ex, opts);
+  const scopedLabel = (ex.options ?? [])
+    .filter((o) => o.scoped && opts[o.id] !== progress.options[o.id])
+    .map((o) => o.values.find((v) => v.id === opts[o.id])?.label)
+    .join(' ');
   const [showPanel, setShowPanel] = useState(false);
+  const [round, setRound] = useState(0); // 换一套考点时重置答题区
   const prevItem = useRef<string | undefined>(undefined);
 
   // 确保练习进度已初始化
@@ -319,19 +346,27 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
     next: () => {
       const item = pickItem(progress, items, prevItem.current);
       prevItem.current = item;
-      return { ex, item, items, options: progress.options };
+      return { ex, item, items, options: opts };
     },
   };
 
-  const setOption = (id: string, value: string) =>
+  const setOption = (id: string, value: string) => {
     update((s) => {
-      getProgress(s, ex).options[id] = value;
+      applyOption(ex, getProgress(s, ex), id, value);
     });
+    // 切换调式等会换掉整套考点：退出临时专练，回到开始页
+    if (ex.options?.find((o) => o.id === id)?.scoped && value !== opts[id]) {
+      setTemp(null);
+      setRound((r) => r + 1);
+    }
+  };
 
   const setLevel = (lv: number) => {
     setTemp(null);
     update((s) => {
       const p = getProgress(s, ex);
+      // 级别按钮显示的是 opts 下的级别表，先切到对应调式
+      for (const o of ex.options ?? []) if (o.scoped) applyOption(ex, p, o.id, opts[o.id]);
       p.level = lv;
       p.custom = null;
     });
@@ -355,7 +390,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
     });
   };
 
-  const allItems = [...new Set(ex.levels.flatMap((l) => l.items))];
+  const allItems = [...new Set(levels.flatMap((l) => l.items))];
 
   return (
     <main className="page practice">
@@ -369,10 +404,10 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
           </h1>
           <p className="muted">
             {temp
-              ? '专练薄弱点'
+              ? `专练薄弱点${scopedLabel && ` · ${scopedLabel}`}`
               : progress.custom
                 ? '自选考点'
-                : `第 ${progress.level + 1} 级 · ${ex.levels[progress.level].name}`}
+                : `第 ${progress.level + 1} 级 · ${currentLevel(ex, progress).name}`}
           </p>
         </div>
         <button className={showPanel ? 'ghost active' : 'ghost'} onClick={() => setShowPanel(!showPanel)}>
@@ -385,7 +420,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
           <div className="field">
             <label>级别</label>
             <div className="seg wrap">
-              {ex.levels.map((l, i) => (
+              {levels.map((l, i) => (
                 <button
                   key={i}
                   className={!temp && !progress.custom && progress.level === i ? 'on' : ''}
@@ -403,7 +438,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
                 {o.values.map((v) => (
                   <button
                     key={v.id}
-                    className={progress.options[o.id] === v.id ? 'on' : ''}
+                    className={opts[o.id] === v.id ? 'on' : ''}
                     onClick={() => setOption(o.id, v.id)}
                   >
                     {v.label}
@@ -434,6 +469,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
       )}
 
       <Quiz
+        key={round}
         store={store}
         update={update}
         source={source}

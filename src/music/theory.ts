@@ -18,8 +18,13 @@ export function pitchClassName(pc: number, preferFlat = false): string {
   return (preferFlat ? PITCH_CLASS_FLAT : PITCH_CLASS_SHARP)[mod(pc, 12)];
 }
 
-export function keyName(tonicPc: number): string {
-  return pitchClassName(tonicPc, FLAT_KEYS.has(mod(tonicPc, 12)));
+/** 该调是否用降号书写：按关系大调判断（如 D 小调 → F 大调 → 降号）。 */
+export function prefersFlat(tonicPc: number, mode: ModeDef = MAJOR): boolean {
+  return FLAT_KEYS.has(mod(tonicPc + mode.relMajor, 12));
+}
+
+export function keyName(tonicPc: number, mode: ModeDef = MAJOR): string {
+  return pitchClassName(tonicPc, prefersFlat(tonicPc, mode));
 }
 
 export function midiToFreq(midi: number): number {
@@ -112,6 +117,138 @@ export function chordNotes(root: Midi, chord: ChordDef, inversion = 0): Midi[] {
 
 export const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
 export const NATURAL_MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
+export const HARMONIC_MINOR_SCALE = [0, 2, 3, 5, 7, 8, 11];
+export const DORIAN_SCALE = [0, 2, 3, 5, 7, 9, 10];
+export const MIXOLYDIAN_SCALE = [0, 2, 4, 5, 7, 9, 10];
+
+export type ModeId = 'major' | 'minor' | 'harmonic' | 'dorian' | 'mixolydian';
+
+export interface ModeDef {
+  id: ModeId;
+  name: string; // 选项中的名称
+  label: string; // 题目中的称呼，如「A 小调」
+  scale: number[]; // 自然音级（相对主音的半音数，7 个）
+  relMajor: number; // 主音到关系大调主音的半音数，决定升降号写法
+  cadence: number[][]; // 建立调性的终止式，相对主音的半音数（第一个音为低音）
+}
+
+// 唱名一律以 do 为主音（do-based minor：do re me fa sol le te）
+export const MODES: ModeDef[] = [
+  {
+    id: 'major',
+    name: '大调',
+    label: '大调',
+    scale: MAJOR_SCALE,
+    relMajor: 0,
+    // Ⅰ–Ⅳ–Ⅴ–Ⅰ
+    cadence: [
+      [-12, 4, 7],
+      [-7, 5, 9],
+      [-5, 2, 7, 11],
+      [-12, 4, 7, 12],
+    ],
+  },
+  {
+    id: 'minor',
+    name: '自然小调',
+    label: '小调',
+    scale: NATURAL_MINOR_SCALE,
+    relMajor: 3,
+    // ⅰ–ⅳ–Ⅴ–ⅰ，Ⅴ 用和声小调的导音 ti
+    cadence: minorCadence(),
+  },
+  {
+    id: 'harmonic',
+    name: '和声小调',
+    label: '和声小调',
+    scale: HARMONIC_MINOR_SCALE,
+    relMajor: 3,
+    cadence: minorCadence(),
+  },
+  {
+    id: 'dorian',
+    name: '多利亚',
+    label: '多利亚',
+    scale: DORIAN_SCALE,
+    relMajor: 10,
+    // ⅰ–Ⅳ–ⅰ：Ⅳ 里的 la 是多利亚的特征音
+    cadence: [
+      [-12, 3, 7],
+      [-7, 5, 9],
+      [-12, 3, 7, 12],
+    ],
+  },
+  {
+    id: 'mixolydian',
+    name: '混合利底亚',
+    label: '混合利底亚',
+    scale: MIXOLYDIAN_SCALE,
+    relMajor: 5,
+    // Ⅰ–♭Ⅶ–Ⅰ：♭Ⅶ 里的 te 是混合利底亚的特征音
+    cadence: [
+      [-12, 4, 7],
+      [-14, 2, 5, 10],
+      [-12, 4, 7, 12],
+    ],
+  },
+];
+
+function minorCadence(): number[][] {
+  return [
+    [-12, 3, 7], // ⅰ
+    [-7, 5, 8], // ⅳ
+    [-5, 2, 7, 11], // Ⅴ
+    [-12, 3, 7, 12], // ⅰ
+  ];
+}
+
+export const MODE_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m])) as Record<ModeId, ModeDef>;
+export const MAJOR = MODE_BY_ID.major;
+
+/** 由选项值取调式，未知值按大调处理（兼容旧数据）。 */
+export function modeById(id: string | undefined): ModeDef {
+  return MODE_BY_ID[id as ModeId] ?? MAJOR;
+}
+
+export interface Triad {
+  id: string; // ASCII 级数，如 'bVII'、'ii'
+  roman: string; // 显示用，如 '♭Ⅶ'、'ⅱ°'
+  name: string; // 中文功能名
+  root: number; // 相对主音
+  third: number; // 相对根音
+  fifth: number;
+}
+
+const ROMAN_UP = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ'];
+const ROMAN_LOW = ['ⅰ', 'ⅱ', 'ⅲ', 'ⅳ', 'ⅴ', 'ⅵ', 'ⅶ'];
+const ASCII_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+const FUNC_NAMES = ['主和弦', '上主和弦', '中音和弦', '下属和弦', '属和弦', '下中音和弦', '导和弦'];
+
+/** 给定级数（0 起）与三和弦结构，生成罗马数字：大小写表示大小三和弦，° 减、+ 增，升降号相对大调音阶。 */
+export function makeTriad(degree: number, root: number, third: number, fifth: number): Triad {
+  const minor = third === 3;
+  const acc = ['♭', '', '♯'][root - MAJOR_SCALE[degree] + 1] ?? '';
+  const quality = fifth === 6 ? '°' : fifth === 8 ? '+' : '';
+  const ascii = ASCII_ROMAN[degree];
+  return {
+    id: `${acc === '♭' ? 'b' : acc === '♯' ? '#' : ''}${minor ? ascii.toLowerCase() : ascii}`,
+    roman: `${acc}${(minor ? ROMAN_LOW : ROMAN_UP)[degree]}${quality}`,
+    // 第七级：导音（ti）上的叫导和弦，下主音（te）上的叫下主和弦
+    name: degree === 6 && root === 10 ? '下主和弦' : FUNC_NAMES[degree],
+    root,
+    third,
+    fifth,
+  };
+}
+
+/** 调式的七个自然三和弦（按三度叠置）。 */
+export function diatonicTriads(mode: ModeDef): Triad[] {
+  const s = mode.scale;
+  return s.map((root, k) => {
+    const at = (i: number) => s[(k + i) % 7] + (k + i >= 7 ? 12 : 0) - root;
+    return makeTriad(k, root, at(2), at(4));
+  });
+}
 
 // 半音相对主音 → 级数标签（首调体系，含变化音）
 export interface DegreeDef {
@@ -148,8 +285,8 @@ export const NAMING_LABELS: Record<NamingSystem, string> = {
   letter: '音名 (C D E)',
 };
 
-/** 把某个音按指定体系命名。tonicPc 为当前调主音的音级。 */
-export function nameInSystem(midi: Midi, tonicPc: number, system: NamingSystem): string {
+/** 把某个音按指定体系命名。tonicPc 为当前调主音的音级，mode 决定音名的升降号写法。 */
+export function nameInSystem(midi: Midi, tonicPc: number, system: NamingSystem, mode: ModeDef = MAJOR): string {
   const rel = mod(midi - tonicPc, 12);
   switch (system) {
     case 'movable':
@@ -159,18 +296,13 @@ export function nameInSystem(midi: Midi, tonicPc: number, system: NamingSystem):
     case 'fixed':
       return FIXED_DO[mod(midi, 12)];
     case 'letter':
-      return pitchClassName(midi, FLAT_KEYS.has(mod(tonicPc, 12)));
+      return pitchClassName(midi, prefersFlat(tonicPc, mode));
   }
 }
 
-/** 主-下属-属-主 终止式，用于建立调性感。 */
-export function cadence(tonic: Midi): Midi[][] {
-  return [
-    [tonic - 12, tonic + 4, tonic + 7], // I
-    [tonic - 7, tonic + 5, tonic + 9], // IV
-    [tonic - 5, tonic + 2, tonic + 7, tonic + 11], // V
-    [tonic - 12, tonic + 4, tonic + 7, tonic + 12], // I
-  ];
+/** 建立调性感的终止式（大调为 Ⅰ–Ⅳ–Ⅴ–Ⅰ），见 MODES。 */
+export function cadence(tonic: Midi, mode: ModeDef = MAJOR): Midi[][] {
+  return mode.cadence.map((chord) => chord.map((d) => tonic + d));
 }
 
 // ───────────── 工具 ─────────────

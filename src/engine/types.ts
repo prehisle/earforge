@@ -5,6 +5,11 @@ export interface Choice {
   id: string;
   label: string;
   sub?: string;
+  /**
+   * 节奏谱（可选）：时值序列，单位为 1/12 个四分音符（四分 12、八分 6、十六分 3、三连音八分 4、
+   * 附点四分 18、二分 24、全音符 48），负数表示同时值的休止。存在时选项按钮显示节奏谱代替 label。
+   */
+  rhythm?: number[];
 }
 
 export interface Question {
@@ -37,6 +42,8 @@ export interface OptionDef {
   label: string;
   values: { id: string; label: string }[];
   default: string;
+  /** 每个取值各自记录级别与自选考点（如调式：切换后考点完全不同） */
+  scoped?: boolean;
 }
 
 export interface Settings {
@@ -75,7 +82,10 @@ export interface ExerciseDef {
   subtitle: string;
   icon: string;
   group: '基础' | '调性听觉' | '视唱练耳';
+  /** 默认选项下的级别 */
   levels: Level[];
+  /** 级别随选项变化时提供（如按调式生成）；缺省即 levels。请通过 progress.levelsOf() 读取 */
+  levelsFor?(options: Record<string, string>): Level[];
   options?: OptionDef[];
   itemLabel(item: string, settings: Settings): string;
   generate(item: string, ctx: GenContext): Question;
