@@ -9,7 +9,7 @@ export interface NoteEvent {
   time: number; // 相对开始的秒数
   dur: number; // 秒
   velocity?: number; // 0..1
-  /** 音色类别：缺省为乐音；'perc' 为固定音高的木鱼声，'click' 为节拍器（此两类忽略 notes） */
+  /** 音色类别：缺省为乐音；'perc' 为节奏音（木鱼起音 + 按时值持续的固定音高），'click' 为节拍器（此两类忽略 notes） */
   kind?: 'note' | 'perc' | 'click';
   /** 节拍器重拍（仅 kind 为 'click' 时有效） */
   accent?: boolean;
@@ -65,7 +65,10 @@ class AudioEngine {
     let end = 0;
     for (const ev of events) {
       if (ev.kind === 'click') this.click(start + ev.time, ev.accent ?? false, ev.velocity ?? 0.7);
-      else if (ev.kind === 'perc') this.perc(start + ev.time, ev.velocity ?? 0.7);
+      else if (ev.kind === 'perc') {
+        this.perc(start + ev.time, ev.velocity ?? 0.7);
+        this.sustain(start + ev.time, ev.dur, ev.velocity ?? 0.7);
+      }
       else for (const n of ev.notes) this.voice(n, start + ev.time, ev.dur, ev.velocity ?? 0.7);
       end = Math.max(end, ev.time + ev.dur);
     }
@@ -146,6 +149,33 @@ class AudioEngine {
     osc.start(t);
     osc.stop(t + 0.06);
     this.track(osc);
+  }
+
+  /** 节奏音的持续部分：柔和的固定音高，按时值持续，让长音与休止能听出区别。 */
+  private sustain(t: number, dur: number, vel: number): void {
+    const ctx = this.context;
+    const out = ctx.createGain();
+    out.connect(this.master!);
+    const hold = Math.max(0.06, dur * 0.88);
+    const level = vel * 0.16;
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(level, t + 0.01);
+    out.gain.setValueAtTime(level, t + hold - 0.03);
+    out.gain.linearRampToValueAtTime(0, t + hold);
+    for (const [f, amp] of [
+      [587.33, 1],
+      [1174.66, 0.18],
+    ]) {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.value = amp;
+      osc.connect(g).connect(out);
+      osc.start(t);
+      osc.stop(t + hold + 0.02);
+      this.track(osc);
+    }
   }
 
   /** 木鱼：向下扫频的三角波 + 带通噪声的敲击声，固定音高、约 0.1 秒衰减。 */

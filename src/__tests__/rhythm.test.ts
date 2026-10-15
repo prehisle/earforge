@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { activeItems } from '../engine/progress';
 import { DEFAULT_SETTINGS } from '../engine/types';
-import { BAR, UNITS, onsetKey, rhythm } from '../exercises/rhythm';
+import { BAR, UNITS, soundKey, rhythm } from '../exercises/rhythm';
 
 const fresh = (level: number) => ({ level, custom: null, items: {}, options: {} });
 const variants = [
@@ -59,14 +59,14 @@ describe('节奏听写', () => {
         for (const bars of ['1', '2']) {
           const q = rhythm.generate(a, { settings: DEFAULT_SETTINGS, items: [a, b], options: { speed: 'mid', bars } });
           expect(q.choices.length).toBeGreaterThanOrEqual(3);
-          expect(new Set(q.choices.map((c) => onsetKey(c.rhythm!))).size).toBe(q.choices.length);
+          expect(new Set(q.choices.map((c) => soundKey(c.rhythm!))).size).toBe(q.choices.length);
         }
       }
   });
 
-  it('干扰项与答案不同、彼此不重复（按听感即起音位置比较）', () => {
+  it('干扰项与答案不同、彼此不重复（按听感即起音与发声长度比较）', () => {
     for (const { q } of questions()) {
-      const keys = q.choices.map((c) => onsetKey(c.rhythm!));
+      const keys = q.choices.map((c) => soundKey(c.rhythm!));
       expect(new Set(keys).size).toBe(keys.length);
       expect(new Set(q.choices.map((c) => c.id)).size).toBe(q.choices.length);
     }
@@ -93,5 +93,13 @@ describe('节奏听写', () => {
       expect(clicks[0].accent).toBe(true);
       expect(perc[0].time).toBeGreaterThanOrEqual(clicks[3].time);
     }
+  });
+});
+
+describe('听感键', () => {
+  it('长音与「短音 + 休止」听起来不同', () => {
+    expect(soundKey([24])).not.toBe(soundKey([12, -12])); // 二分 vs 四分 + 四分休止
+    expect(soundKey([12])).not.toBe(soundKey([6, -6])); // 四分 vs 八分 + 八分休止
+    expect(soundKey([12, -6, -6])).toBe(soundKey([12, -12])); // 相邻休止听起来一样
   });
 });

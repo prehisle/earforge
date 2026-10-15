@@ -35,6 +35,17 @@ type Bar = Half[];
 export const flatten = (bars: Bar[]): number[] => bars.flat(2).flatMap((u) => UNITS[u].durs);
 
 /** 听觉上可区分的特征：木鱼声短促，只能听出起音位置，因此用起音时刻判断两个节奏是否相同。 */
+/** 听感键：每个音的起点与发声长度（相邻休止合并为静音）。听感键相同的两个节奏听起来完全一样。 */
+export function soundKey(durs: number[]): string {
+  const out: string[] = [];
+  let t = 0;
+  for (const d of durs) {
+    if (d > 0) out.push(`${t}+${d}`);
+    t += Math.abs(d);
+  }
+  return out.join(',');
+}
+
 export function onsetKey(durs: number[]): string {
   const on: number[] = [];
   let t = 0;
@@ -162,14 +173,14 @@ export const rhythm: ExerciseDef = {
     const bars: Bar[] = Array.from({ length: nBars }, (_, i) => makeBar(pool, i === at ? item : undefined));
 
     // 干扰项：先在当前单元池里改一处；不够时放宽到基础单元并改两处
-    const seen = new Set([onsetKey(flatten(bars))]);
+    const seen = new Set([soundKey(flatten(bars))]);
     const wrongs: Bar[][] = [];
     const wide = [...new Set([...pool, 'h', 'ee', 'qr'])];
     for (let k = 0; k < 300 && wrongs.length < 3; k++) {
       const p = k < 150 ? pool : wide;
       let cand = mutate(bars, p);
       if (k >= 150) cand = mutate(cand, p);
-      const key = onsetKey(flatten(cand));
+      const key = soundKey(flatten(cand));
       if (seen.has(key) || !cand.every(goodBar)) continue;
       seen.add(key);
       wrongs.push(cand);
@@ -201,7 +212,7 @@ export const rhythm: ExerciseDef = {
       choices,
       answer: [answer],
       prompt: `听到的是哪个节奏？（♩ = ${bpm}，先听一小节预备拍）`,
-      explain: `${describe(bars)}${hasRest(item) || beats(item) > 1 ? '。木鱼声短促，休止和长音听起来相似，关键是听哪里有新的敲击' : ''}`,
+      explain: `${describe(bars)}${hasRest(item) ? '。休止处是静音，注意和长音区分' : ''}`,
     };
   },
 };
