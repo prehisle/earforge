@@ -142,6 +142,25 @@ export function SettingsPage({ store, update, onBack }: Props) {
 
       <section className="panel">
         <div className="field">
+          <label>每日目标（题）</label>
+          <Seg
+            value={String(s.dailyGoal)}
+            options={['10', '20', '30', '50', '100'].map((v) => [v, v] as [string, string])}
+            onChange={(v) => set('dailyGoal', Number(v))}
+          />
+        </div>
+        <div className="field">
+          <label>今日训练每组题数</label>
+          <Seg
+            value={String(s.mixSize)}
+            options={['10', '20', '30', '40'].map((v) => [v, v] as [string, string])}
+            onChange={(v) => set('mixSize', Number(v))}
+          />
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="field">
           <label>数据（仅保存在本机浏览器）</label>
           <div className="seg wrap">
             <button onClick={exportData}>导出备份</button>

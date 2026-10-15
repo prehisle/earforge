@@ -2,13 +2,13 @@ import type { ExerciseDef, Level } from '../engine/types';
 import { keyName, mod, nameInSystem, randInt, type ModeDef } from '../music/theory';
 import { MODE_OPTION, cadenceEvents, degreeLevels, melodyEvents, modeItem, modeOf } from './common';
 import { degreeLabel, semi } from './degrees';
+import { makeMelody } from './dictation';
 
 /** 视唱的级别：主三和弦 → +2、4 级 → +6、7 级（只唱自然音级）。 */
 function singingLevels(mode: ModeDef): Level[] {
   const s = mode.scale;
   return degreeLevels(mode, [[s[0], s[2], s[4]], [s[1], s[3]], [s[5], s[6]]], 3);
 }
-import { makeMelody } from './dictation';
 
 export const singing: ExerciseDef = {
   id: 'singing',
