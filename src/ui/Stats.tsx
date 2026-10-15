@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { EXERCISES } from '../exercises';
-import { itemStat, streak, type Store } from '../engine/progress';
+import { itemGroups, itemStat, streak, type Store } from '../engine/progress';
 
 interface Props {
   store: Store;
@@ -90,33 +90,38 @@ export function StatsPage({ store, onBack }: Props) {
         </table>
       </section>
 
-      {EXERCISES.map((ex) => {
+      {EXERCISES.flatMap((ex) => {
         const p = store.exercises[ex.id];
-        if (!p || Object.keys(p.items).length === 0) return null;
-        const items = [...new Set(ex.levels.flatMap((l) => l.items))].filter((it) => p.items[it]);
-        // 最弱的排前面，方便针对性练习
-        items.sort((a, b) => itemStat(p, a).acc - itemStat(p, b).acc);
-        return (
-          <section className="panel" key={ex.id}>
-            <h2 className="chart-title">
-              {ex.icon} {ex.title} · 掌握度（由弱到强）
-            </h2>
-            <ul className="mastery">
-              {items.map((it) => {
-                const st = itemStat(p, it);
-                return (
-                  <li key={it} title={`答对 ${st.c}/${st.n}`}>
-                    <span className="mastery-label">{ex.itemLabel(it, store.settings)}</span>
-                    <span className="meter">
-                      <span className="meter-fill" style={{ width: `${st.acc * 100}%` }} />
-                    </span>
-                    <span className="mastery-val">{Math.round(st.acc * 100)}%</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        );
+        if (!p || Object.keys(p.items).length === 0) return [];
+        // 有调式等 scoped 选项的练习按取值分组显示
+        return itemGroups(ex).map((g) => {
+          const items = g.items.filter((it) => p.items[it]);
+          if (items.length === 0) return null;
+          // 最弱的排前面，方便针对性练习
+          items.sort((a, b) => itemStat(p, a).acc - itemStat(p, b).acc);
+          return (
+            <section className="panel" key={`${ex.id}:${g.label}`}>
+              <h2 className="chart-title">
+                {ex.icon} {ex.title}
+                {g.label && ` · ${g.label}`} · 掌握度（由弱到强）
+              </h2>
+              <ul className="mastery">
+                {items.map((it) => {
+                  const st = itemStat(p, it);
+                  return (
+                    <li key={it} title={`答对 ${st.c}/${st.n}`}>
+                      <span className="mastery-label">{ex.itemLabel(it, store.settings)}</span>
+                      <span className="meter">
+                        <span className="meter-fill" style={{ width: `${st.acc * 100}%` }} />
+                      </span>
+                      <span className="mastery-val">{Math.round(st.acc * 100)}%</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        });
       })}
     </main>
   );

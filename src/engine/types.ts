@@ -37,6 +37,8 @@ export interface OptionDef {
   label: string;
   values: { id: string; label: string }[];
   default: string;
+  /** 每个取值各自记录级别与自选考点（如调式：切换后考点完全不同） */
+  scoped?: boolean;
 }
 
 export interface Settings {
@@ -69,7 +71,10 @@ export interface ExerciseDef {
   subtitle: string;
   icon: string;
   group: '基础' | '调性听觉' | '视唱练耳';
+  /** 默认选项下的级别 */
   levels: Level[];
+  /** 级别随选项变化时提供（如按调式生成）；缺省即 levels。请通过 progress.levelsOf() 读取 */
+  levelsFor?(options: Record<string, string>): Level[];
   options?: OptionDef[];
   itemLabel(item: string, settings: Settings): string;
   generate(item: string, ctx: GenContext): Question;

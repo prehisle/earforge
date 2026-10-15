@@ -1,7 +1,15 @@
-import type { ExerciseDef } from '../engine/types';
-import { DEGREES, keyName, mod } from '../music/theory';
-import { chooseTonic, cadenceEvents, melodyEvents } from './common';
-import { degreeChoices, degreeLabel, semi } from './degrees';
+import type { ExerciseDef, Level } from '../engine/types';
+import { DEGREES, keyName, mod, type ModeDef } from '../music/theory';
+import { MODE_OPTION, chooseTonic, cadenceEvents, degreeLevels, melodyEvents, modeItem, modeOf } from './common';
+import { CHROMATIC, degreeChoices, degreeLabel, semi } from './degrees';
+
+/** 旋律听写的级别：按音阶顺序 do re mi → +4、5 级 → +6、7 级 → 变化音。 */
+function dictationLevels(mode: ModeDef): Level[] {
+  const s = mode.scale;
+  // 大调沿用原有的变化音组合 ♭3 ♭7 ♯4
+  const chromatic = mode.id === 'major' ? [3, 10, 6] : CHROMATIC[mode.id][0];
+  return degreeLevels(mode, [s.slice(0, 3), s.slice(3, 5), s.slice(5), chromatic], 3, ' ');
+}
 
 /** 生成以 do 开头、包含指定音级、以级进为主的旋律（相对主音的半音数）。 */
 export function makeMelody(pool: number[], must: number, len: number): number[] {
@@ -36,13 +44,10 @@ export const dictation: ExerciseDef = {
   subtitle: '听一段短旋律，按顺序写出唱名',
   icon: '✎',
   group: '调性听觉',
-  levels: [
-    { name: 'do re mi', items: ['d0', 'd2', 'd4'] },
-    { name: '+ fa sol', items: ['d5', 'd7'] },
-    { name: '+ la ti', items: ['d9', 'd11'] },
-    { name: '+ 变化音 ♭3 ♭7 ♯4', items: ['d3', 'd10', 'd6'] },
-  ],
+  levels: dictationLevels(modeOf({})),
+  levelsFor: (options) => dictationLevels(modeOf(options)),
   options: [
+    MODE_OPTION,
     {
       id: 'len',
       label: '音符数',
@@ -58,16 +63,17 @@ export const dictation: ExerciseDef = {
   ],
   itemLabel: (it, s) => degreeLabel(it, s),
   generate(item, ctx) {
+    const mode = modeOf(ctx.options);
     const tonic = chooseTonic(ctx.settings);
     const tonicPc = mod(tonic, 12);
     // 旋律总从 do 开始，所以 do 必须可选
-    const items = ctx.items.includes('d0') ? ctx.items : ['d0', ...ctx.items];
-    const pool = items.map(semi);
-    const mel = makeMelody(pool, semi(item), Number(ctx.options.len));
-    const answer = mel.map((d) => `d${d}`);
+    const items = ctx.items.some((it) => semi(it) === 0) ? ctx.items : [modeItem(mode, 'd0'), ...ctx.items];
+    const idOf = new Map(items.map((it) => [semi(it), it]));
+    const mel = makeMelody([...idOf.keys()], semi(item), Number(ctx.options.len));
+    const answer = mel.map((d) => idOf.get(d)!);
     return {
       item,
-      prelude: cadenceEvents(tonic),
+      prelude: cadenceEvents(tonic, mode),
       events: melodyEvents(
         mel.map((d) => tonic + d),
         0.62,
@@ -75,7 +81,7 @@ export const dictation: ExerciseDef = {
       choices: degreeChoices(items, ctx.settings, tonicPc),
       answer,
       stepItems: answer,
-      prompt: `${keyName(tonicPc)} 大调 · 依次写出 ${mel.length} 个音（第一个是 do）`,
+      prompt: `${keyName(tonicPc, mode)} ${mode.label} · 依次写出 ${mel.length} 个音（第一个是 do）`,
       explain: mel.map((d) => DEGREES[d].movableDo).join(' '),
     };
   },

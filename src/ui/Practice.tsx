@@ -1,6 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
-import { activeItems, canLevelUp, getProgress, itemStat, pickItem, record, type Store } from '../engine/progress';
+import {
+  activeItems,
+  canLevelUp,
+  currentLevel,
+  getProgress,
+  itemStat,
+  levelsOf,
+  pickItem,
+  record,
+  setOption as applyOption,
+  type Store,
+} from '../engine/progress';
 import type { ExerciseDef, Question } from '../engine/types';
 import { SingPanel } from './SingPanel';
 
@@ -22,7 +33,9 @@ function endOf(events: NoteEvent[]): number {
 }
 
 export function Practice({ ex, store, update, onBack }: Props) {
-  const progress = store.exercises[ex.id] ?? getProgress(structuredClone(store), ex);
+  // 在副本上规范化（补全选项、级别不越界），不写回
+  const progress = useMemo(() => getProgress(structuredClone(store), ex), [store, ex]);
+  const levels = levelsOf(ex, progress.options);
   const items = activeItems(ex, progress);
 
   const [q, setQ] = useState<Question | null>(null);
@@ -91,7 +104,7 @@ export function Practice({ ex, store, update, onBack }: Props) {
         record(s, p, stepItem, firstTry);
         if (idx === question.answer.length - 1 && canLevelUp(ex, p)) {
           p.level++;
-          leveled = ex.levels[p.level].name;
+          leveled = currentLevel(ex, p).name;
         }
       });
       if (idx < question.answer.length - 1) {
@@ -153,10 +166,17 @@ export function Practice({ ex, store, update, onBack }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [q, done, next, play, answer]);
 
-  const setOption = (id: string, value: string) =>
+  const setOption = (id: string, value: string) => {
     update((s) => {
-      getProgress(s, ex).options[id] = value;
+      applyOption(ex, getProgress(s, ex), id, value);
     });
+    // 切换调式等会换掉整套考点，回到开始页
+    if (ex.options?.find((o) => o.id === id)?.scoped && value !== progress.options[id]) {
+      window.clearTimeout(timer.current);
+      audio.stopAll();
+      setQ(null);
+    }
+  };
 
   const setLevel = (lv: number) =>
     update((s) => {
@@ -174,7 +194,7 @@ export function Practice({ ex, store, update, onBack }: Props) {
       p.custom = cur.size >= 2 ? [...cur] : p.custom;
     });
 
-  const allItems = [...new Set(ex.levels.flatMap((l) => l.items))];
+  const allItems = [...new Set(levels.flatMap((l) => l.items))];
   const accuracy = session.n ? Math.round((session.c / session.n) * 100) : null;
 
   return (
@@ -188,7 +208,7 @@ export function Practice({ ex, store, update, onBack }: Props) {
             {ex.icon} {ex.title}
           </h1>
           <p className="muted">
-            {progress.custom ? '自选考点' : `第 ${progress.level + 1} 级 · ${ex.levels[progress.level].name}`}
+            {progress.custom ? '自选考点' : `第 ${progress.level + 1} 级 · ${currentLevel(ex, progress).name}`}
           </p>
         </div>
         <button className={showPanel ? 'ghost active' : 'ghost'} onClick={() => setShowPanel(!showPanel)}>
@@ -201,7 +221,7 @@ export function Practice({ ex, store, update, onBack }: Props) {
           <div className="field">
             <label>级别</label>
             <div className="seg wrap">
-              {ex.levels.map((l, i) => (
+              {levels.map((l, i) => (
                 <button
                   key={i}
                   className={!progress.custom && progress.level === i ? 'on' : ''}
