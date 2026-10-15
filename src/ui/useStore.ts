@@ -10,6 +10,8 @@ export function useStore(): [Store, (fn: (s: Store) => void) => void] {
   useEffect(() => {
     audio.timbre = store.settings.timbre;
     audio.setVolume(store.settings.volume);
+    // 已选采样钢琴：启动时后台预加载（离线时由 service worker 缓存提供）；失败后的重试由设置页发起
+    if (store.settings.timbre === 'sampled' && audio.sampler.state === 'idle') void audio.loadSampler();
   }, [store.settings.timbre, store.settings.volume]);
 
   const update = useCallback((fn: (s: Store) => void) => {

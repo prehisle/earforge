@@ -1,8 +1,17 @@
 // 音频引擎：纯 Web Audio 合成的类钢琴音色与节奏打击音，无需下载采样，可离线使用。
+// 另有可选的采样钢琴（'sampled'），按需从 CDN 下载；未就绪或下载失败时回退到合成钢琴。
 
 import { midiToFreq } from '../music/theory';
+import { loadSamples, pickSample } from './sampler';
 
-export type Timbre = 'piano' | 'epiano' | 'sine';
+export type Timbre = 'piano' | 'epiano' | 'sine' | 'sampled';
+type SynthTimbre = Exclude<Timbre, 'sampled'>;
+
+export type SamplerState = 'idle' | 'loading' | 'ready' | 'error';
+export interface SamplerStatus {
+  state: SamplerState;
+  progress: number; // 0..1
+}
 
 export interface NoteEvent {
   notes: number[]; // MIDI
@@ -21,6 +30,10 @@ class AudioEngine {
   private active = new Set<AudioScheduledSourceNode>();
   timbre: Timbre = 'piano';
   volume = 0.8;
+  private samples: Map<number, AudioBuffer> | null = null;
+  private loading: Promise<boolean> | null = null;
+  private status: SamplerStatus = { state: 'idle', progress: 0 };
+  private listeners = new Set<(s: SamplerStatus) => void>();
 
   get context(): AudioContext {
     if (!this.ctx) {
@@ -56,10 +69,58 @@ class AudioEngine {
     this.active.clear();
   }
 
+  /** 采样加载状态 */
+  get sampler(): SamplerStatus {
+    return this.status;
+  }
+
+  /** 订阅采样加载状态，返回取消订阅函数 */
+  onSampler(fn: (s: SamplerStatus) => void): () => void {
+    this.listeners.add(fn);
+    return () => void this.listeners.delete(fn);
+  }
+
+  private setStatus(s: SamplerStatus): void {
+    this.status = s;
+    for (const fn of this.listeners) fn(s);
+  }
+
+  /** 下载并解码采样钢琴（可重复调用，只下载一次；失败后再次调用会重试）。成功返回 true。 */
+  loadSampler(): Promise<boolean> {
+    if (this.samples) return Promise.resolve(true);
+    if (this.loading) return this.loading;
+    this.setStatus({ state: 'loading', progress: 0 });
+    // 尚无 AudioContext 时（如启动时预加载、还没有用户手势）用离线上下文解码，AudioBuffer 可跨上下文使用
+    const decoder = this.ctx ?? new OfflineAudioContext(1, 1, 48000);
+    this.loading = loadSamples(decoder, (progress) => this.setStatus({ state: 'loading', progress }))
+      .then((m) => {
+        this.samples = m;
+        this.setStatus({ state: 'ready', progress: 1 });
+        return true;
+      })
+      .catch((e: unknown) => {
+        console.warn('采样钢琴加载失败，回退到合成钢琴', e);
+        this.setStatus({ state: 'error', progress: 0 });
+        return false;
+      })
+      .finally(() => (this.loading = null));
+    return this.loading;
+  }
+
   /** 播放一组事件，返回总时长（秒）。会先停止正在播放的声音。 */
   async play(events: NoteEvent[]): Promise<number> {
     await this.resume();
     this.stopAll();
+    return this.schedule(events);
+  }
+
+  /** 叠加播放一组事件（不停止正在播放的声音），返回总时长（秒）。stopAll 同样能停止它。 */
+  async playExtra(events: NoteEvent[]): Promise<number> {
+    await this.resume();
+    return this.schedule(events);
+  }
+
+  private schedule(events: NoteEvent[]): number {
     const ctx = this.context;
     const start = ctx.currentTime + 0.05;
     let end = 0;
@@ -76,6 +137,34 @@ class AudioEngine {
   }
 
   private voice(midi: number, t: number, dur: number, vel: number): void {
+    if (this.timbre !== 'sampled') return this.synth(midi, t, dur, vel, this.timbre);
+    // 采样未就绪：先用合成钢琴，后台继续加载（失败过则不自动重试，等用户在设置里重选）
+    if (!this.samples) {
+      if (this.status.state === 'idle') void this.loadSampler();
+      return this.synth(midi, t, dur, vel, 'piano');
+    }
+    const pick = pickSample(midi);
+    const buf = pick && this.samples.get(pick.sample);
+    if (!pick || !buf) return this.synth(midi, t, dur, vel, 'piano');
+
+    const ctx = this.context;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = pick.rate;
+    const out = ctx.createGain();
+    // 力度 → 增益（略带曲线，弱奏更弱）
+    const peak = 1.6 * vel ** 1.5; // 采样峰值约 0.25，与合成钢琴响度相当
+    const release = 0.15; // 松开踏板：约 0.15 秒淡出
+    out.gain.setValueAtTime(peak, t);
+    out.gain.setValueAtTime(peak, t + dur);
+    out.gain.setTargetAtTime(0, t + dur, release / 4);
+    src.connect(out).connect(this.master!);
+    src.start(t);
+    src.stop(t + dur + release + 0.05);
+    this.track(src);
+  }
+
+  private synth(midi: number, t: number, dur: number, vel: number, timbre: SynthTimbre): void {
     const ctx = this.context;
     const f = midiToFreq(midi);
     const out = ctx.createGain();
@@ -92,7 +181,7 @@ class AudioEngine {
     out.gain.setTargetAtTime(peak * 0.25, t + 0.006, decay * 0.35);
     out.gain.setTargetAtTime(0, t + dur, release / 3);
 
-    const partials = this.partials();
+    const partials = this.partials(timbre);
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.value = 0.5;
@@ -115,7 +204,7 @@ class AudioEngine {
       this.track(osc);
     }
 
-    if (this.timbre === 'piano') {
+    if (timbre === 'piano') {
       // 击弦噪声
       const len = Math.floor(ctx.sampleRate * 0.03);
       const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -221,8 +310,8 @@ class AudioEngine {
     this.track(noise);
   }
 
-  private partials(): [number, number, number][] {
-    switch (this.timbre) {
+  private partials(timbre: SynthTimbre): [number, number, number][] {
+    switch (timbre) {
       case 'sine':
         return [[1, 1, 0]];
       case 'epiano':
@@ -253,3 +342,6 @@ class AudioEngine {
 }
 
 export const audio = new AudioEngine();
+
+// 开发模式下挂到 window 方便调试
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { audio: AudioEngine }).audio = audio;

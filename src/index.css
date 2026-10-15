@@ -801,3 +801,16 @@ input[type='range'] {
 .choices:has(.rhythm[data-bars='2']) {
   grid-template-columns: 1fr;
 }
+
+.sampler-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+.sampler-status a {
+  color: inherit;
+}
+.sampler-status .error-text {
+  color: var(--bad);
+}

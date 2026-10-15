@@ -1,8 +1,10 @@
 import { useRef } from 'react';
 import { audio, type Timbre } from '../audio/engine';
+import { SAMPLE_SIZE_MB } from '../audio/sampler';
 import type { Store } from '../engine/progress';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/types';
 import { NAMING_LABELS, type NamingSystem } from '../music/theory';
+import { SamplerStatus } from './SamplerStatus';
 
 interface Props {
   store: Store;
@@ -97,13 +99,23 @@ export function SettingsPage({ store, update, onBack }: Props) {
               ['piano', '钢琴'],
               ['epiano', '电钢琴'],
               ['sine', '纯音'],
+              ['sampled', `采样钢琴（需下载约 ${SAMPLE_SIZE_MB} MB）`],
             ]}
             onChange={(v) => {
               set('timbre', v);
               audio.timbre = v;
-              void audio.play([{ notes: [60, 64, 67], time: 0, dur: 1 }]);
+              const chord = [{ notes: [60, 64, 67], time: 0, dur: 1 }];
+              if (v !== 'sampled' || audio.sampler.state === 'ready') void audio.play(chord);
+              // 首次选采样：趁用户手势启动音频，再下载，完成后试听（失败时回退合成钢琴试听）
+              else {
+                void audio.resume();
+                void audio.loadSampler().then(() => {
+                  if (audio.timbre === 'sampled') void audio.play(chord);
+                });
+              }
             }}
           />
+          <SamplerStatus />
         </div>
         <div className="field">
           <label>音量 {Math.round(s.volume * 100)}%</label>
