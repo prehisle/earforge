@@ -1,4 +1,4 @@
-// 音频引擎：纯 Web Audio 合成的类钢琴音色，无需下载采样，可离线使用。
+// 音频引擎：纯 Web Audio 合成的类钢琴音色与节奏打击音，无需下载采样，可离线使用。
 
 import { midiToFreq } from '../music/theory';
 
@@ -9,6 +9,10 @@ export interface NoteEvent {
   time: number; // 相对开始的秒数
   dur: number; // 秒
   velocity?: number; // 0..1
+  /** 音色类别：缺省为乐音；'perc' 为固定音高的木鱼声，'click' 为节拍器（此两类忽略 notes） */
+  kind?: 'note' | 'perc' | 'click';
+  /** 节拍器重拍（仅 kind 为 'click' 时有效） */
+  accent?: boolean;
 }
 
 class AudioEngine {
@@ -60,7 +64,9 @@ class AudioEngine {
     const start = ctx.currentTime + 0.05;
     let end = 0;
     for (const ev of events) {
-      for (const n of ev.notes) this.voice(n, start + ev.time, ev.dur, ev.velocity ?? 0.7);
+      if (ev.kind === 'click') this.click(start + ev.time, ev.accent ?? false, ev.velocity ?? 0.7);
+      else if (ev.kind === 'perc') this.perc(start + ev.time, ev.velocity ?? 0.7);
+      else for (const n of ev.notes) this.voice(n, start + ev.time, ev.dur, ev.velocity ?? 0.7);
       end = Math.max(end, ev.time + ev.dur);
     }
     return end;
@@ -123,6 +129,66 @@ class AudioEngine {
       noise.start(t);
       this.track(noise);
     }
+  }
+
+  /** 节拍器嘀嗒：短促的正弦脉冲，重拍音高更高、更响。 */
+  private click(t: number, accent: boolean, vel: number): void {
+    const ctx = this.context;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = accent ? 1760 : 1320;
+    const g = ctx.createGain();
+    const peak = vel * (accent ? 0.5 : 0.32);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    osc.connect(g).connect(this.master!);
+    osc.start(t);
+    osc.stop(t + 0.06);
+    this.track(osc);
+  }
+
+  /** 木鱼：向下扫频的三角波 + 带通噪声的敲击声，固定音高、约 0.1 秒衰减。 */
+  private perc(t: number, vel: number): void {
+    const ctx = this.context;
+    const out = ctx.createGain();
+    out.connect(this.master!);
+    const peak = vel * 0.7;
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(peak, t + 0.002);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+
+    for (const [f, type, amp] of [
+      [880, 'triangle', 1],
+      [1320, 'sine', 0.35],
+    ] as const) {
+      const osc = ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(f * 1.25, t);
+      osc.frequency.exponentialRampToValueAtTime(f, t + 0.015);
+      const g = ctx.createGain();
+      g.gain.value = amp;
+      osc.connect(g).connect(out);
+      osc.start(t);
+      osc.stop(t + 0.16);
+      this.track(osc);
+    }
+
+    const len = Math.floor(ctx.sampleRate * 0.012);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const nf = ctx.createBiquadFilter();
+    nf.type = 'bandpass';
+    nf.frequency.value = 2500;
+    nf.Q.value = 1.2;
+    const ng = ctx.createGain();
+    ng.gain.value = 0.6;
+    noise.connect(nf).connect(ng).connect(out);
+    noise.start(t);
+    this.track(noise);
   }
 
   private partials(): [number, number, number][] {

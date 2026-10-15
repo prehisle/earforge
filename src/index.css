@@ -622,3 +622,17 @@ input[type='range'] {
     display: none;
   }
 }
+
+/* 节奏谱选项：两列，谱面按按钮宽度缩放 */
+.choices:has(.rhythm) {
+  grid-template-columns: repeat(2, 1fr);
+}
+.choice .rhythm {
+  width: auto;
+  max-width: 100%;
+  height: 84px;
+  padding: 2px 4px;
+}
+.choices:has(.rhythm[data-bars='2']) {
+  grid-template-columns: 1fr;
+}

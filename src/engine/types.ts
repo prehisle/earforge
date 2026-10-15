@@ -5,6 +5,11 @@ export interface Choice {
   id: string;
   label: string;
   sub?: string;
+  /**
+   * 节奏谱（可选）：时值序列，单位为 1/12 个四分音符（四分 12、八分 6、十六分 3、三连音八分 4、
+   * 附点四分 18、二分 24、全音符 48），负数表示同时值的休止。存在时选项按钮显示节奏谱代替 label。
+   */
+  rhythm?: number[];
 }
 
 export interface Question {

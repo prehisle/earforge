@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
 import { activeItems, canLevelUp, getProgress, itemStat, pickItem, record, type Store } from '../engine/progress';
 import type { ExerciseDef, Question } from '../engine/types';
+import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
 
 interface Props {
@@ -305,7 +306,11 @@ export function Practice({ ex, store, update, onBack }: Props) {
                 const cls = wrong.has(c.id) ? 'choice bad' : isAnswer ? 'choice good' : 'choice';
                 return (
                   <button key={c.id} className={cls} onClick={() => answer(c.id)} disabled={done}>
-                    <span className="choice-label">{c.label}</span>
+                    {c.rhythm ? (
+                      <RhythmNotation rhythm={c.rhythm} label={c.label} />
+                    ) : (
+                      <span className="choice-label">{c.label}</span>
+                    )}
                     {c.sub && <span className="choice-sub">{c.sub}</span>}
                     {i < 9 && <kbd className="choice-key">{i + 1}</kbd>}
                   </button>
