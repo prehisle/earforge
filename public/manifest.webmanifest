@@ -1,0 +1,11 @@
+{
+  "name": "EarForge 耳锻 · 开源练耳",
+  "short_name": "耳锻",
+  "description": "开源免费的练耳训练，自适应出题，离线可用",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f3f0",
+  "theme_color": "#2a78d6",
+  "lang": "zh-CN",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

@@ -1,0 +1,88 @@
+import { EXERCISES } from '../exercises';
+import { activeItems, getProgress, mastery, streak, today, type Store } from '../engine/progress';
+
+interface Props {
+  store: Store;
+  onOpen(id: string): void;
+  onStats(): void;
+  onSettings(): void;
+}
+
+const GROUPS = ['调性听觉', '基础', '视唱练耳'] as const;
+
+export function Home({ store, onOpen, onStats, onSettings }: Props) {
+  const t = store.daily[today()];
+  const days = streak(store);
+  // 只读取，不写回：getProgress 对新练习会创建默认值
+  const snapshot = structuredClone(store);
+
+  return (
+    <main className="page">
+      <header className="topbar">
+        <div className="brand">
+          <span className="logo">耳</span>
+          <div>
+            <h1>EarForge 耳锻</h1>
+            <p className="muted">开源 · 免费 · 离线可用的练耳训练</p>
+          </div>
+        </div>
+        <nav className="topnav">
+          <button className="ghost" onClick={onStats}>
+            统计
+          </button>
+          <button className="ghost" onClick={onSettings}>
+            设置
+          </button>
+        </nav>
+      </header>
+
+      <section className="tiles">
+        <div className="tile">
+          <span className="tile-label">今日练习</span>
+          <span className="tile-value">{t?.n ?? 0}</span>
+        </div>
+        <div className="tile">
+          <span className="tile-label">今日正确率</span>
+          <span className="tile-value">{t && t.n ? `${Math.round((t.c / t.n) * 100)}%` : '—'}</span>
+        </div>
+        <div className="tile">
+          <span className="tile-label">连续天数</span>
+          <span className="tile-value">{days}</span>
+        </div>
+      </section>
+
+      {GROUPS.map((g) => (
+        <section key={g}>
+          <h2 className="group-title">{g}</h2>
+          <div className="cards">
+            {EXERCISES.filter((e) => e.group === g).map((ex) => {
+              const p = getProgress(snapshot, ex);
+              const m = mastery(p, activeItems(ex, p));
+              return (
+                <button key={ex.id} className="card" onClick={() => onOpen(ex.id)}>
+                  <span className="card-icon">{ex.icon}</span>
+                  <span className="card-body">
+                    <span className="card-title">{ex.title}</span>
+                    <span className="card-sub">{ex.subtitle}</span>
+                    <span className="card-meta">
+                      {p.custom ? '自选考点' : `第 ${p.level + 1}/${ex.levels.length} 级 · ${ex.levels[p.level].name}`}
+                    </span>
+                    <span className="meter" title={`当前级别掌握度 ${Math.round(m * 100)}%`}>
+                      <span className="meter-fill" style={{ width: `${m * 100}%` }} />
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+
+      <footer className="foot muted">
+        建议从「调内音级」开始：它训练的是在调性中听音的能力，对扒歌、即兴、视唱帮助最大。
+        <br />
+        快捷键：数字键作答 · 空格重听 · 回车下一题
+      </footer>
+    </main>
+  );
+}
