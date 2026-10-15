@@ -1,5 +1,14 @@
 import { EXERCISES } from '../exercises';
-import { activeItems, getProgress, mastery, streak, today, type Store } from '../engine/progress';
+import {
+  activeItems,
+  currentLevel,
+  getProgress,
+  levelsOf,
+  mastery,
+  streak,
+  today,
+  type Store,
+} from '../engine/progress';
 
 interface Props {
   store: Store;
@@ -65,7 +74,7 @@ export function Home({ store, onOpen, onStats, onSettings }: Props) {
                     <span className="card-title">{ex.title}</span>
                     <span className="card-sub">{ex.subtitle}</span>
                     <span className="card-meta">
-                      {p.custom ? '自选考点' : `第 ${p.level + 1}/${ex.levels.length} 级 · ${ex.levels[p.level].name}`}
+                      {p.custom ? '自选考点' : `第 ${p.level + 1}/${levelsOf(ex, p.options).length} 级 · ${currentLevel(ex, p).name}`}
                     </span>
                     <span className="meter" title={`当前级别掌握度 ${Math.round(m * 100)}%`}>
                       <span className="meter-fill" style={{ width: `${m * 100}%` }} />

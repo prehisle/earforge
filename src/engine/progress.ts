@@ -1,6 +1,6 @@
 // 学习进度：每个考点的掌握度（指数滑动正确率）、自适应抽题、自动升级。数据保存在 localStorage。
 
-import type { ExerciseDef, Settings } from './types';
+import type { ExerciseDef, Level, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 
 export interface ItemStat {
@@ -15,6 +15,8 @@ export interface ExerciseProgress {
   custom: string[] | null; // 用户自选考点；null 表示按级别
   items: Record<string, ItemStat>;
   options: Record<string, string>;
+  /** scoped 选项其他取值下暂存的级别与自选考点，键为「选项id:取值」 */
+  scoped?: Record<string, { level: number; custom: string[] | null }>;
 }
 
 export interface Store {
@@ -49,21 +51,69 @@ export function saveStore(s: Store): void {
   localStorage.setItem(KEY, JSON.stringify(s));
 }
 
+/** 取进度并规范化：补全/修正选项（未知取值回到默认），级别不越界，自选考点只保留当前级别表中的。 */
 export function getProgress(s: Store, ex: ExerciseDef): ExerciseProgress {
   let p = s.exercises[ex.id];
   if (!p) {
     p = { level: 0, custom: null, items: {}, options: {} };
     s.exercises[ex.id] = p;
   }
-  for (const o of ex.options ?? []) p.options[o.id] ??= o.default;
+  for (const o of ex.options ?? [])
+    if (!o.values.some((v) => v.id === p.options[o.id])) p.options[o.id] = o.default;
+  const levels = levelsOf(ex, p.options);
+  p.level = Math.max(0, Math.min(p.level, levels.length - 1));
+  if (p.custom) {
+    const known = new Set(levels.flatMap((l) => l.items));
+    const kept = p.custom.filter((it) => known.has(it));
+    p.custom = kept.length > 0 ? kept : null;
+  }
   return p;
+}
+
+/** 当前选项下的级别表。 */
+export function levelsOf(ex: ExerciseDef, options: Record<string, string>): Level[] {
+  return ex.levelsFor?.(options) ?? ex.levels;
+}
+
+/** 当前级别（越界时取最近的）。 */
+export function currentLevel(ex: ExerciseDef, p: ExerciseProgress): Level {
+  const levels = levelsOf(ex, p.options);
+  return levels[Math.max(0, Math.min(p.level, levels.length - 1))];
+}
+
+/** 修改选项。scoped 选项（如调式）切换时，暂存旧取值下的级别与自选考点，恢复新取值下的。 */
+export function setOption(ex: ExerciseDef, p: ExerciseProgress, id: string, value: string): void {
+  const old = p.options[id];
+  if (old === value) return;
+  if (ex.options?.find((o) => o.id === id)?.scoped) {
+    p.scoped ??= {};
+    p.scoped[`${id}:${old}`] = { level: p.level, custom: p.custom };
+    const saved = p.scoped[`${id}:${value}`];
+    p.level = saved?.level ?? 0;
+    p.custom = saved?.custom ?? null;
+  }
+  p.options[id] = value;
+}
+
+/** 按 scoped 选项的各个取值列出全部考点（统计页分组用）；没有 scoped 选项时只有一组。 */
+export function itemGroups(ex: ExerciseDef): { label: string; items: string[] }[] {
+  const defaults = Object.fromEntries((ex.options ?? []).map((o) => [o.id, o.default]));
+  const o = ex.options?.find((x) => x.scoped);
+  const variants = o
+    ? o.values.map((v) => ({ label: v.label, options: { ...defaults, [o.id]: v.id } }))
+    : [{ label: '', options: defaults }];
+  return variants.map((v) => ({
+    label: v.label,
+    items: [...new Set(levelsOf(ex, v.options).flatMap((l) => l.items))],
+  }));
 }
 
 /** 当前启用的考点：自选优先，否则为 0..level 所有级别的并集。 */
 export function activeItems(ex: ExerciseDef, p: ExerciseProgress): string[] {
   if (p.custom && p.custom.length > 0) return p.custom;
+  const levels = levelsOf(ex, p.options);
   const set = new Set<string>();
-  for (let i = 0; i <= Math.min(p.level, ex.levels.length - 1); i++) ex.levels[i].items.forEach((it) => set.add(it));
+  for (let i = 0; i <= Math.min(p.level, levels.length - 1); i++) levels[i].items.forEach((it) => set.add(it));
   return [...set];
 }
 
@@ -111,7 +161,7 @@ export function record(s: Store, p: ExerciseProgress, item: string, correct: boo
 
 /** 当前级别所有考点都已掌握 → 可以升级。 */
 export function canLevelUp(ex: ExerciseDef, p: ExerciseProgress): boolean {
-  if (p.custom || p.level >= ex.levels.length - 1) return false;
+  if (p.custom || p.level >= levelsOf(ex, p.options).length - 1) return false;
   return activeItems(ex, p).every((it) => {
     const st = itemStat(p, it);
     return st.n >= MASTERY_N && st.acc >= MASTERY_ACC;
