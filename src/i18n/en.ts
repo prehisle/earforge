@@ -15,6 +15,14 @@ export const en: Record<MessageKey, string> = {
   'app.title': 'EarForge · Open-source ear training',
   'app.brand': 'EarForge',
   'app.tagline': 'Free, open-source ear training that works offline',
+  'app.loading': 'Loading…',
+  'app.storageFail': "Your progress can't be saved (browser storage is full or in private mode). You can keep practising; export a backup in Settings before closing the page.",
+  'app.storageDismiss': 'Got it',
+  'app.crashTitle': 'Something went wrong',
+  'app.crashBody': 'The app hit an unexpected error. Your progress is stored on this device and is safe; you can export a backup first, then reload.',
+  'app.crashReload': 'Reload',
+  'app.crashExport': 'Export backup',
+  'app.crashOffline': "This page isn't cached on this device yet; you may be offline. Reload once you're back online.",
   'lang.label': 'Language',
 
   // ───── home ─────

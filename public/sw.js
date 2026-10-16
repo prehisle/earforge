@@ -1,11 +1,21 @@
-// 离线缓存：页面走网络优先（保证更新），静态资源走缓存优先。
-// 采样钢琴（tonejs.github.io，返回 Access-Control-Allow-Origin: *）单独缓存、缓存优先，应用升级时保留。
-const CACHE = 'earforge-v2';
+// 离线缓存：
+// - 预缓存：构建时 vite.config.ts 把本次构建的全部文件（含按需加载的页面分块）写进 PRECACHE，
+//   并把 BUILD 换成文件列表的哈希。sw.js 因此每次发布都会变化，浏览器安装新版本时一次性缓存全部分块，
+//   即使从没打开过的页面（统计、曲库、设置……）离线时也能打开；启用后删除旧版本的缓存。
+// - 页面导航走网络优先（保证更新），失败时用缓存的 '/'；其余同源资源缓存优先，未命中则联网并顺手缓存。
+// - 采样钢琴（tonejs.github.io，返回 Access-Control-Allow-Origin: *）单独缓存、缓存优先，应用升级时保留。
+const BUILD = 'dev';
+const PRECACHE = [];
+const CACHE = `earforge-v3-${BUILD}`;
 const SAMPLE_CACHE = 'earforge-samples-v1';
 const SAMPLE_PREFIX = 'https://tonejs.github.io/audio/salamander/';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/favicon.svg'])));
+  const urls = ['/', '/manifest.webmanifest', '/favicon.svg', ...PRECACHE];
+  // cache: 'reload' 绕过 HTTP 缓存，确保存进去的是本次构建的文件
+  e.waitUntil(
+    caches.open(CACHE).then((c) => c.addAll([...new Set(urls)].map((u) => new Request(u, { cache: 'reload' })))),
+  );
   self.skipWaiting();
 });
 
@@ -55,6 +65,7 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
+  // 缓存优先（预缓存的分块都在这里命中）；未命中则联网，成功的同源响应顺手缓存
   e.respondWith(
     caches.match(req).then(
       (hit) =>

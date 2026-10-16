@@ -1,6 +1,7 @@
 // 实时音高检测：YIN 算法（de Cheveigné & Kawahara, 2002）。
 
 import { freqToMidi } from '../music/theory';
+import { watchVisibility } from './engine';
 
 export interface PitchResult {
   freq: number;
@@ -72,12 +73,18 @@ export class PitchListener {
   private stream: MediaStream | null = null;
   private ctx: AudioContext | null = null;
   private raf = 0;
+  private unwatch: () => void = () => {};
 
   async start(onPitch: (p: PitchResult | null) => void): Promise<void> {
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false },
     });
     this.ctx = new AudioContext();
+    // 切回前台时恢复被挂起的麦克风分析上下文
+    const ctx = this.ctx;
+    this.unwatch = watchVisibility(() => {
+      if (ctx.state !== 'running' && ctx.state !== 'closed') void ctx.resume().catch(() => {});
+    });
     const src = this.ctx.createMediaStreamSource(this.stream);
     const analyser = this.ctx.createAnalyser();
     analyser.fftSize = 2048;
@@ -93,6 +100,8 @@ export class PitchListener {
   }
 
   stop(): void {
+    this.unwatch();
+    this.unwatch = () => {};
     cancelAnimationFrame(this.raf);
     this.stream?.getTracks().forEach((t) => t.stop());
     this.ctx?.close();

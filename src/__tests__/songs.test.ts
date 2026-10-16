@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadStore } from '../engine/progress';
 import { barLength, beatLength, parseMelody } from '../songs/format';
+import { SONG_COUNT } from '../songs/count';
 import { SONGS, songById } from '../songs/library';
 import {
   MAX_SPAN,
@@ -51,6 +52,7 @@ describe('旋律记法', () => {
 describe('曲库数据', () => {
   it('至少 40 首，id 不重复，每级都有', () => {
     expect(SONGS.length).toBeGreaterThanOrEqual(40);
+    expect(SONG_COUNT).toBe(SONGS.length); // 首页入口卡片用的曲目数
     expect(new Set(SONGS.map((s) => s.id)).size).toBe(SONGS.length);
     for (const lv of [1, 2, 3, 4, 5]) expect(SONGS.filter((s) => s.level === lv).length).toBeGreaterThanOrEqual(5);
     expect(songById['twinkle'].title.zh).toBe('小星星');

@@ -14,7 +14,7 @@ import { EXERCISES as ALL, exerciseById } from '../exercises';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
 import type { ExerciseDef } from '../engine/types';
-import { SONGS } from '../songs/library';
+import { SONG_COUNT } from '../songs/count';
 import { hasSung } from '../songs/results';
 
 interface Props {
@@ -160,16 +160,17 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs }: Pro
 /** 视唱曲库入口卡片（放在「视唱练耳」分组里）。 */
 function SongsCard({ store, onOpen }: { store: Store; onOpen(): void }) {
   const t = useT();
-  const done = SONGS.filter((s) => hasSung(store.songs?.[s.id])).length;
+  // 只数记录里唱过的曲目（不加载曲库数据）；曲目若被移除，最多算满
+  const done = Math.min(SONG_COUNT, Object.values(store.songs ?? {}).filter(hasSung).length);
   return (
     <button className="card" onClick={onOpen}>
       <span className="card-icon">🎼</span>
       <span className="card-body">
         <span className="card-title">{t('songs.title')}</span>
-        <span className="card-sub">{t('songs.cardSub', { n: SONGS.length })}</span>
-        <span className="card-meta">{t('songs.cardMeta', { done, n: SONGS.length })}</span>
+        <span className="card-sub">{t('songs.cardSub', { n: SONG_COUNT })}</span>
+        <span className="card-meta">{t('songs.cardMeta', { done, n: SONG_COUNT })}</span>
         <span className="meter">
-          <span className="meter-fill" style={{ width: `${(done / SONGS.length) * 100}%` }} />
+          <span className="meter-fill" style={{ width: `${(done / SONG_COUNT) * 100}%` }} />
         </span>
       </span>
     </button>
