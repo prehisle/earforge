@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Store } from '../engine/progress';
 import { useLocale, useT } from '../i18n/react';
 import { SONGS, type SongDef, type SongTag } from '../songs/library';
@@ -20,8 +20,12 @@ interface Filter {
 }
 
 const EMPTY: Filter = { level: 'all', kind: 'all', meter: 'all', tags: [] };
-// 返回曲库时保留上次的筛选
+// 返回曲库时保留上次的筛选与各级别的展开状态
 let lastFilter: Filter = EMPTY;
+const saved: { open: Record<number, boolean> | null } = { open: null };
+
+/** 窄屏（手机）上默认只展开一个级别，曲目列表不至于太长 */
+const narrow = () => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
 
 const METERS = [...new Set(SONGS.map((s) => s.meter.join('/')))].sort((a, b) => Number(a.split('/')[1]) - Number(b.split('/')[1]) || a.localeCompare(b));
 const ALL_TAGS = TAG_ORDER.filter((t) => SONGS.some((s) => songTags(s).includes(t)));
@@ -49,6 +53,23 @@ export function SongLibrary({ store, onBack, onOpen }: Props) {
   );
   const levels = [...new Set(list.map((s) => s.level))].sort();
   const filtered = f.level !== 'all' || f.kind !== 'all' || f.meter !== 'all' || f.tags.length > 0;
+
+  // 级别分组可折叠：宽屏默认全部展开；窄屏默认只展开第一个还有没唱过曲目的级别。筛选时全部展开。
+  const [open, setOpen] = useState<Record<number, boolean>>(() => {
+    if (saved.open) return saved.open;
+    if (!narrow()) return {};
+    const first = SONGS.find((s) => !hasSung(store.songs?.[s.id]))?.level ?? 1;
+    return Object.fromEntries([1, 2, 3, 4, 5].map((lv) => [lv, lv === first]));
+  });
+  const isOpen = (lv: number) => filtered || (open[lv] ?? true);
+  const toggle = (lv: number, v: boolean) => {
+    if (filtered || isOpen(lv) === v) return;
+    setOpen({ ...open, [lv]: v });
+  };
+  // 记住展开状态，返回曲库时沿用
+  useEffect(() => {
+    saved.open = open;
+  }, [open]);
 
   return (
     <main className="page">
@@ -119,30 +140,43 @@ export function SongLibrary({ store, onBack, onOpen }: Props) {
 
       {list.length === 0 && <p className="muted songs-empty">{t('songs.empty')}</p>}
 
-      {levels.map((lv) => (
-        <section key={lv}>
-          <h2 className="group-title">{t('songs.levelN', { n: lv })}</h2>
-          <div className="cards">
-            {list
-              .filter((s) => s.level === lv)
-              .map((s) => {
+      {levels.map((lv) => {
+        const songs = list.filter((s) => s.level === lv);
+        const done = songs.filter((s) => hasSung(store.songs?.[s.id])).length;
+        return (
+          <details
+            key={lv}
+            className="songs-group"
+            open={isOpen(lv)}
+            onToggle={(e) => toggle(lv, e.currentTarget.open)}
+          >
+            <summary>
+              <h2 className="group-title">{t('songs.levelN', { n: lv })}</h2>
+              <span className="songs-group-meta">
+                {t('songs.cardMeta', { done, n: songs.length })}
+              </span>
+            </summary>
+            <div className="song-list">
+              {songs.map((s) => {
                 const r = store.songs?.[s.id];
                 const sung = hasSung(r);
+                const tags = songTags(s).filter((tg) => tg !== 'compound');
                 return (
-                  <button key={s.id} className={`card song-card ${sung ? 'sung' : ''}`} onClick={() => onOpen(s.id)}>
-                    <span className="card-icon">{s.kind === 'drill' ? '♪' : '♫'}</span>
-                    <span className="card-body">
-                      <span className="card-title">{s.title[lang]}</span>
-                      <span className="card-sub">{s.source[lang]}</span>
+                  <button key={s.id} className={`song-card ${sung ? 'sung' : ''}`} onClick={() => onOpen(s.id)}>
+                    <span className="song-icon" aria-hidden="true">
+                      {s.kind === 'drill' ? '♪' : '♫'}
+                    </span>
+                    <span className="song-main">
+                      <span className="song-title">{s.title[lang]}</span>
                       <span className="song-tags">
                         <span className="song-tag song-tag-meter">{s.meter.join('/')}</span>
-                        {songTags(s)
-                          .filter((tg) => tg !== 'compound')
-                          .map((tg) => (
-                            <span key={tg} className="song-tag">
-                              {t(`songs.tag.${tg}`)}
-                            </span>
-                          ))}
+                        {tags.map((tg) => (
+                          <span key={tg} className="song-tag">
+                            {t(`songs.tag.${tg}`)}
+                          </span>
+                        ))}
+                        {/* 原创练习的来源都一样，不重复显示；民歌显示出处 */}
+                        {s.kind === 'song' && <span className="song-source">{s.source[lang]}</span>}
                       </span>
                     </span>
                     <span className={`song-badge ${sung ? 'on' : ''}`}>
@@ -151,9 +185,10 @@ export function SongLibrary({ store, onBack, onOpen }: Props) {
                   </button>
                 );
               })}
-          </div>
-        </section>
-      ))}
+            </div>
+          </details>
+        );
+      })}
     </main>
   );
 }

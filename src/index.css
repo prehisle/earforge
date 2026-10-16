@@ -1655,34 +1655,112 @@ input[type='range'] {
   text-align: center;
   padding: 24px 0;
 }
-.song-card {
-  align-items: flex-start;
+/* 级别分组：可折叠，标题在组内吸顶 */
+.songs-group > summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 2px 8px;
+  background: var(--bg);
+  cursor: pointer;
+  list-style: none;
+  border-radius: 8px;
 }
-.song-card.sung .card-icon {
+.songs-group > summary::-webkit-details-marker {
+  display: none;
+}
+.songs-group > summary::before {
+  content: '▸';
+  align-self: center;
+  width: 1em;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.songs-group[open] > summary::before {
+  transform: rotate(90deg);
+}
+.songs-group > summary .group-title {
+  margin: 0;
+}
+.songs-group-meta {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* 曲目：紧凑的行，宽屏两列 */
+.song-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 6px 10px;
+  padding-bottom: 6px;
+}
+.song-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
+  border-radius: 10px;
+}
+.song-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+.song-card.sung .song-icon {
   background: var(--good-soft);
   color: var(--good);
+}
+.song-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.song-title {
+  font-weight: 600;
+  line-height: 1.3;
 }
 .song-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 2px;
+  align-items: center;
+  gap: 3px 4px;
 }
 .song-tag {
-  padding: 0 7px;
+  padding: 0 6px;
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   line-height: 1.6;
 }
 .song-tag-meter {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+.song-source {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
 .song-badge {
   flex: none;
-  align-self: flex-start;
   padding: 1px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
@@ -1694,6 +1772,41 @@ input[type='range'] {
   color: var(--good);
   background: var(--good-soft);
   font-weight: 600;
+}
+/* 手机：筛选更紧凑，特点标签单行横向滚动 */
+@media (max-width: 639px) {
+  .songs-filter {
+    gap: 8px;
+    padding: 12px;
+  }
+  .songs-filter .field {
+    gap: 4px;
+  }
+  .songs-filter .field > label {
+    font-size: 0.8rem;
+  }
+  .songs-filter .seg button {
+    padding: 4px 10px;
+  }
+  .songs-filter-row {
+    gap: 8px 16px;
+  }
+  .songs-filter .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -12px;
+    padding: 2px 12px 4px;
+    scrollbar-width: none;
+  }
+  .songs-filter .chips .chip {
+    flex: none;
+  }
+  .songs-count {
+    min-height: 28px;
+  }
+  .song-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .song-page .practice-title h1 {
