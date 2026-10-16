@@ -5,7 +5,9 @@ import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
 import { Practice } from './ui/Practice';
-import { AboutPage, Onboarding, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
+import { AboutPage, Onboarding, SetBuilder, SetRun, SetsPage, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
+import { findSet } from './engine/sets';
+import type { PracticeSet } from './engine/practiceSet';
 import { useMidiInput } from './ui/useMidi';
 import { useStore } from './ui/useStore';
 
@@ -18,7 +20,11 @@ type Route =
   | { page: 'songs' }
   | { page: 'song'; id: string }
   | { page: 'exam' }
-  | { page: 'about'; from: 'home' | 'settings' };
+  | { page: 'about'; from: 'home' | 'settings' }
+  // 练习组合：列表、新建/编辑（可带模板）、练习（已保存的按 id，或直接给出未保存的组合，如分享链接里的）
+  | { page: 'sets' }
+  | { page: 'setEdit'; id?: string; template?: string }
+  | { page: 'setRun'; id?: string; set?: PracticeSet; round?: number };
 
 export default function App() {
   const [store, update] = useStore();
@@ -59,6 +65,7 @@ export default function App() {
             onSettings={() => setRoute({ page: 'settings' })}
             onSongs={() => setRoute({ page: 'songs' })}
             onExam={() => setRoute({ page: 'exam' })}
+            onSets={() => setRoute({ page: 'sets' })}
             onAbout={() => setRoute({ page: 'about', from: 'home' })}
           />
         )}
@@ -127,6 +134,41 @@ export default function App() {
           />
         )}
         {route.page === 'about' && <AboutPage onBack={() => setRoute({ page: route.from })} />}
+        {/* ───── 练习组合 ───── */}
+        {route.page === 'sets' && (
+          <SetsPage
+            store={store}
+            update={update}
+            onBack={home}
+            onNew={(template) => setRoute({ page: 'setEdit', template })}
+            onEdit={(id) => setRoute({ page: 'setEdit', id })}
+            onRun={(id) => setRoute({ page: 'setRun', id })}
+          />
+        )}
+        {route.page === 'setEdit' && (
+          <SetBuilder
+            key={`${route.id ?? ''}:${route.template ?? ''}`}
+            store={store}
+            update={update}
+            id={route.id}
+            template={route.template}
+            onBack={() => setRoute({ page: 'sets' })}
+            onSaved={(id, start) => {
+              setRoute(start ? { page: 'setRun', id } : { page: 'sets' });
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
+        {route.page === 'setRun' && (
+          <SetRun
+            key={`${route.id ?? ''}:${route.round ?? 0}`}
+            store={store}
+            update={update}
+            set={route.set ?? (route.id ? (findSet(store, route.id) ?? null) : null)}
+            onBack={() => setRoute({ page: 'sets' })}
+            onAgain={() => setRoute({ ...route, round: (route.round ?? 0) + 1 })}
+          />
+        )}
       </div>
     </LocaleContext.Provider>
   );

@@ -2617,3 +2617,182 @@ input[type='range'] {
   margin: 0;
   color: var(--text-2);
 }
+
+/* ───── 练习组合：列表与编辑 ───── */
+.field-label {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.text-input {
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 100%;
+  min-width: 0;
+}
+.text-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.sets-intro {
+  line-height: 1.6;
+}
+.sets-new {
+  display: flex;
+}
+.sets-empty {
+  text-align: center;
+  padding: 12px 0;
+}
+.set-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.set-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.set-item-head h2 {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.set-item-head p {
+  font-size: 0.85rem;
+}
+.set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.set-actions button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+.set-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--good-soft);
+  font-size: 0.9rem;
+}
+.set-share > span,
+.set-share-manual {
+  flex: 1 1 220px;
+}
+.set-share-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.set-share-manual input {
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  width: 100%;
+}
+.set-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.set-count-custom {
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+.set-count-input {
+  width: 6em;
+}
+.set-noparts {
+  margin-top: -10px;
+}
+.set-part-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.set-part-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+.set-heavy {
+  font-size: 0.8rem;
+}
+.set-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.set-level {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.set-level-btn {
+  flex: none;
+  min-width: 5.5em;
+  white-space: nowrap;
+}
+.set-level .chips {
+  flex: 1 1 auto;
+}
+.set-add .chart-title {
+  margin: 0;
+}
+.set-excluded {
+  font-size: 0.85rem;
+}
+.set-errors {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bad-soft);
+  font-size: 0.9rem;
+}
+.set-errors ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+.set-save {
+  flex-wrap: wrap;
+}
+@media (max-width: 520px) {
+  .set-item {
+    padding: 12px;
+  }
+  .set-level {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .set-level-btn {
+    min-width: 0;
+  }
+}
+.set-actions button:disabled {
+  opacity: 0.55;
+}

@@ -1,4 +1,4 @@
-// 非首屏页面按需加载（统计与趋势图、曲库与曲目数据、视唱练习、设置、新手引导、关于与帮助），缩小首屏脚本。
+// 非首屏页面按需加载（统计与趋势图、曲库与曲目数据、视唱练习、设置、新手引导、关于与帮助、练习组合），缩小首屏脚本。
 // 首屏渲染后立即在后台预取这些分块：之后切换页面是同步的，不出现加载占位；
 // 离线时由 service worker 预缓存提供（见 public/sw.js 与 vite.config.ts）。
 
@@ -49,6 +49,9 @@ const onboarding = lazyPage(() => import('./Onboarding').then((m) => m.Onboardin
 const library = lazyPage(() => import('./SongLibrary').then((m) => m.SongLibrary));
 const songPractice = lazyPage(() => import('./SongPractice').then((m) => m.SongPracticeById));
 const about = lazyPage(() => import('./About').then((m) => m.AboutPage));
+const sets = lazyPage(() => import('./Sets').then((m) => m.SetsPage));
+const setBuilder = lazyPage(() => import('./SetBuilder').then((m) => m.SetBuilder));
+const setRun = lazyPage(() => import('./SetRun').then((m) => m.SetRun));
 
 export function StatsPage(props: PropsOf<typeof import('./Stats').StatsPage>) {
   return <Render page={stats} props={props} />;
@@ -70,8 +73,18 @@ export function AboutPage(props: PropsOf<typeof import('./About').AboutPage>) {
   return <Render page={about} props={props} />;
 }
 
+export function SetsPage(props: PropsOf<typeof import('./Sets').SetsPage>) {
+  return <Render page={sets} props={props} />;
+}
+export function SetBuilder(props: PropsOf<typeof import('./SetBuilder').SetBuilder>) {
+  return <Render page={setBuilder} props={props} />;
+}
+export function SetRun(props: PropsOf<typeof import('./SetRun').SetRun>) {
+  return <Render page={setRun} props={props} />;
+}
+
 // 首屏之后在后台预取（失败无妨：真正打开页面时会再试，并由出错兜底提示）
 if (typeof window !== 'undefined')
   setTimeout(() => {
-    for (const p of [onboarding, stats, library, settings, songPractice, about]) p.load().catch(() => {});
+    for (const p of [onboarding, stats, library, settings, songPractice, about, sets, setBuilder, setRun]) p.load().catch(() => {});
   }, 0);

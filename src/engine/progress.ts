@@ -6,6 +6,8 @@ import { detectLocale, LOCALES } from '../i18n';
 import { NAMING_SYSTEMS } from '../music/theory';
 import { TIMBRE_SETTINGS } from '../audio/timbres';
 import { sanitizeExams, type ExamRecord } from './examHistory';
+import type { PracticeSet } from './practiceSet';
+import { sanitizeSets } from './setRunner';
 
 export interface ItemStat {
   n: number; // 作答次数
@@ -51,6 +53,8 @@ export interface Store {
   songs?: Record<string, SongResult>;
   /** 模拟考试的历史成绩（按时间先后）。旧数据没有该字段 */
   exams?: ExamRecord[];
+  /** 自定义练习组合（用户自己的内容，清空练习记录时保留）。旧数据没有该字段 */
+  sets?: PracticeSet[];
 }
 
 const KEY = 'earforge:v1';
@@ -110,6 +114,7 @@ export function parseStore(raw: string | null): Store {
       s.daily = sanitizeDaily(s.daily);
       s.songs = sanitizeSongs(s.songs);
       s.exams = sanitizeExams(s.exams);
+      s.sets = sanitizeSets(s.sets);
       // 已有练习记录的一定是老用户，不再显示新手引导
       if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
       return s;
@@ -125,6 +130,7 @@ export function parseStore(raw: string | null): Store {
     daily: {},
     songs: {},
     exams: [],
+    sets: [],
   };
 }
 
@@ -233,7 +239,7 @@ export function sanitizeSongs(raw: unknown): Record<string, SongResult> {
 
 /**
  * 导入备份（就地修改 st）：格式不对时抛错、不做任何修改。
- * 备份里有的部分整体替换（进度、每日记录、曲库、考试、设置），没有的部分（旧版本备份没有曲库/考试记录）保留现有的；
+ * 备份里有的部分整体替换（进度、每日记录、曲库、考试、练习组合、设置），没有的部分（旧版本备份没有曲库/考试记录/组合）保留现有的；
  * 旧备份没有界面语言时沿用当前语言。
  */
 export function importBackup(st: Store, raw: unknown): void {
@@ -242,6 +248,7 @@ export function importBackup(st: Store, raw: unknown): void {
   st.daily = sanitizeDaily(raw.daily);
   if (raw.songs !== undefined) st.songs = sanitizeSongs(raw.songs);
   if (raw.exams !== undefined) st.exams = sanitizeExams(raw.exams);
+  if (raw.sets !== undefined) st.sets = sanitizeSets(raw.sets);
   st.settings = mergeSettings(raw.settings, { ...DEFAULT_SETTINGS, lang: st.settings.lang });
 }
 

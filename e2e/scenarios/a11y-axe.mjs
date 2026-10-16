@@ -1,4 +1,4 @@
-// axe-core 无障碍审计：中英 × 明暗 × 主要页面（新手引导、首页、练习出题 / 答完（含和弦转位、音阶与调式、和声听写、复音程）、今日训练、统计、设置、曲库、曲目练习、关于与帮助）。
+// axe-core 无障碍审计：中英 × 明暗 × 主要页面（新手引导、首页、练习出题 / 答完（含和弦转位、音阶与调式、和声听写、复音程）、今日训练、统计、设置、曲库、曲目练习、关于与帮助、练习组合的列表 / 编辑 / 练习）。
 // 任何违规都算失败；明细写到 axe.json / summary.txt。原 axe.mjs
 // E2E_AXE_IMPACT=serious 可只对 serious / critical 级别判失败（其余照样记录）。
 import { writeFileSync } from 'node:fs';
@@ -20,8 +20,8 @@ await run(async (t) => {
       const page = await t.open({ target: ctx, lang: lang === 'zh' ? 'zh-CN' : 'en-US', dark, onboarding: 'keep', tag });
       const T =
         lang === 'zh'
-          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别', harmony: '和声听写', about: '使用指南与快捷键' }
-          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', harmony: 'Harmonic Dictation', about: 'Guide & shortcuts' };
+          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别', harmony: '和声听写', about: '使用指南与快捷键', sets: '自定义练习', tpl: '音程 + 和弦性质', save: '保存' }
+          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', harmony: 'Harmonic Dictation', about: 'Guide & shortcuts', sets: 'Custom practice', tpl: 'Intervals + chord qualities', save: 'Save' };
       // 按文字或 aria-label 匹配
       const click = async (text, sel = 'button') => {
         for (const el of await page.$$(sel)) {
@@ -117,6 +117,18 @@ await run(async (t) => {
       await audit('songs');
       await (await page.$('.song-card')).click();
       await audit('song-practice');
+      // 练习组合：列表（空）→ 模板新建（编辑页）→ 保存 → 列表 → 练习出题
+      await page.reload({ waitUntil: 'networkidle0' });
+      await click(T.sets, '.card');
+      await audit('sets-empty');
+      await click(T.tpl);
+      await audit('set-builder');
+      await click(T.save);
+      await page.waitForSelector('.set-item');
+      await audit('sets-list');
+      await (await page.$('.set-actions button.primary')).click();
+      await page.waitForSelector('.choice');
+      await audit('set-run');
       await ctx.close();
     }
 
