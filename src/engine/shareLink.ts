@@ -8,10 +8,13 @@
 // - 带作用域的考点（如 minor:d3）在其作用域就是该练习当前选项值时省略前缀，解码时补回。
 // - 名称放在最后，内容里的「|」不需要转义。
 // 解码对任意输入都不抛异常：长度上限、版本号、结构与取值逐项校验，未知的练习 / 考点 / 选项丢弃，无效时返回 null。
+// 解码结果与本地规范化（setRunner.normalizeSet）取值范围一致：题数 5–100、权重 1–3、不含麦克风练习、练习不重复，
+// 这样从链接直接开始与保存后再开始出的题相同。
 import { exerciseById } from '../exercises';
 import { levelsOf } from './progress';
 import type { PracticeSet, SetPart } from './practiceSet';
 import type { ExerciseDef } from './types';
+import { canUseInSet, cleanSetName, SET_COUNT_MAX, SET_COUNT_MIN, SET_NAME_MAX, SET_WEIGHT_MAX } from './setRunner';
 
 /** 分享时编码的内容（不含本地 id 与创建时间） */
 export type SharedSet = Omit<PracticeSet, 'id' | 'created'>;
@@ -21,13 +24,14 @@ export const SHARE_VERSION = 1;
 const PARAM = 's';
 /** 编码后长度上限（字符） */
 export const MAX_CODE = 4096;
-export const MAX_NAME = 40;
+// 取值范围与本地组合的规范化（setRunner.normalizeSet）一致：从链接直接开始与保存后再开始出同样的题
+export const MAX_NAME = SET_NAME_MAX;
 export const MAX_PARTS = 12;
 export const MAX_ITEMS = 60;
-export const MIN_COUNT = 1;
-export const MAX_COUNT = 100;
+export const MIN_COUNT = SET_COUNT_MIN;
+export const MAX_COUNT = SET_COUNT_MAX;
 const DEFAULT_COUNT = 20;
-const MAX_WEIGHT = 100;
+const MAX_WEIGHT = SET_WEIGHT_MAX;
 
 /** 练习 id 的短代号：只能追加，不能修改已有的（旧链接要能解析）。代号不得与任何练习 id 相同。 */
 export const CODES: Record<string, string> = {
@@ -69,11 +73,9 @@ function fromBase64Url(code: string): string | null {
 
 // ───── 校验与清理 ─────
 
-/** 名称：去掉控制字符与分隔用的换行，压缩空白，最多 MAX_NAME 个字符（按码点） */
+/** 名称：去掉控制字符与分隔用的换行，压缩空白，最多 MAX_NAME 个字符（按码点；孤立代理项换成 U+FFFD，见 cleanSetName） */
 export function cleanName(name: string): string {
-  // eslint-disable-next-line no-control-regex
-  const s = name.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
-  return [...s].slice(0, MAX_NAME).join('').trim();
+  return cleanSetName(name);
 }
 
 export function clampCount(n: number): number {
@@ -102,6 +104,8 @@ export function validItems(ex: ExerciseDef, options: Record<string, string>): Se
 export function cleanPart(part: { ex: unknown; items: unknown; options?: unknown; weight?: unknown }): SetPart | null {
   if (typeof part.ex !== 'string' || !Object.hasOwn(exerciseById, part.ex)) return null;
   const ex: ExerciseDef = exerciseById[part.ex];
+  // 需要麦克风 / 手动输入的练习不能放进组合（与 normalizePart 一致）
+  if (!canUseInSet(ex)) return null;
   const rawOpts = part.options && typeof part.options === 'object' ? (part.options as Record<string, string>) : {};
   const options = cleanOptions(ex, rawOpts);
   const valid = validItems(ex, options);
@@ -111,16 +115,21 @@ export function cleanPart(part: { ex: unknown; items: unknown; options?: unknown
   if (!items.length) return null;
   const out: SetPart = { ex: ex.id, items, options };
   const w = part.weight;
-  if (typeof w === 'number' && Number.isFinite(w) && w > 0 && w !== 1) out.weight = Math.min(MAX_WEIGHT, w);
+  // 权重取整到 1–MAX_WEIGHT（与 normalizePart 一致），1 时省略
+  if (typeof w === 'number' && Number.isFinite(w)) {
+    const wi = Math.max(1, Math.min(MAX_WEIGHT, Math.round(w)));
+    if (wi > 1) out.weight = wi;
+  }
   return out;
 }
 
-/** 清理整个组合：没有有效练习时返回 null */
+/** 清理整个组合：没有有效练习时返回 null；同一练习出现多次时只保留第一个（与 normalizeSet 一致） */
 export function cleanSet(set: { name?: unknown; parts?: unknown; count?: unknown; seed?: unknown }): SharedSet | null {
   const parts = (Array.isArray(set.parts) ? set.parts : [])
     .slice(0, MAX_PARTS)
     .map((p: unknown) => (p && typeof p === 'object' ? cleanPart(p as SetPart) : null))
-    .filter((p): p is SetPart => p !== null);
+    .filter((p): p is SetPart => p !== null)
+    .filter((p, i, a) => a.findIndex((x) => x.ex === p.ex) === i);
   if (!parts.length) return null;
   const out: SharedSet = {
     name: cleanName(typeof set.name === 'string' ? set.name : ''),
@@ -241,19 +250,48 @@ export function shareUrl(set: SharedSet, base: string = appBase()): string {
   return `${base}#${PARAM}=${encodeSet(set)}`;
 }
 
-/** 网址的 hash 里是否带分享参数（无论是否有效） */
-export function hasSharedSet(href: string): boolean {
-  return /#(?:.*&)?s=/.test(href);
+/**
+ * hash 里分享参数的原始值（未校验）；没有时为 null。
+ * 聊天软件转发时常见的改动都能容忍：hash 整体被百分号编码（#s%3D…）、码里夹了换行或空格（长链接折行）。
+ */
+function sharedParam(href: string): string | null {
+  const i = href.indexOf('#');
+  if (i < 0) return null;
+  let hash = href.slice(i + 1);
+  if (!/(?:^|&)s=/.test(hash) && /(?:^|%26|&)s%3D/i.test(hash)) {
+    try {
+      hash = decodeURIComponent(hash);
+    } catch {
+      return null;
+    }
+  }
+  return new URLSearchParams(hash).get(PARAM);
 }
 
-/** 从网址解析分享的组合；没有或无效时返回 null（从不抛异常） */
+/** 网址的 hash 里是否带分享参数（无论是否有效） */
+export function hasSharedSet(href: string): boolean {
+  try {
+    return sharedParam(href) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 从网址解析分享的组合；没有或无效时返回 null（从不抛异常）。
+ * 只取码开头连续的 base64url 字符：粘贴时带上的尾随标点（。，）. 等）、聊天软件追加的 ?from=… 都被忽略；
+ * 尾随的「-」「_」本身是合法字符，分不出来，逐个去掉再试（校验和保证不会误认成另一套题）。
+ */
 export function readSharedSet(href: string): SharedSet | null {
   try {
-    const i = href.indexOf('#');
-    if (i < 0) return null;
-    const params = new URLSearchParams(href.slice(i + 1));
-    const code = params.get(PARAM);
-    return code ? decodeSet(code.trim()) : null;
+    const raw = sharedParam(href);
+    if (!raw) return null;
+    let code = /^[A-Za-z0-9_-]*/.exec(raw.replace(/\s+/g, ''))![0];
+    for (let k = 0; ; k++) {
+      const got = decodeSet(code);
+      if (got || k >= 2 || !/[-_]$/.test(code)) return got;
+      code = code.slice(0, -1);
+    }
   } catch {
     return null;
   }

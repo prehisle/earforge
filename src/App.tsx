@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { exerciseById } from './exercises';
 import { ExamPage } from './ui/Exam';
 import { translate } from './i18n';
@@ -28,13 +28,18 @@ type Route =
   | { page: 'sets' }
   | { page: 'setEdit'; id?: string; template?: string }
   | { page: 'setRun'; id?: string; set?: PracticeSet; round?: number }
-  // 分享链接（set 为 null 表示链接无效）
-  | { page: 'shared'; set: SharedSet | null };
+  // 分享链接（set 为 null 表示链接无效；n 每打开一次加一，作为落地页的 key：在落地页上再打开另一个链接时重新初始化）
+  | { page: 'shared'; set: SharedSet | null; n: number };
+
+let sharedOpens = 0;
 
 /** 网址带 #s= 时进入分享落地页 */
 function sharedRoute(): Route | null {
-  return hasSharedSet(location.href) ? { page: 'shared', set: readSharedSet(location.href) } : null;
+  return hasSharedSet(location.href) ? { page: 'shared', set: readSharedSet(location.href), n: ++sharedOpens } : null;
 }
+
+/** 有未保存进度的页面：打开分享链接前先确认（考试、组合练习、今日训练、编辑组合） */
+const BUSY_PAGES: ReadonlySet<Route['page']> = new Set(['exam', 'setRun', 'mix', 'setEdit']);
 
 export default function App() {
   const [store, update] = useStore();
@@ -45,13 +50,26 @@ export default function App() {
     setPostponeOnboard(false);
     setRoute({ page: 'home' });
   };
-  useShareLinks((r) => {
-    setPostponeOnboard(true);
-    setRoute(r);
-    window.scrollTo(0, 0);
-  });
   // 从设置页重新查看新手引导（不清空进度）
   const [rerun, setRerun] = useState(false);
+  const routeRef = useRef(route);
+  useEffect(() => {
+    routeRef.current = route;
+  });
+  useShareLinks(
+    (r) => {
+      // 正在考试 / 练习组合等：先确认，免得进度悄悄丢失（取消则留在当前页）
+      if (BUSY_PAGES.has(routeRef.current.page) && !confirm(translate(store.settings.lang, 'share.leaveConfirm'))) return;
+      setPostponeOnboard(true);
+      setRerun(false);
+      setRoute(r);
+      window.scrollTo(0, 0);
+    },
+    // 落地页上按浏览器后退：清掉 hash 后历史里只剩同一网址，页面不会变，这里回到首页
+    () => {
+      if (routeRef.current.page === 'shared') home();
+    },
+  );
   useMidiInput(store.settings.midi);
 
   const lang = store.settings.lang;
@@ -197,11 +215,12 @@ export default function App() {
           })()}
         {route.page === 'shared' && (
           <SharedSetPage
+            key={route.n}
             set={route.set}
             store={store}
             onHome={home}
             onStart={(set) => setRoute({ page: 'setRun', set })}
-            onSave={(set) => void saveSet(update, set)}
+            onSave={(set) => saveSet(update, set) !== null}
           />
         )}
       </div>
@@ -209,8 +228,15 @@ export default function App() {
   );
 }
 
-/** 处理分享链接：启动时与打开期间（粘贴新链接触发 hashchange）进入落地页，并清掉 hash，刷新或后退不再重复触发 */
-function useShareLinks(open: (r: Route) => void) {
+/**
+ * 处理分享链接：启动时与打开期间（粘贴新链接触发 hashchange）进入落地页，并清掉 hash，刷新或后退不再重复触发。
+ * 清 hash 用 replaceState（不触发 hashchange，不会循环）；pathname 已含部署子路径。
+ */
+function useShareLinks(open: (r: Route) => void, onPop: () => void) {
+  const handlers = useRef({ open, onPop });
+  useEffect(() => {
+    handlers.current = { open, onPop };
+  });
   useEffect(() => {
     const clear = () => history.replaceState(history.state, '', location.pathname + location.search);
     if (hasSharedSet(location.href)) clear();
@@ -218,9 +244,16 @@ function useShareLinks(open: (r: Route) => void) {
       const r = sharedRoute();
       if (!r) return;
       clear();
-      open(r);
+      handlers.current.open(r);
+    };
+    const onPop = () => {
+      if (!hasSharedSet(location.href)) handlers.current.onPop();
     };
     window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('popstate', onPop);
+    };
+  }, []);
 }

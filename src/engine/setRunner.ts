@@ -52,6 +52,18 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const clampInt = (v: unknown, min: number, max: number, d: number) =>
   typeof v === 'number' && Number.isFinite(v) ? Math.max(min, Math.min(max, Math.round(v))) : d;
 
+/**
+ * 名称：去掉控制字符与换行，压缩空白，最多 SET_NAME_MAX 个字符（按码点计，emoji 算一个；截断不拆开代理对）。
+ * 孤立的代理项换成 U+FFFD：否则编码成 UTF-8 时被替换，分享码的校验对不上，链接作废。
+ * （组合合字、带组合附加符号的字符仍可能在第 40 个码点处被截开，只影响显示。）
+ */
+export function cleanSetName(name: string): string {
+  // eslint-disable-next-line no-control-regex
+  const s = name.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
+  const cps = [...s].map((c) => (c.length === 1 && c >= '\ud800' && c <= '\udfff' ? '\ufffd' : c));
+  return cps.slice(0, SET_NAME_MAX).join('').trim();
+}
+
 /** 新的本地 id */
 export function newSetId(): string {
   return `s${Date.now().toString(36)}${Math.floor(Math.random() * 36 ** 4).toString(36).padStart(4, '0')}`;
@@ -92,7 +104,7 @@ export function normalizeSet(raw: unknown): PracticeSet | null {
   if (parts.length === 0) return null;
   const set: PracticeSet = {
     id: typeof raw.id === 'string' && raw.id ? raw.id.slice(0, 40) : newSetId(),
-    name: typeof raw.name === 'string' ? raw.name.trim().slice(0, SET_NAME_MAX) : '',
+    name: typeof raw.name === 'string' ? cleanSetName(raw.name) : '',
     parts,
     count: clampInt(raw.count, SET_COUNT_MIN, SET_COUNT_MAX, SET_COUNT_DEFAULT),
     created: typeof raw.created === 'number' && Number.isFinite(raw.created) && raw.created > 0 ? Math.floor(raw.created) : Date.now(),

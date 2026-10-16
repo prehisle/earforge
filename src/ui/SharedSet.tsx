@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import type { PracticeSet } from '../engine/practiceSet';
 import type { Store } from '../engine/progress';
+import { setsFull } from '../engine/sets';
+import { SETS_MAX } from '../engine/setRunner';
 import { toPracticeSet, type SharedSet } from '../engine/shareLink';
 import { exerciseById } from '../exercises';
 import { joinList } from '../i18n';
@@ -13,13 +15,15 @@ interface Props {
   set: SharedSet | null;
   store: Store;
   onStart(set: PracticeSet): void;
-  onSave(set: PracticeSet): void;
+  /** 保存；返回是否保存成功（已存满时失败） */
+  onSave(set: PracticeSet): boolean;
   onHome(): void;
 }
 
 export function SharedSetPage({ set, store, onStart, onSave, onHome }: Props) {
   const t = useT();
   const [saved, setSaved] = useState(false);
+  const [failed, setFailed] = useState(false);
   // 同一个页面里开始与保存用同一个组合（同一 id），避免保存两份
   const [local] = useState(() => (set ? toPracticeSet(set, t('share.untitled')) : null));
 
@@ -79,8 +83,9 @@ export function SharedSetPage({ set, store, onStart, onSave, onHome }: Props) {
           <button
             disabled={saved}
             onClick={() => {
-              onSave(local);
-              setSaved(true);
+              // 「我的组合」已满时不保存（不悄悄删掉最早的组合），提示用户先删除
+              if (setsFull(store) || !onSave(local)) setFailed(true);
+              else setSaved(true);
             }}
           >
             {saved ? t('share.saved') : t('share.save')}
@@ -89,6 +94,11 @@ export function SharedSetPage({ set, store, onStart, onSave, onHome }: Props) {
             {t('share.home')}
           </button>
         </div>
+        {failed && !saved && (
+          <p className="muted" role="alert">
+            {t('share.full', { n: SETS_MAX })}
+          </p>
+        )}
       </section>
     </main>
   );

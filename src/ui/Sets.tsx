@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { exerciseById } from '../exercises';
 import type { Store } from '../engine/progress';
 import type { PracticeSet } from '../engine/practiceSet';
-import { deleteSet, duplicateSet, listSets } from '../engine/sets';
+import { copyName, deleteSet, duplicateSet, listSets, setsFull } from '../engine/sets';
+import { SETS_MAX } from '../engine/setRunner';
 import { SET_TEMPLATES } from '../engine/setTemplates';
 import { shareUrl } from '../engine/shareLink';
 import { useT } from '../i18n/react';
@@ -33,6 +34,16 @@ function setLink(set: PracticeSet): string | null {
 export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props) {
   const t = useT();
   const sets = listSets(store);
+  // 已存满：不能新建 / 复制（保存时不会悄悄删掉最早的组合）
+  const full = setsFull(store);
+  const duplicate = (set: PracticeSet, name: string) => {
+    const copy = copyName(
+      name,
+      sets.map((x) => x.name),
+      (nm, n) => (n > 1 ? t('sets.copySuffixN', { name: nm, n }) : t('sets.copySuffix', { name: nm })),
+    );
+    update((s) => void duplicateSet(s, set.id, copy));
+  };
   // 分享：复制成功的提示，或复制失败时显示链接让用户手动复制
   const [shared, setShared] = useState<{ id: string; url: string; manual: boolean } | null>(null);
 
@@ -75,10 +86,15 @@ export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props)
       <p className="sets-intro muted">{t('sets.intro')}</p>
 
       <div className="sets-new">
-        <button className="primary" onClick={() => onNew()}>
+        <button className="primary" onClick={() => onNew()} disabled={full}>
           {t('sets.new')}
         </button>
       </div>
+      {full && (
+        <p className="sets-full muted" role="status">
+          {t('sets.full', { n: SETS_MAX })}
+        </p>
+      )}
 
       {sets.length === 0 ? (
         <p className="sets-empty muted">{t('sets.empty')}</p>
@@ -104,7 +120,7 @@ export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props)
                     {t('sets.start')}
                   </button>
                   <button onClick={() => onEdit(set.id)}>{t('sets.edit')}</button>
-                  <button onClick={() => update((s) => void duplicateSet(s, set.id, t('sets.copySuffix', { name })))}>
+                  <button onClick={() => duplicate(set, name)} disabled={full}>
                     {t('sets.duplicate')}
                   </button>
                   <button onClick={url ? () => void share(set, url) : undefined} disabled={!url}>
@@ -127,7 +143,7 @@ export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props)
         <h2 className="group-title">{t('sets.fromTemplate')}</h2>
         <div className="seg wrap set-templates">
           {SET_TEMPLATES.map((tpl) => (
-            <button key={tpl.id} onClick={() => onNew(tpl.id)}>
+            <button key={tpl.id} onClick={() => onNew(tpl.id)} disabled={full}>
               {tpl.icon} {t(tpl.name)}
             </button>
           ))}

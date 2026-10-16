@@ -38,6 +38,8 @@ export const en: Record<MessageKey, string> = {
   'share.home': 'Back to home',
   'share.invalidTitle': 'Can’t open this link',
   'share.invalidBody': 'This share link is incomplete or damaged (it may have been cut off when copied). Ask the sender for the full link.',
+  'share.full': 'My sets is full ({n} sets). Delete some before saving this one.',
+  'share.leaveConfirm': 'Opening the shared set will leave this page and your current progress will be lost. Continue?',
 
   // ───── home ─────
   'home.stats': 'Stats',
@@ -133,6 +135,8 @@ export const en: Record<MessageKey, string> = {
   'sets.share': 'Share',
   'sets.deleteConfirm': 'Delete the set "{name}"? This cannot be undone.',
   'sets.copySuffix': '{name} (copy)',
+  'sets.copySuffixN': '{name} (copy {n})',
+  'sets.full': 'You can save up to {n} sets and the list is full. Delete sets you no longer use before creating or duplicating.',
   'sets.untitled': 'Untitled set',
   'sets.meta': '{n} questions · {mods}',
   'sets.seeded': 'Fixed questions',

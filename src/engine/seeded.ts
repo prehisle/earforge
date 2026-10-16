@@ -11,6 +11,14 @@
 // 出题还读取部分用户设置（固定 C 调 / 随机调、人声音区），这些设置决定 generate 消耗多少随机数、生成什么音高，
 // 不同设置的人会拿到不同的题。固定题目出题时用 SEEDED_GEN_SETTINGS 覆盖它们（SetRun 作为 Quiz 的 genSettings 传入，只用于出题；
 // 唱名体系、记谱方式等只影响显示的设置仍按用户自己的）。
+//
+// 可复现的前提（复查结论）：
+// - generate 全程同步，没有 async / 定时器；音色随机（audio.newQuestion）在 withSeed 之外调用，不消耗题目的随机数。
+// - 出题路径不用 localeCompare / Intl / toLocaleString；排序都是数值比较（Array.prototype.sort 自 ES2019 起稳定），
+//   Chrome 与 Safari 结果相同。旋律听写用 Math.pow(x, 1.2) 算权重，不同引擎末位可能差 1 ulp，
+//   只有随机数恰好落在边界的 1e-16 内才会选到不同的音，可忽略。
+// - 链接里没有「题库版本」：以后改了练习的级别 / 考点 / generate / planSet，同一链接会出不同的题（不会报错）。
+//   seeded.test.ts 的「出题指纹」测试会在这类改动时失败，提醒在 CHANGELOG 里注明。
 
 import type { Settings } from './types';
 

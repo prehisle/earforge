@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { levelsOf } from '../engine/progress';
 import { mulberry32, newSeed, questionSeed, SEEDED_GEN_SETTINGS, seededSource, withSeed } from '../engine/seeded';
-import { SET_EXERCISES } from '../engine/setRunner';
+import { planSet, SET_EXERCISES } from '../engine/setRunner';
 import { DEFAULT_SETTINGS, type ExerciseDef, type Question, type Settings } from '../engine/types';
 import { EXERCISES } from '../exercises';
 
@@ -183,5 +183,53 @@ describe('固定题目：不同用户设置下题目相同', () => {
         JSON.stringify(genWith(userB, false, ex, item, items, options, questionSeed(77, i))),
     );
     expect(differ.length).toBeGreaterThan(0);
+  });
+});
+
+describe('固定题目：跨版本稳定', () => {
+  // 分享链接里只有 seed，没有「题库版本」：练习的级别 / 考点 / generate 或出题顺序（planSet）一改，
+  // 同一个固定题目链接就会悄悄出不同的题。这个指纹把当前的出题结果钉住——测试失败说明固定题目变了：
+  // 若是有意的改动，在 CHANGELOG 里注明「旧的固定题目链接题目会变化」，再更新这里的指纹。
+  it('同一 seed 的出题指纹不变', () => {
+    const fnv = (s: string) => {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+      return h.toString(16).padStart(8, '0');
+    };
+    const settings = { ...DEFAULT_SETTINGS, ...SEEDED_GEN_SETTINGS };
+    const out: Record<string, string> = {};
+    for (const ex of SET_EXERCISES) {
+      const options = Object.fromEntries((ex.options ?? []).map((o) => [o.id, o.default]));
+      const items = levelsOf(ex, options)[0].items;
+      const qs = items.map((item, i) => content(withSeed(questionSeed(20261016, i), () => ex.generate(item, { settings, items, options }))));
+      out[ex.id] = fnv(JSON.stringify(qs));
+    }
+    // 出题顺序
+    const set = {
+      id: 'x',
+      name: '',
+      created: 1,
+      count: 30,
+      parts: [
+        { ex: 'intervals', items: ['m3', 'M3', 'P5'], options: {} },
+        { ex: 'chords', items: ['maj', 'min'], options: {}, weight: 2 },
+      ],
+    };
+    out.plan = fnv(JSON.stringify(planSet(set, mulberry32(20261016))));
+    expect(out).toMatchInlineSnapshot(`
+      {
+        "chords": "ca51f7f3",
+        "degrees": "72ed7b5c",
+        "dictation": "f7e17488",
+        "harmony": "8a3c5401",
+        "intervals": "802f8034",
+        "inversions": "da8ba142",
+        "plan": "56254f35",
+        "progressions": "75f60a18",
+        "rhythm": "97855478",
+        "rhythmDictation": "cbde7c78",
+        "scales": "0bc327a8",
+      }
+    `);
   });
 });

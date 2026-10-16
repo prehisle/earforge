@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EXERCISES, exerciseById } from '../exercises';
 import { importBackup, parseStore, type Store } from '../engine/progress';
 import type { PracticeSet } from '../engine/practiceSet';
-import { deleteSet, duplicateSet, putSet, saveSet } from '../engine/sets';
+import { copyName, deleteSet, duplicateSet, putSet, saveSet, setsFull } from '../engine/sets';
 import {
   allocateCounts,
   canUseInSet,
@@ -290,5 +290,34 @@ describe('存储', () => {
     expect(saved?.id).toBeTruthy();
     expect(st.sets).toEqual([saved]);
     expect(saved?.seed).toBe(7);
+  });
+});
+
+describe('复查：上限与复制的名称', () => {
+  it('已满 100 个时保存新组合与复制都被拒绝，不丢弃已有的组合；覆盖已有的仍可以', () => {
+    const st = fresh();
+    st.sets = Array.from({ length: 100 }, (_, i) => ({ ...base(), id: `id${i}` }));
+    expect(putSet(st, { name: '新', parts: base().parts, count: 10 })).toBeNull();
+    expect(duplicateSet(st, 'id5', '副本')).toBeNull();
+    expect(st.sets).toHaveLength(100);
+    expect(st.sets[0].id).toBe('id0');
+    expect(putSet(st, { ...base(), id: 'id3', name: '改' })?.name).toBe('改');
+    expect(setsFull(st)).toBe(true);
+    st.sets.pop();
+    expect(setsFull(st)).toBe(false);
+  });
+
+  it('副本名称：不重名（编号递增），不超过名称上限', () => {
+    const fmt = (name: string, n: number) => (n > 1 ? `${name}（副本 ${n}）` : `${name}（副本）`);
+    expect(copyName('甲', [], fmt)).toBe('甲（副本）');
+    expect(copyName('甲', ['甲', '甲（副本）'], fmt)).toBe('甲（副本 2）');
+    expect(copyName('甲', ['甲（副本）', '甲（副本 2）'], fmt)).toBe('甲（副本 3）');
+    const long = '长'.repeat(40);
+    const c = copyName(long, [long], fmt);
+    expect([...c].length).toBeLessThanOrEqual(40);
+    expect(c.endsWith('（副本）')).toBe(true);
+    const e = copyName('😀'.repeat(40), [], fmt);
+    expect([...e].length).toBeLessThanOrEqual(40);
+    expect(e.endsWith('（副本）')).toBe(true);
   });
 });
