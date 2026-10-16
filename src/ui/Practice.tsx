@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { audio, type NoteEvent } from '../audio/engine';
+import { audio, type NoteEvent, type Timbre } from '../audio/engine';
 import { midi } from '../audio/midi';
 import {
   activeItems,
@@ -95,6 +95,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const [goalHit, setGoalHit] = useState(false);
   const [listenAfter, setListenAfter] = useState(0); // 唱歌题：播放结束后才开始判断
   const [qid, setQid] = useState(0);
+  const [inst, setInst] = useState<Timbre | null>(null); // 随机音色模式下本题的乐器
   const nextRef = useRef<() => void>(() => {});
   const timer = useRef<number | undefined>(undefined);
   const holdNext = useRef(false); // 答完后点了试听：取消本题的自动跳题
@@ -129,6 +130,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     }
     const question = d.ex.generate(d.item, { settings: store.settings, items: d.items, options: d.options });
     setCur({ ex: d.ex, q: question });
+    // 随机音色：每道新题换一种乐器（本题的重听与选项试听沿用）
+    setInst(audio.newQuestion());
     setStep(0);
     setWrong(new Set());
     setMisses([]);
@@ -336,6 +339,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
               <button onClick={() => play(q, 'prelude')}>{t('quiz.cadence')}</button>
             </>
           )}
+          {inst && <span className="timbre-badge">{t('settings.timbre.badge', { name: t(`settings.timbre.${inst}`) })}</span>}
           {store.settings.midi && midiStatus.devices.length > 0 && !q.sing && (
             <span
               className={q.midiAnswer || q.notate ? 'midi-badge' : 'midi-badge off'}

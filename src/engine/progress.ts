@@ -4,6 +4,7 @@ import type { ExerciseDef, Level, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { detectLocale, LOCALES } from '../i18n';
 import { NAMING_SYSTEMS } from '../music/theory';
+import { TIMBRE_SETTINGS } from '../audio/timbres';
 import { sanitizeExams, type ExamRecord } from './examHistory';
 
 export interface ItemStat {
@@ -186,7 +187,7 @@ export function mergeSettings(raw: unknown, base: Settings = DEFAULT_SETTINGS): 
 export const SETTING_ENUMS = {
   lang: LOCALES,
   naming: NAMING_SYSTEMS,
-  timbre: ['piano', 'epiano', 'sine', 'sampled'],
+  timbre: TIMBRE_SETTINGS,
   keyMode: ['C', 'random'],
   voice: ['low', 'high'],
   notation: ['jianpu', 'staff', 'both'],

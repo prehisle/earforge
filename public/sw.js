@@ -7,12 +7,13 @@
 //   其余同源资源缓存优先，未命中则联网并顺手缓存。
 // - 重定向：导航请求的重定向模式是 manual，返回 redirected 为 true 的响应会让导航失败
 //   （安装时 addAll 跟随重定向缓存的首页就可能是这样）。从缓存返回时重新构造响应，联网得到的重定向响应不缓存。
-// - 采样钢琴（tonejs.github.io，返回 Access-Control-Allow-Origin: *）单独缓存、缓存优先，应用升级时保留。
+// - 采样乐器（tonejs.github.io 的钢琴，nbrosowsky.github.io 的吉他 / 小提琴 / 长笛，均返回 Access-Control-Allow-Origin: *）
+//   单独缓存、缓存优先，应用升级时保留。
 const BUILD = 'dev';
 const PRECACHE = [];
 const CACHE = `earforge-v3-${BUILD}`;
 const SAMPLE_CACHE = 'earforge-samples-v1';
-const SAMPLE_PREFIX = 'https://tonejs.github.io/audio/salamander/';
+const SAMPLE_PREFIXES = ['https://tonejs.github.io/audio/salamander/', 'https://nbrosowsky.github.io/tonejs-instruments/samples/'];
 const ROOT = new URL('./', self.location).href;
 const NAV_TIMEOUT = 3000;
 
@@ -59,7 +60,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  if (req.url.startsWith(SAMPLE_PREFIX)) {
+  if (SAMPLE_PREFIXES.some((p) => req.url.startsWith(p))) {
     // 只缓存 CORS 成功的完整响应（type 'cors'、200）；opaque 响应读不出内容，也无法判断是否出错，不缓存
     e.respondWith(
       caches.open(SAMPLE_CACHE).then((c) =>

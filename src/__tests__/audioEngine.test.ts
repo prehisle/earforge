@@ -1,5 +1,6 @@
 // 音频引擎的调度竞态与节点回收：用最小的假 AudioContext 驱动（node 环境没有 Web Audio）。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RANDOM_POOL, SYNTH_TIMBRES } from '../audio/timbres';
 
 interface FakeSource {
   started: boolean;
@@ -69,6 +70,7 @@ class FakeContext {
   }
   createGain = () => this.node();
   createDynamicsCompressor = () => this.node();
+  createWaveShaper = () => this.node();
   createBiquadFilter = () => this.node();
   createOscillator = () => this.source();
   createBufferSource = () => this.source();
@@ -142,6 +144,71 @@ describe('音频引擎', () => {
     release();
     await new Promise((r) => setTimeout(r, 10));
     expect(audio.sampler.state).toBe('error');
+  });
+
+  it('每种合成音色都能播放四音和弦', async () => {
+    const audio = await freshEngine();
+    for (const timbre of SYNTH_TIMBRES) {
+      audio.timbre = timbre;
+      sources = [];
+      const p = audio.play([{ notes: [48, 60, 64, 67], time: 0, dur: 1 }]);
+      resumeGate?.();
+      expect(await p, timbre).toBe(1);
+      expect(sources.filter((s) => s.started).length, timbre).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('节奏音与节拍器不随音色变化', async () => {
+    const audio = await freshEngine();
+    const RHYTHM = [
+      { notes: [], time: 0, dur: 0.5, kind: 'perc' as const },
+      { notes: [], time: 0.5, dur: 0.1, kind: 'click' as const, accent: true },
+    ];
+    const counts = [];
+    for (const timbre of ['piano', 'guitar', 'strings', 'random'] as const) {
+      audio.timbre = timbre;
+      sources = [];
+      const p = audio.play(RHYTHM);
+      resumeGate?.();
+      await p;
+      counts.push(sources.length);
+    }
+    expect(new Set(counts).size).toBe(1);
+  });
+
+  it('随机音色：每题换一种离线乐器，不是随机模式时不变', async () => {
+    const audio = await freshEngine();
+    audio.timbre = 'organ';
+    expect(audio.newQuestion()).toBeNull();
+    expect(audio.current).toBe('organ');
+    audio.timbre = 'random';
+    let prev = audio.current;
+    for (let i = 0; i < 50; i++) {
+      const t = audio.newQuestion();
+      expect(t).not.toBeNull();
+      expect(t).not.toBe(prev);
+      expect(audio.current).toBe(t);
+      expect(RANDOM_POOL).toContain(t);
+      prev = t!;
+    }
+  });
+
+  it('未下载的采样乐器：先用同类合成音色发声并开始下载', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('OfflineAudioContext', class {});
+    vi.stubGlobal('fetch', (url: string) => {
+      urls.push(url);
+      return new Promise(() => {});
+    });
+    const audio = await freshEngine();
+    audio.timbre = 'sampled-guitar';
+    const p = audio.play(NOTE);
+    resumeGate?.();
+    expect(await p).toBe(0.5);
+    expect(sources.some((s) => s.started)).toBe(true);
+    expect(audio.sampler.state).toBe('loading');
+    expect(audio.samplerStatus('sampled').state).toBe('idle');
+    expect(urls[0]).toMatch(/tonejs-instruments\/samples\/guitar-acoustic\/E2\.mp3$/);
   });
 
   it('声源结束后断开连接（长时间练习不累积节点）', async () => {

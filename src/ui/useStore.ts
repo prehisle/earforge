@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { audio } from '../audio/engine';
+import { isSampled } from '../audio/timbres';
 import { loadStore, refreshStore, STORE_KEY, updateStore, type Store } from '../engine/progress';
 import { setLocale, translate } from '../i18n';
 
@@ -19,8 +20,9 @@ export function useStore(): [Store, (fn: (s: Store) => void) => void] {
   useEffect(() => {
     audio.timbre = store.settings.timbre;
     audio.setVolume(store.settings.volume);
-    // 已选采样钢琴：启动时后台预加载（离线时由 service worker 缓存提供）；失败后的重试由设置页发起
-    if (store.settings.timbre === 'sampled' && audio.sampler.state === 'idle') void audio.loadSampler();
+    // 已选采样乐器：启动时后台预加载（离线时由 service worker 缓存提供）；失败后的重试由设置页发起
+    const timbre = store.settings.timbre;
+    if (isSampled(timbre) && audio.samplerStatus(timbre).state === 'idle') void audio.loadSampler(timbre);
   }, [store.settings.timbre, store.settings.volume]);
 
   // <html lang> 与标题随界面语言变化

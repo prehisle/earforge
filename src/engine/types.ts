@@ -1,4 +1,4 @@
-import type { NoteEvent, Timbre } from '../audio/engine';
+import type { NoteEvent, TimbreSetting } from '../audio/engine';
 import type { Score } from '../music/notation';
 import type { Locale } from '../i18n';
 import type { ModeId, NamingSystem } from '../music/theory';
@@ -91,7 +91,7 @@ export interface Settings {
   /** 界面语言。缺省为 zh：旧版数据没有该字段，视为中文用户；全新的存储由 loadStore 按浏览器语言设定 */
   lang: Locale;
   naming: NamingSystem;
-  timbre: Timbre;
+  timbre: TimbreSetting;
   volume: number;
   keyMode: 'C' | 'random';
   autoNext: boolean;

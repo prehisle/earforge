@@ -155,6 +155,16 @@ export function AboutPage({ onBack }: Props) {
               CC BY 3.0
             </a>
           </li>
+          <li>
+            {t('about.credits.instruments')}{' '}
+            <a href="https://github.com/nbrosowsky/tonejs-instruments" target="_blank" rel="noopener noreferrer">
+              tonejs-instruments
+            </a>{' '}
+            · Nicholaus P. Brosowsky ·{' '}
+            <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">
+              CC BY 3.0
+            </a>
+          </li>
           <li>{t('about.credits.songs')}</li>
         </ul>
       </section>
