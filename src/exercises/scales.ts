@@ -87,7 +87,8 @@ export const scales: ExerciseDef = {
     };
     const choices = LEVEL_IDS.flat()
       .filter((id) => ctx.items.includes(id))
-      .map((id) => ({ id, label: SCALE_BY_ID[id].name, sub: SCALE_BY_ID[id].feature }));
+      // 特征音级用窄不换行空格连接，在窄按钮里也不折行
+      .map((id) => ({ id, label: SCALE_BY_ID[id].name, sub: SCALE_BY_ID[id].feature.replace(/ /g, '\u202f') }));
     return {
       item,
       events: build(item),
@@ -95,7 +96,8 @@ export const scales: ExerciseDef = {
       answer: [item],
       choiceEvents: build,
       prompt: t('ex.scales.prompt', { dir: t(dirKey(dir)) }),
-      score: { notes: spellScale(tonic, def, dir).map((p) => [p]), fifths: 0, stems: true },
+      // 上下行时谱上只写上行（下行是同样的音倒过来），15 个音在窄屏上太挤
+      score: { notes: spellScale(tonic, def, dir === 'both' ? 'up' : dir).map((p) => [p]), fifths: 0, stems: true },
       explain: t('ex.scales.explain', {
         notes: spellScale(tonic, def, 'up')
           .map((p) => pitchName(p, false))

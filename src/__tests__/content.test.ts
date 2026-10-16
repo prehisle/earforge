@@ -124,8 +124,9 @@ describe('音阶练习出题', () => {
           expect(notes).toEqual(scaleNotes(tonic, def, realDir));
           expect(tonic).toBeGreaterThanOrEqual(55);
           expect(Math.max(...notes)).toBeLessThanOrEqual(76);
-          // 谱：与播放的音一致
-          expect(q.score!.notes.map((g) => g[0].midi)).toEqual(notes);
+          // 谱：与播放的音一致（上下行只写上行）
+          expect(q.score!.notes.map((g) => g[0].midi)).toEqual(realDir === 'both' ? notes.slice(0, Math.ceil(notes.length / 2)) : notes);
+          expect(q.choices.find((c) => c.id === item)!.sub!.replace(/\u202f/g, ' ')).toBe(def.feature);
           for (const c of q.choices) {
             const alt = q.choiceEvents!(c.id).map((e) => e.notes[0]);
             expect(alt).toEqual(scaleNotes(tonic, SCALE_BY_ID[c.id as keyof typeof SCALE_BY_ID], realDir));

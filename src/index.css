@@ -2469,3 +2469,18 @@ input[type='range'] {
     display: none;
   }
 }
+
+/* ───── 新练习 ───── */
+/* 选项按钮可以比最长的单词窄（如 inversion、pentatonic）：长词在按钮内换行，不撑破三列 / 四列网格 */
+.choices > .choice {
+  min-width: 0;
+}
+.choice-label {
+  overflow-wrap: break-word;
+}
+@media (min-width: 521px) {
+  /* 宽屏多列时给右上角的数字键留出位置 */
+  .choices > .choice .choice-label {
+    padding-inline: 14px;
+  }
+}
