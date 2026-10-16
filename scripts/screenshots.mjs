@@ -8,7 +8,7 @@
 //
 // 需要本机 Chrome（同 e2e：CHROME_PATH 或常见安装位置）。截图用 Chrome 直接输出 WebP（宽度 ≤ 1200px），不需要其他图像工具。
 // 跟唱成绩：用合成的「麦克风」（振荡器按曲谱的音高与时值发声，个别音故意唱偏一点）代替真人演唱。
-import { mkdirSync, statSync } from 'node:fs';
+import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
@@ -41,6 +41,56 @@ async function songTimeline() {
     const r = rl.realize(song, 0, VOICE); // C 大调
     const times = rl.noteTimes(r, song.bpm);
     return r.midis.map((m, i) => ({ midi: m, ...times[i] }));
+  } finally {
+    await vite.close();
+  }
+}
+
+// ───── 成绩链接与成绩单：用源码里的编码函数生成几个学生的成绩链接（固定题目组合，部分答错） ─────
+const ASSIGN = {
+  zh: { name: '第三周听力作业', students: ['李小雨', '王浩然', '陈思远', '张一诺', '刘子涵'] },
+  en: { name: 'Week 3 listening', students: ['Emma', 'Liam', 'Sofia', 'Noah', 'Mia'] },
+};
+async function resultCodes() {
+  const { createServer } = await import('vite');
+  const vite = await createServer({ root, logLevel: 'error', server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const rl = await vite.ssrLoadModule('/src/engine/resultLink.ts');
+    const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+    const out = {};
+    for (const [lang, a] of Object.entries(ASSIGN)) {
+      const set = {
+        name: a.name,
+        parts: [
+          { ex: 'intervals', items: ['P5', 'P8', 'M3', 'P4', 'm3', 'M6'], options: { dir: 'mix' } },
+          { ex: 'chords', items: ['maj', 'min', 'dim', 'aug'], options: {} },
+          { ex: 'dictation', items: ['d0', 'd2', 'd4', 'd5', 'd7'], options: {} },
+        ],
+        count: 12,
+        seed: 20261016,
+      };
+      const draws = rl.resultDraws(set);
+      // 每个学生答错的题号（从 0 起）、用时（分钟）、完成时间（昨晚 21:40 之前几小时）
+      const plans = [
+        [[3, 5], 9, 0.5],
+        [[1, 4, 6, 10], 12, 2],
+        [[], 8, 3.2],
+        [[2, 5, 7, 8, 9, 11], 15, 1.1],
+        [[6], 10, 24],
+      ];
+      const base = new Date();
+      base.setDate(base.getDate() - 1);
+      base.setHours(21, 40, 0, 0);
+      out[lang] = plans.map(([wrong, minutes, h], s) => {
+        const results = draws.map((d, i) => {
+          const n = d.ex === 'dictation' ? 4 : 1;
+          const bad = wrong.includes(i);
+          return { steps: Array.from({ length: n }, (_, k) => ({ ok: !bad || k < n - 1 - (s % 2) })) };
+        });
+        return rl.encodeResult({ set, results, at: base.getTime() - Math.round(h * 60) * 60e3, minutes, version, name: a.students[s] });
+      });
+    }
+    return out;
   } finally {
     await vite.close();
   }
@@ -192,6 +242,7 @@ async function main() {
     url = `http://127.0.0.1:${PORT}/`;
   }
   const timeline = want('song-result') ? await songTimeline() : [];
+  const codes = want('result-view') || want('gradebook') ? await resultCodes() : null;
   const browser = await puppeteer.launch({
     executablePath: await findChrome(),
     headless: true,
@@ -199,7 +250,7 @@ async function main() {
   });
   const errors = [];
   try {
-    for (const lang of ['zh', 'en']) await shootLang(browser, lang, timeline, errors);
+    for (const lang of ['zh', 'en']) await shootLang(browser, lang, timeline, errors, codes?.[lang]);
   } finally {
     await browser.close();
     await server?.close();
@@ -217,13 +268,13 @@ async function main() {
   }
 }
 
-async function shootLang(browser, lang, timeline, errors) {
+async function shootLang(browser, lang, timeline, errors, codes) {
   const T =
     lang === 'zh'
       ? { start: '开始练习', back: '返回', stats: '统计', lib: '视唱曲库', exam: '模拟考试', rdict: '节奏旋律听写', degrees: '调内音级', harmony: '和声听写', settings: '设置' }
       : { start: 'Start', back: 'Back', stats: 'Stats', lib: 'Sight-Singing Library', exam: 'mock exams', rdict: 'Melody + Rhythm', degrees: 'Scale Degrees', harmony: 'Harmonic Dictation', settings: 'Settings' };
 
-  async function open({ width = 1100, height = 760, scale = 1, dark = false, fresh = false, init = null, initArg, settings } = {}) {
+  async function open({ width = 1100, height = 760, scale = 1, dark = false, fresh = false, init = null, initArg, settings, hash = '' } = {}) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(`${lang}: ${e}`));
@@ -246,7 +297,7 @@ async function shootLang(browser, lang, timeline, errors) {
     if (init) await page.evaluateOnNewDocument(init, initArg);
     await page.setViewport({ width, height, deviceScaleFactor: scale });
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }]);
-    await page.goto(url, { waitUntil: 'networkidle0' });
+    await page.goto(url + hash, { waitUntil: 'networkidle0' });
     // seed 每次加载都会运行：之后的页面内跳转不刷新，不影响
     return { ctx, page };
   }
@@ -408,6 +459,30 @@ async function shootLang(browser, lang, timeline, errors) {
     const path = join(OUT, `settings-timbre-${lang}.webp`);
     await panel.screenshot({ path, type: 'webp', quality: 80 });
     written.push(path);
+    await ctx.close();
+  }
+
+  // 成绩页：老师打开学生发来的成绩链接（12 题，两题答错，其中一题是旋律听写的多步题）
+  if (want('result-view')) {
+    const { ctx, page } = await open({ height: 900, hash: `#r=${codes[0]}` });
+    await page.waitForSelector('.result-grid');
+    await shot(page, 'result-view', { fullPage: true });
+    await ctx.close();
+  }
+
+  // 成绩单：本机已添加 5 个学生的成绩，打开这份作业的学生 × 得分表
+  if (want('gradebook')) {
+    const add = (list) => {
+      const s = JSON.parse(localStorage.getItem('earforge:v1'));
+      s.gradebook = list.map((code, i) => ({ code, added: Date.now() - (list.length - i) * 3600e3 }));
+      localStorage.setItem('earforge:v1', JSON.stringify(s));
+    };
+    const { ctx, page } = await open({ height: 520, init: add, initArg: codes });
+    await click(page, lang === 'zh' ? '成绩单' : 'Gradebook', '.card');
+    await page.waitForSelector('.gradebook .set-item');
+    await (await page.$('.gradebook .set-actions button.primary')).click();
+    await page.waitForSelector('.grade-table');
+    await shot(page, 'gradebook');
     await ctx.close();
   }
 

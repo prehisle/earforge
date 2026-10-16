@@ -62,6 +62,19 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
   </tr>
 </table>
 
+### For teachers: assign homework, collect results
+- **Result links**: after finishing a fixed-question set, a student adds their name under "Share your result" in the summary and taps "Create & copy result link"; the result link (about 220–350 characters for a 20-question assignment) can be sent to the teacher in any chat app. The link carries per-question right/wrong, score, finish time and duration, and has a checksum, so a truncated or edited link won't open. It contains no device or account information.
+- **Result page**: opening the link shows the score, each question with its item (regenerated from the set's seed, so it matches what the student actually got) and per-exercise performance. It is view-only and doesn't count toward the teacher's own practice.
+- **Gradebook**: "Add to gradebook" collects results per assignment into a students × score table that can be sorted and exported as CSV (with per-question right/wrong, opens cleanly in Excel). The gradebook lives in the teacher's browser and is included in backups.
+- Everything happens in the browser: no server, no sign-up, no accounts for students or teachers.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/result-view-en.webp" alt="Result page: a student's score, each question with its item, and per-exercise performance"></td>
+    <td width="50%"><img src="docs/screenshots/gradebook-en.webp" alt="Gradebook: scores, durations and finish times of all students for one assignment, with CSV export"></td>
+  </tr>
+</table>
+
 ### Sight-singing
 - **Sight-singing library**: 48 graded pieces, both original drills and public-domain folk and classical melodies. Transpose them to your range, sing along with a metronome and get note-by-note pitch scoring, or practise note by note.
 - **Sight-singing / echo exercise**: built-in YIN pitch detection with a live tuner. Octaves are ignored, so it works for any voice.
@@ -80,7 +93,8 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 - **English and Chinese, light and dark**: follows your system's color scheme. New users get the language of their browser, and you can switch in Settings.
 - **Keyboard shortcuts**: answer multiple-choice questions with 1–9, 0 and Q–P (up to 20 options, shown on each button), hold Shift with an answer key to audition, Space to replay, Enter for the next question. The notation editor and rhythm tapping are fully keyboard-driven too; the full list is under "About & help" in the app.
 - **Accessibility**: full keyboard control, screen-reader announcements for answer feedback, WCAG AA color contrast, and 0 axe-core violations.
-- **Mobile-friendly**: designed for touch, with compact narrow-screen layouts.
+- **Mobile-friendly**: designed for touch, with compact narrow-screen layouts, tap targets of at least 44px and no keyboard hints on touch screens.
+- **Fast to load**: about 122 KB of JS (gzip) on first load; the practice page, exams and more load on demand and are prefetched in the background. A size budget script checks this after every build and fails if it is exceeded.
 
 <p align="center">
   <img src="docs/screenshots/mobile-en.webp" alt="Home page on a phone" width="300">
@@ -127,11 +141,11 @@ npm install
 npm run dev      # dev server at http://localhost:5173
 npm test         # unit tests
 npm run build    # production build into dist/, deployable to any static host
-npm run check    # pre-commit check: lint (warnings fail) + unit tests + build
+npm run check    # pre-commit check: lint (warnings fail) + unit tests + build + first-load size budget
 npm run e2e      # browser end-to-end tests (puppeteer-core + local Chrome)
 ```
 
-There are currently 469 unit tests (vitest, 23 files) and 17 browser end-to-end scenarios (`e2e/scenarios/`).
+There are currently 567 unit tests (vitest, 30 files) and 21 browser end-to-end scenarios (`e2e/scenarios/`).
 
 Stack: Vite + React + TypeScript, with no runtime dependencies besides React and no backend.
 
@@ -150,6 +164,7 @@ For other static hosts, run `npm run build` to deploy at the root, or `BASE_PATH
 
 - No accounts, no server, no analytics and no third-party scripts.
 - Progress and settings are stored only in your browser's localStorage. You can export or import a backup in Settings. Clearing your browser data also clears your progress.
+- A result link contains only the results and the name the student typed (optional), and the student sends it themselves; the teacher's gradebook is stored only in the teacher's browser.
 - Microphone audio is analysed for pitch on your device in real time. It is never recorded or uploaded.
 - The only network requests are the optional sampled instruments: the sampled piano is downloaded once from the public Tone.js host, and the sampled guitar / violin / flute from the tonejs-instruments GitHub Pages site. The synthesized sounds need no network.
 
@@ -173,6 +188,7 @@ Done (see [CHANGELOG.md](CHANGELOG.md)):
 - [x] Scales and modes, chord inversions, compound intervals, in-repo e2e and CI, GitHub Pages deployment, in-app help (0.7)
 - [x] Harmonic dictation (four-part, also in mock exams), more instruments and a random instrument per question, 20 answer keys (0.8)
 - [x] Custom practice sets, share links and fixed questions (0.9)
+- [x] Result links and a gradebook for teachers, a phone-friendly set editor, faster first load with a size budget (0.10)
 
 Ideas for next steps (discussion welcome in Issues):
 
