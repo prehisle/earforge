@@ -6,6 +6,9 @@ import { MixedPractice } from './ui/Mixed';
 import { Onboarding } from './ui/Onboarding';
 import { Practice } from './ui/Practice';
 import { SettingsPage } from './ui/Settings';
+import { SongLibrary } from './ui/SongLibrary';
+import { SongPractice } from './ui/SongPractice';
+import { songById } from './songs/library';
 import { useMidiInput } from './ui/useMidi';
 import { StatsPage } from './ui/Stats';
 import { useStore } from './ui/useStore';
@@ -15,7 +18,9 @@ type Route =
   | { page: 'practice'; id: string; focus?: string[] }
   | { page: 'mix'; round: number }
   | { page: 'stats' }
-  | { page: 'settings' };
+  | { page: 'settings' }
+  | { page: 'songs' }
+  | { page: 'song'; id: string };
 
 export default function App() {
   const [store, update] = useStore();
@@ -54,6 +59,7 @@ export default function App() {
             onMix={() => setRoute({ page: 'mix', round: 0 })}
             onStats={() => setRoute({ page: 'stats' })}
             onSettings={() => setRoute({ page: 'settings' })}
+            onSongs={() => setRoute({ page: 'songs' })}
           />
         )}
         {route.page === 'practice' && (
@@ -77,6 +83,25 @@ export default function App() {
         )}
         {route.page === 'stats' && (
           <StatsPage store={store} onBack={home} onFocus={(id, focus) => setRoute({ page: 'practice', id, focus })} />
+        )}
+        {route.page === 'songs' && (
+          <SongLibrary
+            store={store}
+            onBack={home}
+            onOpen={(id) => {
+              setRoute({ page: 'song', id });
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
+        {route.page === 'song' && songById[route.id] && (
+          <SongPractice
+            key={route.id}
+            song={songById[route.id]}
+            store={store}
+            update={update}
+            onBack={() => setRoute({ page: 'songs' })}
+          />
         )}
         {route.page === 'settings' && (
           <SettingsPage store={store} update={update} onBack={home} onOnboard={() => setRerun(true)} />

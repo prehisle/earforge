@@ -30,11 +30,22 @@ export interface DayStat {
   ex?: Record<string, [number, number]>;
 }
 
+/** 视唱曲库中一首歌的记录 */
+export interface SongResult {
+  best: number; // 跟唱最高音准分 0..100
+  attempts: number; // 跟唱次数
+  practiced: number; // 逐音练习唱完的次数
+  last: number; // 上次练习时间戳
+  lastScore: number; // 上次跟唱的分数
+}
+
 export interface Store {
   version: 1;
   settings: Settings;
   exercises: Record<string, ExerciseProgress>;
   daily: Record<string, DayStat>; // 键为本地日期 YYYY-MM-DD
+  /** 视唱曲库的记录（按曲目 id），与练耳进度分开，不计入每日题数。旧数据没有该字段 */
+  songs?: Record<string, SongResult>;
 }
 
 const KEY = 'earforge:v1';
@@ -50,6 +61,7 @@ export function loadStore(): Store {
       s.settings = { ...DEFAULT_SETTINGS, ...s.settings };
       s.exercises ??= {};
       s.daily = sanitizeDaily(s.daily);
+      s.songs ??= {};
       // 已有练习记录的一定是老用户，不再显示新手引导
       if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
       return s;
@@ -63,6 +75,7 @@ export function loadStore(): Store {
     settings: { ...DEFAULT_SETTINGS, onboarded: false, lang: detectLocale() },
     exercises: {},
     daily: {},
+    songs: {},
   };
 }
 
