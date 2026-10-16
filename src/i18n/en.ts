@@ -25,6 +25,20 @@ export const en: Record<MessageKey, string> = {
   'app.crashOffline': "This page isn't cached on this device yet; you may be offline. Reload once you're back online.",
   'lang.label': 'Language',
 
+  // ───── Share links ─────
+  'share.title': 'Shared practice set',
+  'share.untitled': 'Shared set',
+  'share.count': '{n} {n:question|questions} per round',
+  'share.fixed': 'Fixed questions: everyone who opens this link gets the same questions',
+  'share.random': 'Random questions each time',
+  'share.option': '{k}: {v}',
+  'share.start': 'Start practice',
+  'share.save': 'Save to my sets',
+  'share.saved': 'Saved ✓',
+  'share.home': 'Back to home',
+  'share.invalidTitle': 'Can’t open this link',
+  'share.invalidBody': 'This share link is incomplete or damaged (it may have been cut off when copied). Ask the sender for the full link.',
+
   // ───── home ─────
   'home.stats': 'Stats',
   'home.settings': 'Settings',

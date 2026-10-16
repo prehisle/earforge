@@ -23,6 +23,20 @@ export const zh = {
   'app.crashOffline': '这个页面还没有缓存到本机，可能是离线了。联网后重新加载即可。',
   'lang.label': '语言 / Language',
 
+  // ───── 分享链接 ─────
+  'share.title': '分享的练习组合',
+  'share.untitled': '分享的组合',
+  'share.count': '每组 {n} 题',
+  'share.fixed': '固定题目：打开这个链接的人题目完全相同',
+  'share.random': '每次随机出题',
+  'share.option': '{k}：{v}',
+  'share.start': '开始练习',
+  'share.save': '保存到我的组合',
+  'share.saved': '已保存 ✓',
+  'share.home': '返回首页',
+  'share.invalidTitle': '链接无法打开',
+  'share.invalidBody': '这个分享链接不完整或已损坏（可能复制时被截断了）。请让对方重新发送完整的链接。',
+
   // ───── 首页 ─────
   'home.stats': '统计',
   'home.settings': '设置',
