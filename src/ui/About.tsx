@@ -114,7 +114,7 @@ export function AboutPage({ onBack }: Props) {
         <p>{t('about.movable.2')}</p>
       </section>
 
-      <section className="panel" aria-labelledby="about-keys">
+      <section className="panel about-keys-panel" aria-labelledby="about-keys">
         <h2 id="about-keys">{t('about.keys')}</h2>
         <p className="muted">{t('about.keys.note')}</p>
         {KEY_GROUPS.map(([title, keys]) => (

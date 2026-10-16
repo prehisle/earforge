@@ -978,4 +978,10 @@ export const en: Record<MessageKey, string> = {
   'grade.csv': 'Export CSV',
   'grade.qCol': 'Q{i}',
   'grade.notFound': 'All results of this assignment have been deleted.',
+  // ───── 新手走查后续（级别名、小结专练、趋势图提示） ─────
+  'level.adds': 'adds {names}',
+  'level.sep': ', ',
+  'mix.drill': 'Drill these',
+  'mix.drillEx': 'Drill {title}',
+  'stats.accOneDay': 'Only 1 day of data so far. Practice a few more days to see how your accuracy changes.',
 };

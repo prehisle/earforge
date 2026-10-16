@@ -1,7 +1,8 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { EXERCISES, exerciseById } from '../exercises';
-import { activeItems, itemStat, today, type Store } from '../engine/progress';
-import { peekProgress, planSession } from '../engine/planner';
+import { activeItems, itemGroups, itemStat, today, type Store } from '../engine/progress';
+import { peekProgress, planSession, weakItems } from '../engine/planner';
+import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
 import { Quiz, type QuizResult, type QuizSource } from './Practice';
 
@@ -10,12 +11,14 @@ interface Props {
   update(fn: (s: Store) => void): void;
   onBack(): void;
   onAgain(): void;
+  /** 小结里「专练这些」：用指定考点临时专练 */
+  onFocus(id: string, items: string[]): void;
 }
 
 const pct = (c: number, n: number) => (n ? Math.round((c / n) * 100) : 0);
 
 /** 今日训练：按计划跨模块出题，每题仍由各模块自己生成和记录。 */
-export function MixedPractice({ store, update, onBack, onAgain }: Props) {
+export function MixedPractice({ store, update, onBack, onAgain, onFocus }: Props) {
   const t = useT();
   const [plan] = useState(() => planSession(store, EXERCISES, { size: store.settings.mixSize }));
   const idx = useRef(0);
@@ -64,7 +67,7 @@ export function MixedPractice({ store, update, onBack, onAgain }: Props) {
           </button>
         </section>
       ) : finished ? (
-        <Summary store={store} results={results} onAgain={onAgain} onBack={onBack} coach />
+        <Summary store={store} results={results} onAgain={onAgain} onBack={onBack} onFocus={onFocus} coach />
       ) : (
         <Quiz
           store={store}
@@ -89,12 +92,15 @@ export function Summary({
   backLabel,
   againLabel,
   coach,
+  onFocus,
   children,
 }: {
   store: Store;
   results: QuizResult[];
   onAgain(): void;
   onBack(): void;
+  /** 给出时在「最需要加强的考点」下显示专练按钮 */
+  onFocus?(id: string, items: string[]): void;
   /** 返回按钮的文字，缺省为「返回首页」 */
   backLabel?: string;
   /** 再练按钮的文字，缺省为「再来一组」 */
@@ -134,6 +140,15 @@ export function Summary({
   const weakest = [...items.values()]
     .sort((a, b) => a.c / a.n - b.c / b.n || accOf(a.exId, a.item) - accOf(b.exId, b.item))
     .slice(0, 3);
+  // 专练：按练习分组（本组答错过的考点）；只有一个考点时补上该练习（同一调式里）其他的薄弱点，至少两个才好出选择题
+  const missed = weakest.filter((w) => w.c < w.n);
+  const drills = [...new Set(missed.map((w) => w.exId))].map((exId) => {
+    const ex = exerciseById[exId];
+    const own = missed.filter((w) => w.exId === exId).map((w) => w.item);
+    const pool = itemGroups(ex).find((g) => g.items.includes(own[0]))?.items;
+    const extra = weakItems(ex, peekProgress(store, ex), pool).filter((it) => !own.includes(it));
+    return { ex, items: own.length >= 2 ? own : [...own, ...extra].slice(0, 2) };
+  });
 
   const todayN = store.daily[today()]?.n ?? 0;
   const goal = store.settings.dailyGoal;
@@ -191,6 +206,20 @@ export function Summary({
               );
             })}
           </ol>
+          {onFocus && drills.length > 0 && (
+            <div className="weak-drills">
+              {drills.map(({ ex, items }) => (
+                <button
+                  key={ex.id}
+                  className="weak-btn"
+                  onClick={() => onFocus(ex.id, items)}
+                  title={t('stats.drillTitle', { items: joinList(items.map((it) => ex.itemLabel(it, store.settings))) })}
+                >
+                  {drills.length === 1 ? t('mix.drill') : t('mix.drillEx', { title: ex.title })}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

@@ -141,10 +141,16 @@ export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props)
 
       <section>
         <h2 className="group-title">{t('sets.fromTemplate')}</h2>
-        <div className="seg wrap set-templates">
+        {/* 每个模板下面列出包含的练习与题数（手机上没有悬停提示） */}
+        <div className="set-templates">
           {SET_TEMPLATES.map((tpl) => (
-            <button key={tpl.id} onClick={() => onNew(tpl.id)} disabled={full}>
-              {tpl.icon} {t(tpl.name)}
+            <button key={tpl.id} className="set-template" onClick={() => onNew(tpl.id)} disabled={full}>
+              <span className="set-template-name">
+                {tpl.icon} {t(tpl.name)}
+              </span>
+              <span className="set-template-sub muted">
+                {t('sets.meta', { n: tpl.count, mods: tpl.parts.map((p) => exerciseById[p.ex].title).join(' · ') })}
+              </span>
             </button>
           ))}
         </div>

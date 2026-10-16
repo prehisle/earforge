@@ -71,6 +71,11 @@ export default function App() {
     setPostponeOnboard(false);
     setRoute({ page: 'home' });
   };
+  // 小结里的「专练这些」：临时专练指定考点
+  const focusPractice = (id: string, focus: string[]) => {
+    setRoute({ page: 'practice', id, focus });
+    window.scrollTo(0, 0);
+  };
   // 从设置页重新查看新手引导（不清空进度）
   const [rerun, setRerun] = useState(false);
   const routeRef = useRef(route);
@@ -153,6 +158,7 @@ export default function App() {
             update={update}
             onBack={home}
             onAgain={() => setRoute({ page: 'mix', round: route.round + 1 })}
+            onFocus={focusPractice}
           />
         )}
         {route.page === 'stats' && (
@@ -239,6 +245,7 @@ export default function App() {
                 onBack={unsaved ? home : () => setRoute({ page: 'sets' })}
                 backLabel={unsaved ? translate(lang, 'mix.home') : undefined}
                 onAgain={() => setRoute({ ...route, round: (route.round ?? 0) + 1 })}
+                onFocus={focusPractice}
               />
             );
           })()}

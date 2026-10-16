@@ -17,6 +17,7 @@ import type { ExerciseDef } from '../engine/types';
 import { SONG_COUNT } from '../songs/count';
 import { hasSung } from '../songs/results';
 import { ExamCard } from './ExamCard';
+import { levelLabel } from './levelLabel';
 
 interface Props {
   store: Store;
@@ -146,7 +147,7 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
                         : t('home.levelMeta', {
                             level: p.level + 1,
                             total: levelsOf(ex, p.options).length,
-                            name: currentLevel(ex, p).name,
+                            name: levelLabel(currentLevel(ex, p).name, t),
                           })}
                     </span>
                     <span className="meter" title={t('home.masteryTitle', { pct: Math.round(m * 100) })}>

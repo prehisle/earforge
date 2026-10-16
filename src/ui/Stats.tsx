@@ -139,7 +139,10 @@ export function StatsPage({ store, onBack, onFocus }: Props) {
                 )}
               </span>
             </div>
-            {hasAcc ? (
+            {/* 总共只练过一天：画出来只是一个点，改为提示 */}
+            {hasAcc && practiceDays(daily) < 2 ? (
+              <p className="trend-placeholder muted">{t('stats.accOneDay')}</p>
+            ) : hasAcc ? (
               <>
                 <AccuracyLegend />
                 <AccuracyChart rows={rows} label={t('stats.accAria')} />

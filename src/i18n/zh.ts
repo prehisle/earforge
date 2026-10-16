@@ -966,6 +966,12 @@ export const zh = {
   'grade.csv': '导出 CSV',
   'grade.qCol': '第{i}题',
   'grade.notFound': '这份作业的成绩已全部删除。',
+  // ───── 新手走查后续（级别名、小结专练、趋势图提示） ─────
+  'level.adds': '新增 {names}',
+  'level.sep': '、',
+  'mix.drill': '专练这些',
+  'mix.drillEx': '专练{title}',
+  'stats.accOneDay': '目前只有 1 天的数据。再练几天，就能看到正确率的变化趋势。',
 };
 
 export type MessageKey = keyof typeof zh;

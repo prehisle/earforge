@@ -22,6 +22,7 @@ import { useT } from '../i18n/react';
 import { ChoiceGrid } from './ChoiceGrid';
 import { choiceIndexForKey, choiceKeyLabel, keyForFocusedButton } from './keys';
 import { ModuleTip } from './ModuleTip';
+import { levelItemsText, levelLabel } from './levelLabel';
 import { NotatePanel } from './NotatePanel';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
@@ -184,7 +185,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       hit = before < s.settings.dailyGoal && before + 1 >= s.settings.dailyGoal;
       if (idx === question.answer.length - 1 && canLevelUp(ex, p)) {
         p.level++;
-        leveled = currentLevel(ex, p).name;
+        leveled = levelItemsText(currentLevel(ex, p).name, t);
       }
     });
     if (hit) setGoalHit(true);
@@ -571,7 +572,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
               ? `${t('practice.focusWeak')}${scopedLabel && ` · ${scopedLabel}`}`
               : progress.custom
                 ? t('practice.custom')
-                : t('practice.levelMeta', { level: progress.level + 1, name: currentLevel(ex, progress).name })}
+                : t('practice.levelMeta', { level: progress.level + 1, name: levelLabel(currentLevel(ex, progress).name, t) })}
           </p>
         </div>
         <button className={showPanel ? 'ghost active' : 'ghost'} onClick={() => setShowPanel(!showPanel)}>
@@ -590,7 +591,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
                   className={!temp && !progress.custom && progress.level === i ? 'on' : ''}
                   onClick={() => setLevel(i)}
                 >
-                  {i + 1}. {l.name}
+                  {i + 1}. {levelLabel(l.name, t)}
                 </button>
               ))}
             </div>
