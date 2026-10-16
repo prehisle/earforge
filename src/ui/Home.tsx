@@ -8,7 +8,8 @@ import {
   today,
   type Store,
 } from '../engine/progress';
-import { STARTER_IDS, planModules, rankItems } from '../engine/planner';
+import { NEWBIE_QUESTIONS, totalAnswered } from '../engine/onboarding';
+import { STARTER_IDS, peekProgress, planModules, rankItems } from '../engine/planner';
 import { EXERCISES as ALL, exerciseById } from '../exercises';
 
 interface Props {
@@ -36,6 +37,13 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
     .filter((c) => c.strength > 0)
     .slice(0, 3)
     .map((c) => exerciseById[c.exId].itemLabel(c.item, store.settings));
+  // 新手：突出「今日训练」入口，直到累计答满几道题
+  const newbie = totalAnswered(store) < NEWBIE_QUESTIONS;
+  // 起始级别可能由新手引导按基础调高过
+  const starters = STARTER_IDS.map((id) => {
+    const ex = exerciseById[id];
+    return `「${ex.title}」第 ${peekProgress(store, ex).level + 1} 级`;
+  }).join('和');
 
   return (
     <main className="page">
@@ -57,15 +65,16 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
         </nav>
       </header>
 
-      <section className="today">
+      <section className={newbie ? 'today spotlight' : 'today'}>
         <div className="today-body">
+          {newbie && <span className="start-here">✨ 第一次来？从这里开始</span>}
           <h2>🎯 今日训练</h2>
           <p className="today-sub">
             {store.settings.mixSize} 题混合练习 · {mods.map((ex) => ex.title).join(' · ')}
           </p>
           <p className="muted today-focus">
             {fresh
-              ? '从「调内音级」和「音程识别」第 1 级开始，自动挑选最需要练的考点。'
+              ? `从${starters}开始，自动挑选最需要练的考点。`
               : focus.length > 0
                 ? `重点：${focus.join('、')}；掌握好的考点按间隔复习。`
                 : '自动挑选掌握度最低、最久没练的考点。'}

@@ -76,6 +76,10 @@ export interface Settings {
   midi: boolean;
   /** 记谱：jianpu 只用唱名/简谱；staff 视唱只看五线谱；both 两者都显示（答完后都附五线谱） */
   notation: Notation;
+  /** 已完成（或跳过）新手引导。缺省为 true：旧版数据没有该字段，视为老用户；全新的存储由 loadStore 设为 false */
+  onboarded: boolean;
+  /** 已关闭首次使用提示的练习 id */
+  tipsSeen: string[];
 }
 
 export type Notation = 'jianpu' | 'staff' | 'both';
@@ -91,6 +95,8 @@ export const DEFAULT_SETTINGS: Settings = {
   mixSize: 20,
   midi: false,
   notation: 'both',
+  onboarded: true,
+  tipsSeen: [],
 };
 
 export interface GenContext {

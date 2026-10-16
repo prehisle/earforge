@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { exerciseById } from './exercises';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
+import { Onboarding } from './ui/Onboarding';
 import { Practice } from './ui/Practice';
 import { SettingsPage } from './ui/Settings';
 import { useMidiInput } from './ui/useMidi';
@@ -19,7 +20,24 @@ export default function App() {
   const [store, update] = useStore();
   const [route, setRoute] = useState<Route>({ page: 'home' });
   const home = () => setRoute({ page: 'home' });
+  // 从设置页重新查看新手引导（不清空进度）
+  const [rerun, setRerun] = useState(false);
   useMidiInput(store.settings.midi);
+
+  if (!store.settings.onboarded || rerun)
+    return (
+      <div className="app">
+        <Onboarding
+          store={store}
+          update={update}
+          onDone={() => {
+            setRerun(false);
+            home();
+            window.scrollTo(0, 0);
+          }}
+        />
+      </div>
+    );
 
   return (
     <div className="app">
@@ -54,7 +72,9 @@ export default function App() {
       {route.page === 'stats' && (
         <StatsPage store={store} onBack={home} onFocus={(id, focus) => setRoute({ page: 'practice', id, focus })} />
       )}
-      {route.page === 'settings' && <SettingsPage store={store} update={update} onBack={home} />}
+      {route.page === 'settings' && (
+        <SettingsPage store={store} update={update} onBack={home} onOnboard={() => setRerun(true)} />
+      )}
     </div>
   );
 }
