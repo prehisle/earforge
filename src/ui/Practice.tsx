@@ -97,6 +97,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const nextRef = useRef<() => void>(() => {});
   const timer = useRef<number | undefined>(undefined);
   const holdNext = useRef(false); // 答完后点了试听：取消本题的自动跳题
+  const turn = useRef(0); // 每出一题（或卸载）加一：等待播放解决和弦期间已换题时不再安排自动跳题
   const midiStatus = useMidiStatus();
   const latest = useRef({ source, onResult, onComplete });
   const q = cur?.q ?? null;
@@ -117,6 +118,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
 
   const next = () => {
     window.clearTimeout(timer.current);
+    turn.current++;
     const d = latest.current.source.next();
     if (!d) {
       audio.stopAll();
@@ -146,6 +148,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
 
   useEffect(() => () => {
     window.clearTimeout(timer.current);
+    turn.current++;
     audio.stopAll();
   }, []);
 
@@ -186,9 +189,12 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       steps: results.map((ok, i) => ({ item: question.stepItems?.[i] ?? question.item, ok })),
       allRight,
     });
+    const my = turn.current;
     void (async () => {
       let wait = 1.1;
       if (question.resolution && question.resolution.length > 1) wait += await play(question, 'resolution');
+      // 等待播放期间已手动下一题或离开页面：不要给新题（或已卸载的组件）安排自动跳题
+      if (my !== turn.current) return;
       if (allRight && store.settings.autoNext && !question.sing && !question.tap && !holdNext.current) {
         timer.current = window.setTimeout(() => nextRef.current(), wait * 1000);
       }
