@@ -243,6 +243,18 @@ kbd {
 .topnav {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
+}
+/* 窄屏中文顶栏：「统计」「设置」不逐字折行；品牌名只在空格处折行 */
+.topnav button {
+  white-space: nowrap;
+}
+.topbar h1 {
+  word-break: keep-all;
+  line-height: 1.2;
+}
+.brand {
+  min-width: 0;
 }
 .topbar > button {
   /* 「← Back」等较长的英文不折行 */
@@ -947,6 +959,9 @@ input[type='range'] {
   }
   .brand p {
     display: none;
+  }
+  .topnav button {
+    padding-inline: 10px;
   }
   .today .big {
     width: 100%;
