@@ -28,6 +28,22 @@ const TIPS: Record<string, { how: MessageKey; keys?: Keys }> = {
   progressions: { how: 'tip.progressions' },
   dictation: { how: 'tip.dictation' },
   rhythm: { how: 'tip.rhythm' },
+  rhythmDictation: {
+    how: 'tip.rhythmDictation',
+    keys: [
+      ['1–7', 'tip.key.pitch'],
+      ['W H Q E S', 'tip.key.dur'],
+      ['.', 'tip.key.dot'],
+      ['T', 'tip.key.tie'],
+      ['0 / R', 'tip.key.rest'],
+      ['↑ ↓', 'tip.key.octave'],
+      ['= / -', 'tip.key.acc'],
+      ['⌫', 'tip.key.back'],
+      ['Ctrl+Z', 'tip.key.undo'],
+      ['common.space', 'tip.key.replay'],
+      ['common.enter', 'tip.key.submitNext'],
+    ],
+  },
   rhythmTap: {
     how: 'tip.rhythmTap',
     keys: [

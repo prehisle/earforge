@@ -92,7 +92,7 @@ describe('自适应引擎', () => {
             const q = ex.generate(item, { settings: DEFAULT_SETTINGS, items, options });
             expect(q.events.length).toBeGreaterThan(0);
             expect(q.answer.length).toBeGreaterThan(0);
-            if (!q.sing && !q.tap) for (const a of q.answer) expect(q.choices.map((c) => c.id)).toContain(a);
+            if (!q.sing && !q.tap && !q.notate) for (const a of q.answer) expect(q.choices.map((c) => c.id)).toContain(a);
           }
       });
     }

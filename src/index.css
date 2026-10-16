@@ -1825,3 +1825,178 @@ input[type='range'] {
 .song-cents-val {
   font-variant-numeric: tabular-nums;
 }
+
+/* ───── 节奏旋律听写 ───── */
+.notate {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+.notate-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.notate-fill {
+  flex: 1 1 80px;
+  min-width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.notate-fill > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.12s;
+}
+.notate-status.full .notate-fill > span {
+  background: var(--good);
+}
+.notate-status.over {
+  color: var(--bad);
+}
+.notate-status.over .notate-fill > span {
+  background: var(--bad);
+}
+.notate-staff {
+  position: relative;
+  padding: 6px 4px 2px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+.notate-live {
+  min-height: 96px;
+  /* 谱长了在框内滚动到当前行，不把下面的按钮挤来挤去 */
+  max-height: 200px;
+  overflow-y: auto;
+}
+.notate-empty {
+  margin: 0;
+  padding: 30px 12px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.notate-staff-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  padding: 0 6px;
+}
+.notate-row {
+  display: grid;
+  gap: 6px;
+}
+.notate-durs {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+.notate-pitches {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.notate-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 4px 2px;
+  border-width: 2px;
+  line-height: 1.1;
+}
+.notate-btn.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.notate-btn:disabled {
+  opacity: 0.4;
+}
+.notate-btn kbd {
+  margin: 2px 0 0;
+  font-size: 0.62rem;
+}
+.notate-icon {
+  display: block;
+  width: 22px;
+  height: 26px;
+}
+.notate-glyph {
+  font-size: 1.5rem;
+  line-height: 26px;
+}
+.notate-pitch {
+  min-height: 60px;
+}
+.notate-pitch-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.notate-pitch-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.notate-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.notate-oct,
+.notate-acc,
+.notate-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.notate-oct .notate-btn,
+.notate-acc .notate-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+.notate-oct-label {
+  min-width: 4.5em;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.notate-edit button {
+  min-height: 44px;
+  padding: 6px 10px;
+}
+.notate-submit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.notate-submit .primary {
+  min-height: 44px;
+  padding: 8px 22px;
+}
+.notate-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 520px) {
+  .notate-durs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .notate-pitch-label {
+    font-size: 1rem;
+  }
+  .notate-hide-sm {
+    display: none;
+  }
+}

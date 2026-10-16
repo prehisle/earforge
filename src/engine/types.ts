@@ -1,7 +1,7 @@
 import type { NoteEvent, Timbre } from '../audio/engine';
 import type { Score } from '../music/notation';
 import type { Locale } from '../i18n';
-import type { NamingSystem } from '../music/theory';
+import type { ModeId, NamingSystem } from '../music/theory';
 
 export interface Choice {
   id: string;
@@ -46,6 +46,30 @@ export interface Question {
   tap?: { durs: number[]; bpm: number; showNotation: boolean; countIn: number };
   /** 五线谱：本题的音（已拼写），答完后显示在反馈区；视唱题按设置在作答时显示 */
   score?: Score;
+  /**
+   * 记谱作答（节奏旋律听写）：用时值与音高按钮写出整段旋律，由 NotatePanel 判定（整题一步）。
+   * 存在时 choices 为空，Quiz 的数字键与 MIDI 作答交给面板处理。
+   */
+  notate?: NotateSpec;
+}
+
+/** 一个音：相对主音的半音数（null 为休止）与时值（tick，四分音符 = 12） */
+export interface NotateNote {
+  rel: number | null;
+  dur: number;
+}
+
+export interface NotateSpec {
+  /** 正确答案（相邻休止已合并，连音线连起来的音合成一个长音） */
+  notes: NotateNote[];
+  meter: [number, number];
+  /** 主音（MIDI） */
+  tonic: number;
+  mode: ModeId;
+  /** 每分钟四分音符数 */
+  bpm: number;
+  /** 是否提供升降号（含变化音的级别） */
+  chromatic: boolean;
 }
 
 export interface Level {
