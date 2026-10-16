@@ -36,8 +36,8 @@ interface Props {
   onBack(): void;
 }
 
-// 五线谱渲染器支持歌词（唱名）后改为 true：届时「唱名 + 五线谱」模式不再另外显示简谱行
-const STAFF_RENDERS_LYRICS = false;
+// 五线谱渲染器已支持歌词（唱名）：「唱名 + 五线谱」模式不再另外显示简谱行
+const STAFF_RENDERS_LYRICS = true;
 
 const LEAD = 0.05; // audio.play 在 currentTime 之后这么久开始
 const MIC_LAG = 0.03; // 一帧分析窗（2048 点）的中心约比回调时刻早这么久
@@ -319,6 +319,14 @@ export function SongPractice({ song, store, update, onBack }: Props) {
     return i === cursor ? 'cur' : null;
   });
 
+  // 五线谱上加底色并滚动到可见处的音
+  const current =
+    tab === 'practice' && practice
+      ? pitchedIdx[practice.firstTry.length]
+      : result
+        ? undefined
+        : (cursor ?? undefined);
+
   const best = store.songs?.[song.id];
   const busy = phase === 'prep' || phase === 'hint' || phase === 'count' || phase === 'sing';
   const keyName = keyLabel(tonicPc, mode);
@@ -434,7 +442,7 @@ export function SongPractice({ song, store, update, onBack }: Props) {
       <section className="song-sheet">
         {showStaff && (
           <div className="song-staff">
-            <Staff score={score} marks={marks} scale={1.15} />
+            <Staff score={score} marks={marks} current={current} />
           </div>
         )}
         {showLine && <JianpuLine r={r} names={names} marks={marks} label={t('song.notation')} />}

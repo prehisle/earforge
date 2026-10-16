@@ -135,7 +135,7 @@ export function SongLibrary({ store, onBack, onOpen }: Props) {
                       <span className="card-title">{s.title[lang]}</span>
                       <span className="card-sub">{s.source[lang]}</span>
                       <span className="song-tags">
-                        <span className="song-tag meter">{s.meter.join('/')}</span>
+                        <span className="song-tag song-tag-meter">{s.meter.join('/')}</span>
                         {songTags(s)
                           .filter((tg) => tg !== 'compound')
                           .map((tg) => (
