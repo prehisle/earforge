@@ -62,9 +62,9 @@ export function loadStore(): Store {
     if (raw) {
       const s = JSON.parse(raw) as Store;
       s.settings = { ...DEFAULT_SETTINGS, ...s.settings };
-      s.exercises ??= {};
+      s.exercises = sanitizeExercises(s.exercises);
       s.daily = sanitizeDaily(s.daily);
-      s.songs ??= {};
+      s.songs = sanitizeSongs(s.songs);
       s.exams = sanitizeExams(s.exams);
       // 已有练习记录的一定是老用户，不再显示新手引导
       if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
@@ -108,6 +108,61 @@ export function sanitizeDaily(raw: unknown): Record<string, DayStat> {
     out[k] = day;
   }
   return out;
+}
+
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const finite = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+
+/** 规范化各练习的进度（读取本地数据与导入备份时用）：补全缺失的字段，丢弃格式不对的条目，避免出题与统计时报错。 */
+export function sanitizeExercises(raw: unknown): Record<string, ExerciseProgress> {
+  const out: Record<string, ExerciseProgress> = {};
+  if (!isObj(raw)) return out;
+  for (const [id, v] of Object.entries(raw)) {
+    if (!isObj(v)) continue;
+    const items: Record<string, ItemStat> = {};
+    if (isObj(v.items))
+      for (const [it, st] of Object.entries(v.items)) {
+        if (!isObj(st)) continue;
+        const n = count(st.n);
+        items[it] = { n, c: Math.min(n, count(st.c)), acc: Math.max(0, Math.min(1, finite(st.acc, 0.5))), last: finite(st.last, 0) };
+      }
+    const options: Record<string, string> = {};
+    if (isObj(v.options)) for (const [k, o] of Object.entries(v.options)) if (typeof o === 'string') options[k] = o;
+    const strings = (a: unknown) => (Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : null);
+    const p: ExerciseProgress = { level: count(v.level), custom: strings(v.custom), items, options };
+    if (isObj(v.scoped)) {
+      p.scoped = {};
+      for (const [k, sc] of Object.entries(v.scoped)) if (isObj(sc)) p.scoped[k] = { level: count(sc.level), custom: strings(sc.custom) };
+    }
+    out[id] = p;
+  }
+  return out;
+}
+
+/** 规范化曲库记录（读取本地数据与导入备份时用）。 */
+export function sanitizeSongs(raw: unknown): Record<string, SongResult> {
+  const out: Record<string, SongResult> = {};
+  if (!isObj(raw)) return out;
+  const pct = (v: unknown) => Math.max(0, Math.min(100, finite(v, 0)));
+  for (const [id, v] of Object.entries(raw)) {
+    if (!isObj(v)) continue;
+    out[id] = { best: pct(v.best), attempts: count(v.attempts), practiced: count(v.practiced), last: finite(v.last, 0), lastScore: pct(v.lastScore) };
+  }
+  return out;
+}
+
+/**
+ * 导入备份（就地修改 st）：格式不对时抛错、不做任何修改。
+ * 备份里有的部分整体替换（进度、每日记录、曲库、考试、设置），没有的部分（旧版本备份没有曲库/考试记录）保留现有的；
+ * 旧备份没有界面语言时沿用当前语言。
+ */
+export function importBackup(st: Store, raw: unknown): void {
+  if (!isObj(raw) || raw.version !== 1 || !isObj(raw.exercises)) throw new Error('bad backup');
+  st.exercises = sanitizeExercises(raw.exercises);
+  st.daily = sanitizeDaily(raw.daily);
+  if (raw.songs !== undefined) st.songs = sanitizeSongs(raw.songs);
+  if (raw.exams !== undefined) st.exams = sanitizeExams(raw.exams);
+  st.settings = { ...DEFAULT_SETTINGS, lang: st.settings.lang, ...(isObj(raw.settings) ? (raw.settings as Partial<Settings>) : {}) };
 }
 
 /** 是否已有练习记录（任一考点作答过，或有每日记录） */

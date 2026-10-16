@@ -1,9 +1,8 @@
 import { useRef } from 'react';
 import { audio, type Timbre } from '../audio/engine';
 import { SAMPLE_SIZE_MB } from '../audio/sampler';
-import { sanitizeDaily, type Store } from '../engine/progress';
-import { sanitizeExams } from '../engine/examHistory';
-import { DEFAULT_SETTINGS, type Notation, type Settings } from '../engine/types';
+import { importBackup, type Store } from '../engine/progress';
+import { type Notation, type Settings } from '../engine/types';
 import { useT } from '../i18n/react';
 import { NAMING_SYSTEMS, namingLabel, type NamingSystem } from '../music/theory';
 import { SamplerStatus } from './SamplerStatus';
@@ -30,19 +29,16 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
     a.href = URL.createObjectURL(blob);
     a.download = `earforge-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    // 立即撤销会让部分浏览器（Safari、旧版 Firefox）取消下载
+    const url = a.href;
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const importData = async (f: File) => {
     try {
-      const data = JSON.parse(await f.text()) as Store;
-      if (data.version !== 1 || !data.exercises) throw new Error();
-      update((st) => {
-        st.exercises = data.exercises;
-        st.daily = sanitizeDaily(data.daily);
-        if (data.exams) st.exams = sanitizeExams(data.exams);
-        st.settings = { ...DEFAULT_SETTINGS, ...data.settings };
-      });
+      const data: unknown = JSON.parse(await f.text());
+      // 格式不对时 importBackup 抛错：update 在副本上修改，抛错时不会保存
+      update((st) => importBackup(st, data));
       alert(t('settings.importOk'));
     } catch {
       alert(t('settings.importBad'));
