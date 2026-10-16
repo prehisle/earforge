@@ -110,11 +110,21 @@ export function displayShift(midis: number[], voice: Voice): number {
   return order.find((s) => chooseClef(steps(s)) !== 'grand') ?? 0;
 }
 
-/** 生成五线谱（含时值、拍号、弱起与唱名歌词）。 */
+/** 低声部的旋律能否用八度高音谱号（高八度后整段落在高音谱表）。 */
+export function fitsTreble8vb(midis: number[]): boolean {
+  return midis.length > 0 && chooseClef(midis.map((m) => pitchStep(spellSimple(m + 12)))) === 'treble';
+}
+
+/**
+ * 生成五线谱（含时值、拍号、弱起与唱名歌词）。
+ * 低声部（男声）能放下时用八度高音谱号（按实际音高记，读法同高音谱表），不再用低音谱表或大量加线。
+ */
 export function songScore(r: Realized, naming: NamingSystem, voice: Voice, withLyrics = true): Score {
   const pitched = r.midis.filter((m): m is number => m !== null);
-  const shift = displayShift(pitched, voice);
+  const tr8 = voice === 'low' && fitsTreble8vb(pitched);
+  const shift = tr8 ? 0 : displayShift(pitched, voice);
   return {
+    ...(tr8 ? { clef: 'treble8vb' as const } : {}),
     notes: r.notes.map((n, i) => {
       const m = r.midis[i];
       return m === null ? [] : [spellNote(m + shift, n.digit, r)];

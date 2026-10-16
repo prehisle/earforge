@@ -29,6 +29,11 @@ export interface Score {
   pickup?: number;
   /** 写在音符下方的文字（唱名或歌词），与 notes 一一对应；休止符为空串 */
   lyrics?: string[];
+  /**
+   * 'treble8vb'：八度高音谱号（谱号下方标 8，实际音高比记谱低八度），男声常用。
+   * 音按实际音高给出，渲染时整体上移八度画在高音谱表上。缺省按音域自动选谱号。仅带时值的谱（MeasuredStaff）支持。
+   */
+  clef?: 'treble8vb';
 }
 
 export type Mark = 'ok' | 'bad' | 'cur' | null | undefined;
