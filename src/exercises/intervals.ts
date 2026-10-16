@@ -2,10 +2,31 @@ import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
 import { intervalNumber, pitchName, spellStack } from '../music/notation';
 import { t } from '../i18n';
-import { INTERVALS, intervalSong, pick, randInt } from '../music/theory';
+import { ALL_INTERVALS, intervalSong, pick, randInt, simpleOf } from '../music/theory';
 import { level, option } from './common';
 
-const byId = Object.fromEntries(INTERVALS.map((i) => [i.id, i]));
+const byId = Object.fromEntries(ALL_INTERVALS.map((i) => [i.id, i]));
+
+/** 单音程的级别；复音程的级别按同样的顺序各加一个八度（艺考常考复音程）。 */
+const SIMPLE_LEVELS = [
+  ['P5', 'P8'],
+  ['M3', 'P4'],
+  ['m3', 'M6'],
+  ['M2', 'm2'],
+  ['m6', 'm7'],
+  ['M7', 'TT'],
+];
+const COMPOUND_LEVELS = [
+  ['P12', 'P15'],
+  ['M10', 'P11'],
+  ['m10', 'M13'],
+  ['M9', 'm9'],
+  ['m13', 'm14'],
+  ['M14', 'A11'],
+];
+export const INTERVAL_LEVELS = [...SIMPLE_LEVELS, ...COMPOUND_LEVELS];
+/** 第一个复音程级别的下标 */
+export const COMPOUND_FROM = SIMPLE_LEVELS.length;
 
 export const intervals: ExerciseDef = {
   id: 'intervals',
@@ -17,14 +38,7 @@ export const intervals: ExerciseDef = {
   },
   icon: '↕',
   group: 'basics',
-  levels: [
-    ['P5', 'P8'],
-    ['M3', 'P4'],
-    ['m3', 'M6'],
-    ['M2', 'm2'],
-    ['m6', 'm7'],
-    ['M7', 'TT'],
-  ].map((items, i) => level(() => `${i ? '+ ' : ''}${items.map((id) => byId[id].name).join(' · ')}`, items)),
+  levels: INTERVAL_LEVELS.map((items, i) => level(() => `${i ? '+ ' : ''}${items.map((id) => byId[id].name).join(' · ')}`, items)),
   options: [
     option(
       'dir',
@@ -42,7 +56,8 @@ export const intervals: ExerciseDef = {
   generate(item, ctx) {
     const iv = byId[item];
     const dir = ctx.options.dir === 'mix' ? pick(['up', 'down', 'harm']) : ctx.options.dir;
-    const low = randInt(52, 72 - iv.semitones);
+    // 单音程在 E3..C5 之间；复音程跨度大，下限放低到 G2，上限 A5
+    const low = iv.semitones > 12 ? randInt(43, 81 - iv.semitones) : randInt(52, 72 - iv.semitones);
     const high = low + iv.semitones;
     const a = dir === 'down' ? high : low;
     // 从第一个音 a 出发、同一方向上的音程（和声音程 a 为低音）
@@ -60,6 +75,7 @@ export const intervals: ExerciseDef = {
     // 记谱：上方音的字母按度数从低音数起（三全音记作增四度）
     const [pl, ph] = spellStack([low, high], [0, intervalNumber(item) - 1]);
     const [pa, pb] = dir === 'down' ? [ph, pl] : [pl, ph];
+    const simple = simpleOf(item);
     const song = intervalSong(item);
     const dirLabel = t(
       dir === 'up' ? 'ex.intervals.dir.up' : dir === 'down' ? 'ex.intervals.dir.down' : 'ex.intervals.dirShort.harm',
@@ -76,6 +92,7 @@ export const intervals: ExerciseDef = {
       score: { notes: dir === 'harm' ? [[pl, ph]] : [[pa], [pb]], fifths: 0 },
       explain:
         t('ex.intervals.explain', { from: pitchName(pa), to: pitchName(pb), n: iv.semitones }) +
+        (simple ? t('ex.intervals.compound', { simple: simple.name }) : '') +
         (song ? t('ex.intervals.song', { song }) : ''),
     };
   },

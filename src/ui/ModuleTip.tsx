@@ -25,6 +25,8 @@ const TIPS: Record<string, { how: MessageKey; keys?: Keys }> = {
   degrees: { how: 'tip.degrees' },
   intervals: { how: 'tip.intervals' },
   chords: { how: 'tip.chords' },
+  inversions: { how: 'tip.inversions' },
+  scales: { how: 'tip.scales' },
   progressions: { how: 'tip.progressions' },
   dictation: { how: 'tip.dictation' },
   rhythm: { how: 'tip.rhythm' },
