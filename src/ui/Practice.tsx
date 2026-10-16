@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
 import { midi } from '../audio/midi';
 import {
@@ -19,6 +19,7 @@ import type { ExerciseDef, Question } from '../engine/types';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
 import { ModuleTip } from './ModuleTip';
+import { NotatePanel } from './NotatePanel';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
 import { Staff } from './Staff';
@@ -36,6 +37,11 @@ function endOf(events: NoteEvent[]): number {
 }
 
 // ───── 答题核心：单模块练习与今日训练共用 ─────
+
+/** 未开始时的界面：intro 在子组件里调用，start 只会在点击时执行 */
+function IntroSlot({ render, start }: { render(start: () => void): ReactNode; start(): void }) {
+  return <>{render(start)}</>;
+}
 
 /** 下一题从哪里来：模块 + 考点 + 该模块的出题上下文 */
 export interface Draw {
@@ -93,7 +99,6 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const holdNext = useRef(false); // 答完后点了试听：取消本题的自动跳题
   const midiStatus = useMidiStatus();
   const latest = useRef({ source, onResult, onComplete });
-  latest.current = { source, onResult, onComplete };
   const q = cur?.q ?? null;
 
   const play = async (question: Question, what: 'all' | 'target' | 'prelude' | 'resolution') => {
@@ -132,8 +137,6 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     setQid((n) => n + 1);
     void play(question, 'all');
   };
-
-  nextRef.current = next;
 
   useEffect(() => {
     // 用定时器而不是直接调用：StrictMode 下重复挂载只会出一题
@@ -240,14 +243,20 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     else answer(id);
   };
 
-  // MIDI 键盘作答（琴键发声由 useMidiInput 负责）
+  // MIDI 键盘作答（琴键发声由 useMidiInput 负责；记谱题由 NotatePanel 自己处理）
   const onMidi = useRef<(note: number) => void>(() => {});
-  onMidi.current = (note) => {
-    if (!q?.midiAnswer || q.sing || done) return;
-    const id = q.midiAnswer(note);
-    if (id && q.choices.some((c) => c.id === id)) answer(id);
-  };
   useEffect(() => midi.onNote((note) => onMidi.current(note)), []);
+
+  // 渲染后同步「最新」的回调与 props（不在渲染中写 ref）；事件与定时器都在提交之后触发，行为不变
+  useLayoutEffect(() => {
+    latest.current = { source, onResult, onComplete };
+    nextRef.current = next;
+    onMidi.current = (note) => {
+      if (!q?.midiAnswer || q.sing || q.notate || done) return;
+      const id = q.midiAnswer(note);
+      if (id && q.choices.some((c) => c.id === id)) answer(id);
+    };
+  });
 
   // 键盘快捷键
   useEffect(() => {
@@ -282,7 +291,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  if (!cur || !q) return <>{intro?.(next)}</>;
+  if (!cur || !q) return intro ? <IntroSlot render={intro} start={next} /> : null;
 
   const accuracy = session.n ? Math.round((session.c / session.n) * 100) : null;
   const last = source.hasNext?.() === false;
@@ -310,8 +319,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
           )}
           {store.settings.midi && midiStatus.devices.length > 0 && !q.sing && (
             <span
-              className={q.midiAnswer ? 'midi-badge' : 'midi-badge off'}
-              title={`${joinList(midiStatus.devices)}${q.midiAnswer ? t('quiz.midiCan') : t('quiz.midiCannot')}`}
+              className={q.midiAnswer || q.notate ? 'midi-badge' : 'midi-badge off'}
+              title={`${joinList(midiStatus.devices)}${q.midiAnswer || q.notate ? t('quiz.midiCan') : t('quiz.midiCannot')}`}
             >
               {t('quiz.midiConnected')}
             </span>
@@ -352,6 +361,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
         />
       ) : q.tap ? (
         <TapPanel key={qid} question={q} onStep={(i, ok) => finishStep(q, i, ok)} done={done} />
+      ) : q.notate ? (
+        <NotatePanel key={qid} question={q} naming={store.settings.naming} onStep={(i, ok) => finishStep(q, i, ok)} done={done} />
       ) : (
         /* ───── 选项按钮 ───── */
         <div className={`choices n${Math.min(q.choices.length, 8)}`}>
