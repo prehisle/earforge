@@ -61,12 +61,16 @@ export const en: Record<MessageKey, string> = {
   'home.custom': 'Custom items',
   'home.levelMeta': 'Level {level}/{total} · {name}',
   'home.masteryTitle': 'Current level mastery: {pct}%',
+  'home.recommended': 'Start here',
   'home.foot':
-    'Start with Scale Degrees: it trains you to hear notes within a key, which helps most with playing by ear, improvising and sight-singing.',
+    'Practicing one exercise? Start with Scale Degrees: it trains you to hear notes within a key, which helps most with playing by ear, improvising and sight-singing.',
   'home.keys': 'Shortcuts: number keys to answer · Space to replay · Enter for next',
   'group.tonal': 'Hearing in a Key',
   'group.basics': 'Fundamentals',
   'group.sing': 'Singing',
+  'group.tonal.hint': 'A cadence sets the key, then you place notes or chords within it',
+  'group.basics.hint': 'Recognize intervals, chords, scales and rhythms on their own, without a key',
+  'group.sing.hint': 'Uses the microphone: sing and get live pitch feedback',
 
   // ───── practice / quiz ─────
   'practice.options': 'Options',
@@ -117,9 +121,12 @@ export const en: Record<MessageKey, string> = {
   'mix.weakest': 'Needs the most work',
   'mix.weakVal': 'This set {c}/{n} · mastery {pct}%',
   'mix.again': 'Another set',
+  'mix.tipLow': 'Lots of misses at first is normal. After each miss, listen to the correct answer: that helps more than doing extra questions. Items you miss will come up more often.',
+  'mix.tipHigh': 'Solid! Once every item in your current level is mastered, you move up a level automatically.',
 
   // ───── Practice sets ─────
   'group.plans': 'Exams & sets',
+  'group.plans.hint': 'Several exercises in one go: exam-style papers, or your own mix to share',
   'group.sets': 'Custom practice',
   'sets.title': '🧩 Practice sets',
   'sets.cardSub': 'Mix items and options from several exercises into your own set; save and share it',
@@ -350,7 +357,7 @@ export const en: Record<MessageKey, string> = {
   'onboard.suggestToday': "Today's Training",
   'onboard.suggest2': ' on the home page: it mixes several exercises and picks the items you most need to practice.',
   'onboard.prev': '← Back',
-  'onboard.finish': "Go to home · start today's training",
+  'onboard.finish': 'Go to home →',
   'onboard.skipStep': 'Skip for now, next',
   'onboard.next': 'Next →',
   'bg.beginner': 'Complete beginner',

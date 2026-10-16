@@ -89,8 +89,11 @@ button {
     border-color 0.12s,
     transform 0.06s;
 }
-button:hover:not(:disabled) {
-  border-color: var(--accent);
+/* 只在能悬停的设备上高亮：触屏点按后悬停态会「粘」在按钮上，看起来像被选中 */
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
 }
 button:active:not(:disabled) {
   transform: scale(0.97);
@@ -268,6 +271,8 @@ kbd {
 }
 .practice-title p {
   font-size: 0.85rem;
+  /* 窄屏折成两行时两行等长，不留一个孤字 */
+  text-wrap: balance;
 }
 
 /* ───── 统计块 ───── */
@@ -300,6 +305,11 @@ kbd {
   margin: 4px 0 8px;
   font-weight: 600;
 }
+/* 分组下的一句说明：解释「调性听觉」「基础」等分组名 */
+.group-hint {
+  font-size: 0.8rem;
+  margin: -6px 0 8px;
+}
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -311,6 +321,22 @@ kbd {
   text-align: left;
   padding: 14px;
   border-radius: var(--radius);
+}
+/* 新手：今日训练起步的模块角标 */
+.card.recommended {
+  position: relative;
+  border-color: var(--accent);
+}
+.card-badge {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  padding: 2px 10px;
+  border-radius: 0 var(--radius) 0 10px;
+  background: var(--accent-bg);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .card-icon {
   flex: none;
@@ -871,6 +897,13 @@ input[type='range'] {
   flex-direction: column;
   gap: 14px;
 }
+.summary-tip {
+  max-width: 34em;
+  margin-top: 6px;
+  font-size: 0.88rem;
+  text-align: center;
+  text-wrap: balance;
+}
 .summary-hero {
   display: flex;
   flex-direction: column;
@@ -946,8 +979,10 @@ input[type='range'] {
   border-color: var(--accent);
   background: transparent;
 }
-.weak-btn:hover:not(:disabled) {
-  background: var(--accent-soft);
+@media (hover: hover) {
+  .weak-btn:hover:not(:disabled) {
+    background: var(--accent-soft);
+  }
 }
 
 @media (max-width: 520px) {
@@ -3165,4 +3200,31 @@ html:has(.set-bar) {
 .grade-actions button {
   padding: 4px 10px;
   font-size: 0.85rem;
+}
+
+/* ───── 触屏（手机 / 平板） ───── */
+@media (pointer: coarse) {
+  /* 快捷键提示对触屏没用，只占地方：按钮里的键名、选项角标、说明卡片与首页的快捷键说明都隐藏 */
+  button kbd,
+  .module-tip-keys,
+  .keys-hint {
+    display: none;
+  }
+  /* 常用按钮的点按区域不小于 44px（曲库筛选区是有意做紧凑的，不在此列） */
+  .topbar button,
+  .play-row button,
+  .module-tip-close,
+  .seg button,
+  .chip {
+    min-height: 44px;
+  }
+  .topnav .help-btn,
+  .seg button {
+    min-width: 44px;
+  }
+  .songs-filter .seg button,
+  .songs-filter .chip {
+    min-height: 0;
+    min-width: 0;
+  }
 }

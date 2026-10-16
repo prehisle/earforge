@@ -103,6 +103,8 @@ export function SettingsPage({ store, update, onBack, onOnboard, onAbout }: Prop
             options={NAMING_SYSTEMS.map((n) => [n, namingLabel(n)])}
             onChange={(v) => set('naming', v)}
           />
+          {/* 首调 / 固定调等术语：给出当前选项的一句说明（与新手引导一致） */}
+          <p className="muted onboard-note">{t(`naming.${s.naming}.desc`)}</p>
         </div>
         <div className="field">
           <label>{t('settings.staff')}</label>

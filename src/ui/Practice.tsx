@@ -632,26 +632,28 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
         </section>
       )}
 
-      <ModuleTip ex={ex} store={store} update={update} />
-
       <Quiz
         key={round}
         store={store}
         update={update}
         source={source}
         intro={(start) => (
-          <section className="start">
-            <p>{ex.subtitle}</p>
-            <p className="muted">
-              {t('practice.introItems', {
-                label: temp ? t('practice.focusWeak') : t('practice.current'),
-                items: joinList(items.map((it) => ex.itemLabel(it, store.settings))),
-              })}
-            </p>
-            <button className="primary big" onClick={start}>
-              {t('practice.start')}
-            </button>
-          </section>
+          <>
+            {/* 玩法说明只放在开始页：开始答题后不再占屏，手机上题目与反馈不会被挤到首屏以外 */}
+            <ModuleTip ex={ex} store={store} update={update} />
+            <section className="start">
+              <p>{ex.subtitle}</p>
+              <p className="muted">
+                {t('practice.introItems', {
+                  label: temp ? t('practice.focusWeak') : t('practice.current'),
+                  items: joinList(items.map((it) => ex.itemLabel(it, store.settings))),
+                })}
+              </p>
+              <button className="primary big" onClick={start}>
+                {t('practice.start')}
+              </button>
+            </section>
+          </>
         )}
       />
     </main>
