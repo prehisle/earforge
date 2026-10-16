@@ -83,9 +83,9 @@ function started(p: ExerciseProgress | undefined): boolean {
   return !!p && Object.values(p.items).some((st) => st.n > 0);
 }
 
-/** 今日训练的候选模块：已开始过的（不含需要麦克风的）；不足两个时补上入门模块。 */
+/** 今日训练的候选模块：已开始过的（不含需要麦克风或手动输入的）；不足两个时补上入门模块。 */
 export function planModules(store: Store, exercises: ExerciseDef[]): ExerciseDef[] {
-  const pool = exercises.filter((ex) => !ex.mic);
+  const pool = exercises.filter((ex) => !ex.mic && !ex.manual);
   const mods = pool.filter((ex) => started(store.exercises[ex.id]));
   if (mods.length < 2) {
     for (const id of STARTER_IDS) {

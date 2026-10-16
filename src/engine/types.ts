@@ -37,6 +37,11 @@ export interface Question {
   midiAnswer?(midi: number): string | null;
   /** 唱歌题：目标 MIDI 与显示文字 */
   sing?: { targets: number[]; display: string[]; showDisplay: boolean };
+  /**
+   * 打节奏题：时值序列（单位同 Choice.rhythm）、速度、是否边看谱边打（否则先听 events 再凭记忆打）、
+   * 预备拍数。由 TapPanel 自行播放与判定，Quiz 不自动播放。
+   */
+  tap?: { durs: number[]; bpm: number; showNotation: boolean; countIn: number };
 }
 
 export interface Level {
@@ -101,4 +106,6 @@ export interface ExerciseDef {
   generate(item: string, ctx: GenContext): Question;
   /** 唱歌类练习需要麦克风 */
   mic?: boolean;
+  /** 需要手动输入（如打节奏），不进今日训练 */
+  manual?: boolean;
 }

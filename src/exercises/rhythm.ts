@@ -30,7 +30,7 @@ const hasRest = (u: string) => UNITS[u].durs.some((d) => d < 0);
 
 /** 一小节由两个「半小节」（各 2 拍）组成：一个 2 拍单元或两个 1 拍单元；全音符独占一小节。 */
 type Half = string[];
-type Bar = Half[];
+export type Bar = Half[];
 
 export const flatten = (bars: Bar[]): number[] => bars.flat(2).flatMap((u) => UNITS[u].durs);
 
@@ -78,7 +78,7 @@ function goodBar(bar: Bar): boolean {
 }
 
 /** 生成一小节；指定 target 时保证包含该单元。 */
-function makeBar(pool: string[], target?: string): Bar {
+export function makeBar(pool: string[], target?: string): Bar {
   if (target === 'w') return [['w']];
   const ones = pool.filter((u) => beats(u) === 1);
   let bar: Bar = [];
@@ -125,7 +125,7 @@ function mutate(bars: Bar[], pool: string[]): Bar[] {
   return out;
 }
 
-const describe = (bars: Bar[]) => bars.map((b) => b.flat().map((u) => UNITS[u].name).join(' · ')).join(' ｜ ');
+export const describe = (bars: Bar[]) => bars.map((b) => b.flat().map((u) => UNITS[u].name).join(' · ')).join(' ｜ ');
 
 /** 节奏型的音频：一小节预备拍，然后节奏型（木鱼）+ 轻声节拍器。durs 为时值序列（见 UNITS）。 */
 export function rhythmEvents(durs: number[], bpm: number): NoteEvent[] {
@@ -146,7 +146,7 @@ export function rhythmEvents(durs: number[], bpm: number): NoteEvent[] {
   return events.sort((a, b) => a.time - b.time);
 }
 
-const SPEED: Record<string, number> = { slow: 60, mid: 80, fast: 100 };
+export const SPEED: Record<string, number> = { slow: 60, mid: 80, fast: 100 };
 
 export const rhythm: ExerciseDef = {
   id: 'rhythm',
