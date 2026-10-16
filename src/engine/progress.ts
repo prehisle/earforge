@@ -2,7 +2,8 @@
 
 import type { ExerciseDef, Level, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
-import { detectLocale } from '../i18n';
+import { detectLocale, LOCALES } from '../i18n';
+import { NAMING_SYSTEMS } from '../music/theory';
 import { sanitizeExams, type ExamRecord } from './examHistory';
 
 export interface ItemStat {
@@ -56,9 +57,51 @@ const ALPHA = 0.3; // 新结果权重
 export const MASTERY_ACC = 0.85;
 export const MASTERY_N = 5;
 
-export function loadStore(): Store {
+/**
+ * 多标签页：存储是整份写入 localStorage 的（后写覆盖先写）。为了两个标签页同时练习不丢记录，
+ * 每个标签页记住自己最后一次读到或写入的原始字符串 syncedRaw；每次修改之前先比较 localStorage 里的，
+ * 不同说明其他标签页写过，就先重新读取、在最新数据上应用这次修改再写回（见 refreshStore 与 useStore）。
+ * 修改都是函数式的（update(fn)），所以只要「读最新 → 改 → 写」是同步完成的，就不会丢掉任何一方的作答。
+ */
+let syncedRaw: string | null = null;
+
+export const STORE_KEY = KEY;
+
+function readRaw(): string | null {
   try {
-    const raw = localStorage.getItem(KEY);
+    return localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function loadStore(): Store {
+  const raw = readRaw();
+  syncedRaw = raw;
+  return parseStore(raw);
+}
+
+/** 其他标签页写过存储时返回重新读取的数据（并记为已同步），否则返回 null（内存里的就是最新的）。 */
+export function refreshStore(): Store | null {
+  const raw = readRaw();
+  if (raw === null || raw === syncedRaw) return null;
+  syncedRaw = raw;
+  const s = parseStore(raw);
+  lastSaved = s;
+  return s;
+}
+
+/** 在最新数据（其他标签页写过则先重新读取）的副本上应用修改并保存，返回修改后的存储。 */
+export function updateStore(current: Store, fn: (s: Store) => void): Store {
+  const next = structuredClone(refreshStore() ?? current);
+  fn(next);
+  saveStore(next);
+  return next;
+}
+
+/** 解析存储的原始字符串；没有或损坏时返回全新用户的存储。 */
+export function parseStore(raw: string | null): Store {
+  try {
     if (raw) {
       const s = JSON.parse(raw) as Store;
       s.settings = mergeSettings(s.settings);
@@ -128,10 +171,26 @@ export function mergeSettings(raw: unknown, base: Settings = DEFAULT_SETTINGS): 
       if (Array.isArray(v)) o[k] = v.filter((x) => typeof x === 'string');
     } else if (typeof v === typeof d && (typeof v !== 'number' || Number.isFinite(v))) o[k] = v;
   }
-  // 词典只有 zh / en：其他取值会让翻译函数取不到词典而报错
-  if (out.lang !== 'en' && out.lang !== 'zh') out.lang = base.lang;
+  // 枚举字段只接受已知取值（导入的备份可能来自更新的版本或被手改过）；其他取值回到 base 的值。
+  // 如词典只有 zh / en：其他语言会让翻译函数取不到词典而报错
+  for (const [k, allowed] of Object.entries(SETTING_ENUMS) as [keyof typeof SETTING_ENUMS, readonly string[]][])
+    if (!allowed.includes(out[k])) o[k] = base[k];
+  // 数值字段限定范围：音量 0..1，每日目标与每组题数为正整数（过大的数会让今日训练卡住）
+  if (out.volume < 0 || out.volume > 1) out.volume = base.volume;
+  if (!Number.isInteger(out.dailyGoal) || out.dailyGoal < 1 || out.dailyGoal > 1000) out.dailyGoal = base.dailyGoal;
+  if (!Number.isInteger(out.mixSize) || out.mixSize < 1 || out.mixSize > 200) out.mixSize = base.mixSize;
   return out;
 }
+
+/** 枚举类设置的合法取值 */
+export const SETTING_ENUMS = {
+  lang: LOCALES,
+  naming: NAMING_SYSTEMS,
+  timbre: ['piano', 'epiano', 'sine', 'sampled'],
+  keyMode: ['C', 'random'],
+  voice: ['low', 'high'],
+  notation: ['jianpu', 'staff', 'both'],
+} as const satisfies { [K in keyof Settings]?: readonly Settings[K][] };
 
 /** 规范化各练习的进度（读取本地数据与导入备份时用）：补全缺失的字段，丢弃格式不对的条目，避免出题与统计时报错。 */
 export function sanitizeExercises(raw: unknown): Record<string, ExerciseProgress> {
@@ -200,7 +259,9 @@ export function saveStore(s: Store): boolean {
   lastSaved = s;
   let ok = true;
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    const raw = JSON.stringify(s);
+    localStorage.setItem(KEY, raw);
+    syncedRaw = raw;
   } catch {
     ok = false;
   }
