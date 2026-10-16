@@ -1,6 +1,7 @@
 import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
-import { INTERVALS, INTERVAL_SONGS, noteName, pick, randInt } from '../music/theory';
+import { intervalNumber, pitchName, spellStack } from '../music/notation';
+import { INTERVALS, INTERVAL_SONGS, pick, randInt } from '../music/theory';
 
 const byId = Object.fromEntries(INTERVALS.map((i) => [i.id, i]));
 
@@ -37,7 +38,7 @@ export const intervals: ExerciseDef = {
     const dir = ctx.options.dir === 'mix' ? pick(['up', 'down', 'harm']) : ctx.options.dir;
     const low = randInt(52, 72 - iv.semitones);
     const high = low + iv.semitones;
-    const [a, b] = dir === 'down' ? [high, low] : [low, high];
+    const a = dir === 'down' ? high : low;
     // 从第一个音 a 出发、同一方向上的音程（和声音程 a 为低音）
     const sign = dir === 'down' ? -1 : 1;
     const build = (semitones: number): NoteEvent[] => {
@@ -50,6 +51,9 @@ export const intervals: ExerciseDef = {
           ];
     };
     const events = build(iv.semitones);
+    // 记谱：上方音的字母按度数从低音数起（三全音记作增四度）
+    const [pl, ph] = spellStack([low, high], [0, intervalNumber(item) - 1]);
+    const [pa, pb] = dir === 'down' ? [ph, pl] : [pl, ph];
     const song = INTERVAL_SONGS[item];
     const dirLabel = dir === 'up' ? '上行' : dir === 'down' ? '下行' : '和声';
     return {
@@ -61,7 +65,8 @@ export const intervals: ExerciseDef = {
       // 弹出第二个音：按它相对第一个音的方向与半音数作答（和声音程弹上方的音）；弹第一个音本身不算作答
       midiAnswer: (m) => ctx.items.find((id) => byId[id].semitones > 0 && byId[id].semitones === sign * (m - a)) ?? null,
       prompt: `这是什么音程？（${dirLabel}）`,
-      explain: `${noteName(a)} → ${noteName(b)}，${iv.semitones} 个半音${song ? `。记忆：${song}` : ''}`,
+      score: { notes: dir === 'harm' ? [[pl, ph]] : [[pa], [pb]], fifths: 0 },
+      explain: `${pitchName(pa)} → ${pitchName(pb)}，${iv.semitones} 个半音${song ? `。记忆：${song}` : ''}`,
     };
   },
 };

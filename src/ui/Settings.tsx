@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { audio, type Timbre } from '../audio/engine';
 import { SAMPLE_SIZE_MB } from '../audio/sampler';
 import type { Store } from '../engine/progress';
-import { DEFAULT_SETTINGS, type Settings } from '../engine/types';
+import { DEFAULT_SETTINGS, type Notation, type Settings } from '../engine/types';
 import { NAMING_LABELS, type NamingSystem } from '../music/theory';
 import { SamplerStatus } from './SamplerStatus';
 import { MidiSection } from './MidiSection';
@@ -79,6 +79,18 @@ export function SettingsPage({ store, update, onBack }: Props) {
             value={s.naming}
             options={Object.entries(NAMING_LABELS) as [NamingSystem, string][]}
             onChange={(v) => set('naming', v)}
+          />
+        </div>
+        <div className="field">
+          <label>五线谱</label>
+          <Seg<Notation>
+            value={s.notation}
+            options={[
+              ['both', '唱名 + 五线谱（答完后显示谱）'],
+              ['staff', '五线谱为主（视唱只看谱）'],
+              ['jianpu', '只用唱名 / 简谱'],
+            ]}
+            onChange={(v) => set('notation', v)}
           />
         </div>
         <div className="field">

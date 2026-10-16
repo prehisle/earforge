@@ -1,6 +1,7 @@
 import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
-import { CHORDS, chordNotes, noteName, pitchClassName, randInt, type ChordDef } from '../music/theory';
+import { chordLetterSteps, pitchName, spellStack } from '../music/notation';
+import { CHORDS, chordNotes, randInt, type ChordDef } from '../music/theory';
 
 const byId = Object.fromEntries(CHORDS.map((c) => [c.id, c]));
 
@@ -54,7 +55,9 @@ export const chords: ExerciseDef = {
           ? [...arp.slice(0, -1), { ...arp[arp.length - 1], dur: 1.2 }]
           : [...arp, { notes, time: arpEnd, dur: 1.8 }];
     };
-    const notes = chordNotes(root, c, inv);
+    // 记谱：原位按三度叠置拼写（取变音较少的写法），再按转位把低音移高八度
+    const spelled = spellStack(chordNotes(root, c), chordLetterSteps(c.intervals));
+    const voiced = [...spelled.slice(inv), ...spelled.slice(0, inv).map((p) => ({ ...p, midi: p.midi + 12 }))];
     const events = build(c);
     return {
       item,
@@ -63,7 +66,8 @@ export const chords: ExerciseDef = {
       answer: [item],
       choiceEvents: (id) => build(byId[id]),
       prompt: '这是什么和弦？',
-      explain: `${pitchClassName(root)}${c.symbol}：${notes.map((n) => noteName(n)).join(' ')}`,
+      score: { notes: [voiced], fifths: 0 },
+      explain: `${pitchName(spelled[0], false)}${c.symbol}：${voiced.map((p) => pitchName(p)).join(' ')}`,
     };
   },
 };

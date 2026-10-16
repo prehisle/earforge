@@ -1,4 +1,5 @@
 import type { Choice, ExerciseDef, Level, Settings } from '../engine/types';
+import { keyScore } from '../music/notation';
 import { DEGREES, keyName, mod, nameInSystem, randInt, type ModeDef, type ModeId } from '../music/theory';
 import {
   MODE_OPTION,
@@ -11,6 +12,7 @@ import {
   modeOf,
   noteWithResolution,
   resolutionEvents,
+  resolutionPath,
 } from './common';
 
 /** 考点 id 'd4' / 'minor:d3' → 相对主音的半音数。 */
@@ -104,6 +106,8 @@ export const degrees: ExerciseDef = {
         tonic,
       ),
       prompt: `${keyName(tonicPc, mode)} ${mode.label} · 这个音是哪一级？`,
+      // 五线谱：题目音（高亮）及其解决到 do 的路径
+      score: { ...keyScore(resolutionPath(note, tonic, mode).map((n) => [n]), tonicPc, mode, true), marks: ['cur'] },
       explain: `${DEGREES[semi(item)].movableDo}（${DEGREES[semi(item)].jianpu}）— 听它如何解决到 do`,
     };
   },

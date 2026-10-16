@@ -1,4 +1,5 @@
 import type { ExerciseDef, Level } from '../engine/types';
+import { keyScore } from '../music/notation';
 import { DEGREES, keyName, mod, type ModeDef } from '../music/theory';
 import {
   MODE_OPTION,
@@ -95,6 +96,12 @@ export const dictation: ExerciseDef = {
       choices: degreeChoices(items, ctx.settings, tonicPc),
       answer,
       stepItems: answer,
+      score: keyScore(
+        mel.map((d) => [tonic + d]),
+        tonicPc,
+        mode,
+        true,
+      ),
       prompt: `${keyName(tonicPc, mode)} ${mode.label} · 依次写出 ${mel.length} 个音（第一个是 do）`,
       explain: mel.map((d) => DEGREES[d].movableDo).join(' '),
     };

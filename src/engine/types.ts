@@ -1,4 +1,5 @@
 import type { NoteEvent, Timbre } from '../audio/engine';
+import type { Score } from '../music/notation';
 import type { NamingSystem } from '../music/theory';
 
 export interface Choice {
@@ -42,6 +43,8 @@ export interface Question {
    * 预备拍数。由 TapPanel 自行播放与判定，Quiz 不自动播放。
    */
   tap?: { durs: number[]; bpm: number; showNotation: boolean; countIn: number };
+  /** 五线谱：本题的音（已拼写），答完后显示在反馈区；视唱题按设置在作答时显示 */
+  score?: Score;
 }
 
 export interface Level {
@@ -71,7 +74,11 @@ export interface Settings {
   mixSize: number;
   /** MIDI 键盘作答 */
   midi: boolean;
+  /** 记谱：jianpu 只用唱名/简谱；staff 视唱只看五线谱；both 两者都显示（答完后都附五线谱） */
+  notation: Notation;
 }
+
+export type Notation = 'jianpu' | 'staff' | 'both';
 
 export const DEFAULT_SETTINGS: Settings = {
   naming: 'movable',
@@ -83,6 +90,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyGoal: 30,
   mixSize: 20,
   midi: false,
+  notation: 'both',
 };
 
 export interface GenContext {
