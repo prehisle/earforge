@@ -185,9 +185,12 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
               className="danger"
               onClick={() => {
                 if (confirm(t('settings.clearConfirm')))
+                  // 「全部练习记录」：曲库跟唱成绩与考试历史也一并清空（原来会留在首页与曲库里）
                   update((st) => {
                     st.exercises = {};
                     st.daily = {};
+                    st.songs = {};
+                    st.exams = [];
                   });
               }}
             >
@@ -199,7 +202,12 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
             type="file"
             accept="application/json"
             hidden
-            onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              // 清空选择：再次选同一个文件也会触发 change
+              e.target.value = '';
+              if (f) void importData(f);
+            }}
           />
         </div>
       </section>
