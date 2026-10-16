@@ -1,10 +1,10 @@
-// axe-core 无障碍审计：中英 × 明暗 × 主要页面（新手引导、首页、练习出题 / 答完、今日训练、统计、设置、曲库、曲目练习）。
+// axe-core 无障碍审计：中英 × 明暗 × 主要页面（新手引导、首页、练习出题 / 答完（含和弦转位、音阶与调式、复音程）、今日训练、统计、设置、曲库、曲目练习）。
 // 任何违规都算失败；明细写到 axe.json / summary.txt。原 axe.mjs
 // E2E_AXE_IMPACT=serious 可只对 serious / critical 级别判失败（其余照样记录）。
 import { writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { run, sleep } from '../lib/harness.mjs';
+import { answerQuestion, run, sleep } from '../lib/harness.mjs';
 
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 const LEVELS = ['minor', 'moderate', 'serious', 'critical'];
@@ -20,8 +20,8 @@ await run(async (t) => {
       const page = await t.open({ target: ctx, lang: lang === 'zh' ? 'zh-CN' : 'en-US', dark, onboarding: 'keep', tag });
       const T =
         lang === 'zh'
-          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级' }
-          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees' };
+          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别' }
+          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals' };
       // 按文字或 aria-label 匹配
       const click = async (text, sel = 'button') => {
         for (const el of await page.$$(sel)) {
@@ -64,6 +64,37 @@ await run(async (t) => {
       }
       await page.waitForSelector('.feedback');
       await audit('practice-answered');
+      await click(T.back);
+      await sleep(200);
+      // 新练习：和弦转位、音阶与调式（出题与答完各审计一次）
+      for (const [id, title] of [
+        ['inversions', T.inversions],
+        ['scales', T.scales],
+      ]) {
+        await click(title, '.card');
+        await sleep(200);
+        await click(T.start);
+        await page.waitForSelector('.choice');
+        await audit(`${id}-question`);
+        await answerQuestion(page, false);
+        await audit(`${id}-answered`);
+        await click(T.back);
+        await sleep(200);
+      }
+      // 复音程：预置「只练复音程」后重新加载
+      await page.evaluate(() => {
+        const s = JSON.parse(localStorage.getItem('earforge:v1'));
+        s.exercises.intervals = { level: 11, custom: ['m9', 'M10', 'P11', 'P12', 'M13', 'm14', 'P15'], items: {}, options: { dir: 'harm' } };
+        localStorage.setItem('earforge:v1', JSON.stringify(s));
+      });
+      await page.reload({ waitUntil: 'networkidle0' });
+      await click(T.intervals, '.card');
+      await sleep(200);
+      await click(T.start);
+      await page.waitForSelector('.choice');
+      await audit('compound-question');
+      await answerQuestion(page, true);
+      await audit('compound-answered');
       await click(T.back);
       await sleep(200);
       await page.click('button.primary.big');
