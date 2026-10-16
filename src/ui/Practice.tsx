@@ -97,6 +97,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const nextRef = useRef<() => void>(() => {});
   const timer = useRef<number | undefined>(undefined);
   const holdNext = useRef(false); // 答完后点了试听：取消本题的自动跳题
+  const recorded = useRef(''); // 已记录的「题号:步骤」：同一任务里连到的两次作答（如 MIDI 和弦）只记一次
   const turn = useRef(0); // 每出一题（或卸载）加一：等待播放解决和弦期间已换题时不再安排自动跳题
   const midiStatus = useMidiStatus();
   const latest = useRef({ source, onResult, onComplete });
@@ -155,6 +156,9 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   /** 某一步作答完成（firstTry 表示首次即答对）。 */
   const finishStep = (question: Question, idx: number, firstTry: boolean) => {
     if (!cur) return;
+    const key = `${qid}:${idx}`;
+    if (recorded.current === key) return;
+    recorded.current = key;
     const { ex } = cur;
     const results = [...stepResults, firstTry];
     setStepResults(results);
