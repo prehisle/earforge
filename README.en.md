@@ -13,6 +13,9 @@ A free, open-source ear-training web app that works offline. The interface is av
 - **Modes**: major, natural minor, harmonic minor, Dorian and Mixolydian, each with its own progress.
 - **Sing it**: built-in YIN pitch detection for sight-singing and echo singing with a live tuner. Octaves are ignored, so it works for any voice.
 - **Note names your way**: movable do (do re mi), scale degrees (1 2 3, as in numbered notation / jianpu), fixed do, or letter names (C D E). Optional staff notation.
+- **Sight-singing library**: 48 graded pieces (original drills plus public-domain folk and classical melodies) on a real staff with rhythm, transposed to your range. Sing along with a metronome and get note-by-note pitch scoring.
+- **Trends**: accuracy over time, daily volume, a practice calendar and per-exercise sparklines.
+- **Guided start**: a short first-run setup picks starting levels from your background, and each exercise shows a quick how-to the first time.
 - **Compare when wrong**: a wrong answer plays what you chose. After answering, every option can be auditioned, and you can switch between "your answer" and "correct answer" with one click.
 - **MIDI keyboard input**: play your answers on a MIDI keyboard (scale degrees, melodic dictation, intervals).
 - **No sign-up**: data stays in your browser and can be exported or imported. Installable as a PWA.
