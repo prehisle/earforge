@@ -155,9 +155,10 @@ export function TapPanel({ question, onStep, done }: Props) {
   const start = async () => {
     stopLoop();
     const run = ++st.current.run;
-    const ctx = audio.context;
-    if (ctx.state !== 'running') await ctx.resume();
+    // 用引擎的 resume：iOS 切回前台后 ctx.resume() 可能一直不返回（或被拒绝），这里最多等一会儿
+    await audio.resume();
     if (run !== st.current.run) return;
+    const ctx = audio.context;
     const listen = !tap.showNotation;
     const demo = listen ? question.events : [];
     const lead = listen ? (tap.countIn * beat + total) : 0; // 示范结束后紧接着预备拍
