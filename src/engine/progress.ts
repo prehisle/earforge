@@ -115,8 +115,46 @@ export function hasProgress(s: Store): boolean {
   return Object.keys(s.daily).length > 0 || Object.values(s.exercises).some((p) => Object.keys(p.items ?? {}).length > 0);
 }
 
-export function saveStore(s: Store): void {
-  localStorage.setItem(KEY, JSON.stringify(s));
+// 最近一次要保存的数据：写入 localStorage 失败（空间已满、隐私模式）时仍可从内存导出备份
+let lastSaved: Store | null = null;
+let saveOk = true;
+const saveListeners = new Set<(ok: boolean) => void>();
+
+/** 持久化；写入失败不抛错（应用照常运行，只是关闭页面后不保留），返回是否写入成功。 */
+export function saveStore(s: Store): boolean {
+  lastSaved = s;
+  let ok = true;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    ok = false;
+  }
+  if (ok !== saveOk) {
+    saveOk = ok;
+    for (const fn of saveListeners) fn(ok);
+  }
+  return ok;
+}
+
+/** 最近一次保存是否成功。 */
+export function storageOk(): boolean {
+  return saveOk;
+}
+
+/** 订阅保存状态的变化（成功 ↔ 失败），返回取消订阅函数。 */
+export function onStorageStatus(fn: (ok: boolean) => void): () => void {
+  saveListeners.add(fn);
+  return () => saveListeners.delete(fn);
+}
+
+/** 用于导出备份的数据：优先用内存里最新的，其次 localStorage 里的原始数据。 */
+export function backupJson(): string | null {
+  if (lastSaved) return JSON.stringify(lastSaved, null, 2);
+  try {
+    return localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
 }
 
 /** 取进度并规范化：补全/修正选项（未知取值回到默认），级别不越界，自选考点只保留当前级别表中的。 */

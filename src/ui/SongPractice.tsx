@@ -7,7 +7,7 @@ import { useLocale, useT } from '../i18n/react';
 import type { Mark } from '../music/notation';
 import { keyLabel } from '../music/theory';
 import { beatLength } from '../songs/format';
-import type { SongDef } from '../songs/library';
+import { songById, type SongDef } from '../songs/library';
 import {
   accompanimentEvents,
   countIn,
@@ -45,6 +45,12 @@ const CLARITY = 0.85;
 
 type Phase = 'idle' | 'prep' | 'hint' | 'count' | 'sing' | 'result';
 type Mode = 'sing' | 'practice';
+
+/** 按曲目 id 打开（App 按需加载本模块时用）；id 不在曲库里则不渲染。 */
+export function SongPracticeById({ id, ...rest }: Omit<Props, 'song'> & { id: string }) {
+  const song = songById[id];
+  return song ? <SongPractice key={id} song={song} {...rest} /> : null;
+}
 
 export function SongPractice({ song, store, update, onBack }: Props) {
   const t = useT();

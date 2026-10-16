@@ -13,7 +13,7 @@ export function Seg<T extends string>({
   return (
     <div className="seg wrap">
       {options.map(([v, label]) => (
-        <button key={v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
+        <button key={v} className={value === v ? 'on' : ''} aria-pressed={value === v} onClick={() => onChange(v)}>
           {label}
         </button>
       ))}
@@ -31,7 +31,7 @@ export function LangSwitch({ value, onChange }: { value: Locale; onChange(v: Loc
   return (
     <div className="seg wrap lang-switch">
       {LANG_NAMES.map(([v, label, tag]) => (
-        <button key={v} lang={tag} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
+        <button key={v} lang={tag} className={value === v ? 'on' : ''} aria-pressed={value === v} onClick={() => onChange(v)}>
           {label}
         </button>
       ))}

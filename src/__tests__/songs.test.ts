@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadStore } from '../engine/progress';
 import { barLength, beatLength, parseMelody } from '../songs/format';
+import { SONG_COUNT } from '../songs/count';
 import { SONGS, songById } from '../songs/library';
 import {
   MAX_SPAN,
@@ -11,6 +12,7 @@ import {
   melodyOf,
   noteTimes,
   placeSong,
+  fitsTreble8vb,
   randomKey,
   realize,
   songClicks,
@@ -51,6 +53,7 @@ describe('旋律记法', () => {
 describe('曲库数据', () => {
   it('至少 40 首，id 不重复，每级都有', () => {
     expect(SONGS.length).toBeGreaterThanOrEqual(40);
+    expect(SONG_COUNT).toBe(SONGS.length); // 首页入口卡片用的曲目数
     expect(new Set(SONGS.map((s) => s.id)).size).toBe(SONGS.length);
     for (const lv of [1, 2, 3, 4, 5]) expect(SONGS.filter((s) => s.level === lv).length).toBeGreaterThanOrEqual(5);
     expect(songById['twinkle'].title.zh).toBe('小星星');
@@ -150,6 +153,29 @@ describe('移调与记谱', () => {
     expect(sc.meter).toEqual([4, 4]);
     expect(sc.pickup).toBe(1);
     expect(sc.lyrics!.slice(0, 3)).toEqual(['1', '2', '3']);
+  });
+
+  it('低声部用八度高音谱号（实际音高不变），高声部不用', () => {
+    const r = realize(songById['twinkle'], 7, 'low'); // G 大调低声部
+    const sc = songScore(r, 'movable', 'low');
+    expect(sc.clef).toBe('treble8vb');
+    // 记的是实际音高（不做显示移位）
+    expect(sc.notes.flat().map((p) => p.midi)).toEqual(r.midis.filter((m) => m !== null));
+    expect(Math.min(...r.midis.filter((m): m is number => m !== null))).toBeLessThan(60);
+    const hi = songScore(realize(songById['twinkle'], 0, 'high'), 'movable', 'high');
+    expect(hi.clef).toBeUndefined();
+    let fit = 0;
+    let total = 0;
+    const miss: string[] = [];
+    for (const s of SONGS)
+      for (const k of fittingKeys(s, 'low')) {
+        total++;
+        if (fitsTreble8vb(realize(s, k, 'low').midis.filter((m): m is number => m !== null))) fit++;
+        else miss.push(`${s.id}@${k}`);
+      }
+    // 曲库里每首歌在低声部的每个合适的调上都能用八度高音谱号
+    expect(miss).toEqual([]);
+    expect(fit).toBe(total);
   });
 
   it('休止为空音组与空歌词', () => {

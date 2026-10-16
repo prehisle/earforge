@@ -143,7 +143,10 @@ export function MeasuredStaff({ score, marks, scale, width, current, autoScroll 
 }
 
 function engrave(score: Score, mk: Mark[], cssW: number, k: number, current: number | undefined, curIdx: number) {
-  const { notes, fifths, meter = [4, 4], pickup = 0, lyrics = [] } = score;
+  const { fifths, meter = [4, 4], pickup = 0, lyrics = [] } = score;
+  // 八度高音谱号：按记谱位置（高八度）排版，谱号下方标 8
+  const tr8 = score.clef === 'treble8vb';
+  const notes = tr8 ? score.notes.map((g) => g.map((p) => ({ ...p, midi: p.midi + 12 }))) : score.notes;
   const durs = notes.map((_, i) => score.durs?.[i] ?? 1);
   const measures = splitMeasures(
     durs,
@@ -152,7 +155,7 @@ function engrave(score: Score, mk: Mark[], cssW: number, k: number, current: num
     pickup,
   );
   const accs = measureAccidentals(measures, notes, fifths);
-  const clef = chooseClef(notes.flat().map(pitchStep));
+  const clef = tr8 ? 'treble' : chooseClef(notes.flat().map(pitchStep));
   const staves: StaffClef[] = clef === 'grand' ? ['treble', 'bass'] : [clef];
   const partOf = (p: Pitch): StaffClef => (clef === 'grand' ? (pitchStep(p) >= 28 ? 'treble' : 'bass') : clef);
   const mid = (st: StaffClef) => TOP_LINE[st] - 4;
@@ -556,6 +559,12 @@ function engrave(score: Score, mk: Mark[], cssW: number, k: number, current: num
       head.push(
         st === 'treble' ? <TrebleClef key={`c${st}`} x={clefX} gy={top + 3 * SP} /> : <BassClef key={`c${st}`} x={clefX - 2} fy={top + SP} />,
       );
+      if (tr8 && st === 'treble')
+        head.push(
+          <text key="c8" className="staff-clef8" x={clefX - 1} y={top + 3 * SP + 37} textAnchor="middle" fontSize={10} fontWeight={700}>
+            8
+          </text>,
+        );
       keySignatureSteps(fifths, st).forEach((s, i) =>
         head.push(<Accidental key={`k${st}${i}`} alt={fifths > 0 ? 1 : -1} x={keyX + i * 9} y={yOf(st, s)} />),
       );
@@ -623,7 +632,8 @@ function engrave(score: Score, mk: Mark[], cssW: number, k: number, current: num
   const vbW = cssW / k;
   const vbX = clef === 'grand' ? -8 : 0;
   const h = y + 6;
-  const label = notes.map((g) => (g.length ? g.map((p) => pitchName(p)).join('+') : '-')).join(' ');
+  // 读屏标签用实际音高
+  const label = score.notes.map((g) => (g.length ? g.map((p) => pitchName(p)).join('+') : '-')).join(' ');
   const curSys = curIdx >= 0 ? all.find((p) => p.it.src === curIdx)?.sys : undefined;
   return (
     <svg

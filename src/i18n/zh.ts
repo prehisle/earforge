@@ -13,6 +13,14 @@ export const zh = {
   'app.title': 'EarForge 耳锻 · 开源练耳',
   'app.brand': 'EarForge 耳锻',
   'app.tagline': '开源 · 免费 · 离线可用的练耳训练',
+  'app.loading': '加载中…',
+  'app.storageFail': '无法保存练习记录（浏览器存储已满或处于隐私模式）。本次练习照常进行，关闭页面前请在设置里导出备份。',
+  'app.storageDismiss': '知道了',
+  'app.crashTitle': '页面出错了',
+  'app.crashBody': '界面遇到了意外错误。你的练习记录保存在本机，不会丢失；可以先导出一份备份，再重新加载。',
+  'app.crashReload': '重新加载',
+  'app.crashExport': '导出备份',
+  'app.crashOffline': '这个页面还没有缓存到本机，可能是离线了。联网后重新加载即可。',
   'lang.label': '语言 / Language',
 
   // ───── 首页 ─────

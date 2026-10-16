@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PitchListener } from '../audio/pitch';
 import type { Notation, Question } from '../engine/types';
 import { mod, noteName, type NamingSystem } from '../music/theory';
@@ -35,11 +35,13 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
 
   const state = useRef({ idx: 0, okSince: 0, badSince: 0, failed: false, finished: false });
   const props = useRef({ listenAfter, onStep });
-  props.current = { listenAfter, onStep };
+  // 回调里读最新 props：提交后同步，避免在渲染期间写 ref
+  useLayoutEffect(() => {
+    props.current = { listenAfter, onStep };
+  });
   const listener = useRef<PitchListener | null>(null);
 
   const start = async (cancelled: () => boolean = () => false) => {
-    setMicError(null);
     const l = new PitchListener();
     try {
       await l.start((p) => {
@@ -116,8 +118,9 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
 
   useEffect(() => {
     // 自动尝试开启（若已授权则无感）
+    // 放到微任务里启动：不在 effect 中同步 setState；StrictMode 的首次挂载被取消时也不会白白请求麦克风
     let cancelled = false;
-    void start(() => cancelled);
+    void Promise.resolve().then(() => (cancelled ? undefined : start(() => cancelled)));
     return () => {
       cancelled = true;
       listener.current?.stop();
@@ -151,7 +154,13 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
       {micError && <p className="error">{micError}</p>}
       {!running && !micError && <p className="muted">{t('sing.requesting')}</p>}
       {!running && micError && (
-        <button className="primary" onClick={() => start()}>
+        <button
+          className="primary"
+          onClick={() => {
+            setMicError(null);
+            void start();
+          }}
+        >
           {t('sing.enableMic')}
         </button>
       )}

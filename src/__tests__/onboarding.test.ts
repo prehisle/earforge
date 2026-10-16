@@ -7,7 +7,18 @@ import {
   totalAnswered,
   type Background,
 } from '../engine/onboarding';
-import { activeItems, getProgress, hasProgress, levelsOf, loadStore, saveStore, type Store } from '../engine/progress';
+import {
+  activeItems,
+  backupJson,
+  getProgress,
+  hasProgress,
+  levelsOf,
+  loadStore,
+  onStorageStatus,
+  saveStore,
+  storageOk,
+  type Store,
+} from '../engine/progress';
 import { DEFAULT_SETTINGS } from '../engine/types';
 import { EXERCISES, exerciseById } from '../exercises';
 
@@ -139,6 +150,26 @@ describe('老用户识别', () => {
       const t = loadStore();
       expect(t.settings.onboarded).toBe(true);
       expect(t.exercises.degrees.level).toBe(1);
+    });
+
+    it('写入失败（空间已满/隐私模式）不抛错，通知订阅者，仍可从内存导出', () => {
+      const s = loadStore();
+      s.settings.volume = 0.42;
+      const seen: boolean[] = [];
+      const off = onStorageStatus((ok) => seen.push(ok));
+      vi.stubGlobal('localStorage', {
+        getItem: () => null,
+        setItem: () => {
+          throw new DOMException('quota', 'QuotaExceededError');
+        },
+      });
+      expect(saveStore(s)).toBe(false);
+      expect(storageOk()).toBe(false);
+      expect(JSON.parse(backupJson()!).settings.volume).toBe(0.42);
+      vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+      expect(saveStore(s)).toBe(true);
+      expect(seen).toEqual([false, true]);
+      off();
     });
   });
 });

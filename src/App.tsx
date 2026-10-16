@@ -4,14 +4,9 @@ import { ExamPage } from './ui/Exam';
 import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
-import { Onboarding } from './ui/Onboarding';
 import { Practice } from './ui/Practice';
-import { SettingsPage } from './ui/Settings';
-import { SongLibrary } from './ui/SongLibrary';
-import { SongPractice } from './ui/SongPractice';
-import { songById } from './songs/library';
+import { Onboarding, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
 import { useMidiInput } from './ui/useMidi';
-import { StatsPage } from './ui/Stats';
 import { useStore } from './ui/useStore';
 
 type Route =
@@ -97,10 +92,10 @@ export default function App() {
             }}
           />
         )}
-        {route.page === 'song' && songById[route.id] && (
+        {route.page === 'song' && (
           <SongPractice
             key={route.id}
-            song={songById[route.id]}
+            id={route.id}
             store={store}
             update={update}
             onBack={() => setRoute({ page: 'songs' })}

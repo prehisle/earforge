@@ -24,8 +24,33 @@ export interface NoteEvent {
   accent?: boolean;
 }
 
+/** 页面从后台回到前台时回调（移动端切后台会挂起 AudioContext）。 */
+export function watchVisibility(fn: () => void): () => void {
+  if (typeof document === 'undefined') return () => {};
+  const h = () => {
+    if (document.visibilityState === 'visible') fn();
+  };
+  document.addEventListener('visibilitychange', h);
+  window.addEventListener('pageshow', h);
+  return () => {
+    document.removeEventListener('visibilitychange', h);
+    window.removeEventListener('pageshow', h);
+  };
+}
+
+/** 下一次触摸/点击/按键时回调一次（iOS 只允许在用户手势里恢复音频）。 */
+function resumeOnNextGesture(fn: () => void): void {
+  const events = ['pointerdown', 'keydown', 'touchend'] as const;
+  const h = () => {
+    for (const e of events) window.removeEventListener(e, h, true);
+    fn();
+  };
+  for (const e of events) window.addEventListener(e, h, { capture: true, passive: true });
+}
+
 class AudioEngine {
   private ctx: AudioContext | null = null;
+  private gestureWait = false;
   private master: GainNode | null = null;
   private active = new Set<AudioScheduledSourceNode>();
   timbre: Timbre = 'piano';
@@ -36,7 +61,10 @@ class AudioEngine {
   private listeners = new Set<(s: SamplerStatus) => void>();
 
   get context(): AudioContext {
-    if (!this.ctx) {
+    // 'closed'：个别移动浏览器长时间切到后台后会关闭上下文，重建一个（已解码的采样可跨上下文使用）
+    if (!this.ctx || this.ctx.state === 'closed') {
+      if (!this.ctx) watchVisibility(() => this.wake());
+      this.active.clear();
       this.ctx = new AudioContext({ latencyHint: 'interactive' });
       const comp = this.ctx.createDynamicsCompressor();
       comp.threshold.value = -18;
@@ -50,7 +78,23 @@ class AudioEngine {
 
   async resume(): Promise<void> {
     const ctx = this.context;
-    if (ctx.state !== 'running') await ctx.resume();
+    if (ctx.state === 'running') return;
+    // iOS Safari 切回前台后上下文可能处于 'interrupted'，不在用户手势里 resume() 可能一直不返回：
+    // 最多等一会儿就继续（声音会在上下文恢复后发出），不让播放调用卡住
+    await Promise.race([ctx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 600))]);
+  }
+
+  /** 页面回到前台：尝试恢复被系统挂起的上下文；不成功则等下一次触摸/按键（用户手势）再恢复。 */
+  private wake(): void {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state === 'running' || ctx.state === 'closed') return;
+    ctx.resume().catch(() => {});
+    if (this.gestureWait) return;
+    this.gestureWait = true;
+    resumeOnNextGesture(() => {
+      this.gestureWait = false;
+      if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') void this.ctx.resume().catch(() => {});
+    });
   }
 
   setVolume(v: number): void {
