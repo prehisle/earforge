@@ -3,6 +3,11 @@
 本项目的重要变更都记录在这里。格式参照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。条目用中文书写，分类标题用英文。
 
+## [Unreleased]
+
+### Added
+- 新练习「和声听写」：终止式后听一段四部和声进行（4 或 6 个和弦，第一个是主和弦），逐个写出级数与转位；6 级，从 Ⅰ Ⅳ Ⅴ 到六和弦、属七及其转位、终止四六、ⅱ⁷、ⅶ°⁶ 与副属和弦 Ⅴ/Ⅴ；大调与小调。进行按功能和声文法生成，声部就近进行、没有平行五八度，答完后附五线谱。
+
 ## [0.7.0] - 未发布 (Unreleased)
 
 ### Added
@@ -92,7 +97,8 @@
 - Web Audio 合成钢琴音色；YIN 实时音高检测。
 - 首调唱名、简谱、固定调唱名、字母音名四种显示方式；深色模式；PWA 离线可用。
 
-[0.7.0]: https://github.com/<your-username>/earforge/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/<your-username>/earforge/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/<your-username>/earforge/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/<your-username>/earforge/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/<your-username>/earforge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/<your-username>/earforge/compare/v0.3.0...v0.4.0

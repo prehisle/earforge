@@ -84,6 +84,7 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 |---|---|---|
 | Scale Degrees | Cadence + one note: name it as do re mi… (including chromatic notes), in 5 modes | 5: do mi sol → re fa → la ti → chromatic |
 | Chords in a Key | Identify I IV V vi… in a key, as single chords or four-chord progressions, major and minor | 4: I IV V → vi → ii → iii vii° |
+| Harmonic Dictation | Four-part progressions (4 or 6 chords): name each chord with its inversion, major and minor | 6: I IV V → vi ii → first inversions → V7 and inversions → cadential 6/4, ii7, vii°6 → secondary dominant V/V |
 | Melodic Dictation | Short melodies of 3–8 notes; enter the notes in order | 4: do re mi → … → chromatic |
 | Melody + Rhythm | Short melodies with rhythm; write pitches and durations in the staff editor | 9: quarters and halves → eighths → dotted → sixteenths → syncopation and ties → 6/8 → chromatic |
 | Intervals | Ascending, descending or harmonic, with reference songs, including compound intervals | 12: P5 and octave → … → 9ths to 15ths |

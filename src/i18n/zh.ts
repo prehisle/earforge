@@ -514,6 +514,16 @@ export const zh = {
   'ex.progressions.promptFour': '{key} · 依次选出 4 个和弦（第一个是 {first}）',
   'ex.progressions.prompt': '{key} · 这是哪个级数和弦？',
 
+  'ex.harmony.title': '和声听写',
+  'ex.harmony.subtitle': '听四部和声进行，写出每个和弦的级数与转位：属七、终止四六、副属和弦',
+  'ex.harmony.len': '和弦数',
+  'ex.harmony.len.4': '4 个',
+  'ex.harmony.len.6': '6 个',
+  'ex.harmony.minor': '小调',
+  'ex.harmony.prompt': '{key} · 依次写出 {n} 个和弦的级数与转位（第一个是 {first}）',
+  'tip.harmony':
+    '先听终止式建立调性，再听一段四部和声进行（第一个和弦是主和弦），按顺序选出每个和弦的级数与转位。先跟住低音线判断转位（右上角的小数字是数字低音：⁶ 为第一转位，⁶₄ 为第二转位，⁶₅ ⁴₃ ⁴₂ 为七和弦的转位），再听和弦的功能与色彩。答完后点上方的格子可切换步骤，点选项试听换成它的效果。',
+
   'ex.dictation.title': '旋律听写',
   'ex.dictation.subtitle': '听一段短旋律，按顺序写出唱名',
   'ex.dictation.len': '音符数',

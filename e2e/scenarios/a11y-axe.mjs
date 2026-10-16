@@ -1,4 +1,4 @@
-// axe-core 无障碍审计：中英 × 明暗 × 主要页面（新手引导、首页、练习出题 / 答完（含和弦转位、音阶与调式、复音程）、今日训练、统计、设置、曲库、曲目练习、关于与帮助）。
+// axe-core 无障碍审计：中英 × 明暗 × 主要页面（新手引导、首页、练习出题 / 答完（含和弦转位、音阶与调式、和声听写、复音程）、今日训练、统计、设置、曲库、曲目练习、关于与帮助）。
 // 任何违规都算失败；明细写到 axe.json / summary.txt。原 axe.mjs
 // E2E_AXE_IMPACT=serious 可只对 serious / critical 级别判失败（其余照样记录）。
 import { writeFileSync } from 'node:fs';
@@ -20,8 +20,8 @@ await run(async (t) => {
       const page = await t.open({ target: ctx, lang: lang === 'zh' ? 'zh-CN' : 'en-US', dark, onboarding: 'keep', tag });
       const T =
         lang === 'zh'
-          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别', about: '使用指南与快捷键' }
-          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', about: 'Guide & shortcuts' };
+          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别', harmony: '和声听写', about: '使用指南与快捷键' }
+          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', harmony: 'Harmonic Dictation', about: 'Guide & shortcuts' };
       // 按文字或 aria-label 匹配
       const click = async (text, sel = 'button') => {
         for (const el of await page.$$(sel)) {
@@ -66,10 +66,11 @@ await run(async (t) => {
       await audit('practice-answered');
       await click(T.back);
       await sleep(200);
-      // 新练习：和弦转位、音阶与调式
+      // 新练习：和弦转位、音阶与调式、和声听写
       for (const [id, title] of [
         ['inversions', T.inversions],
         ['scales', T.scales],
+        ['harmony', T.harmony],
       ]) {
         await click(title, '.card');
         await sleep(200);
