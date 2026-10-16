@@ -21,6 +21,14 @@ export interface Score {
   stems?: boolean;
   /** 各音组的默认高亮（如「这是题目里的那个音」） */
   marks?: Mark[];
+  /** 时值（四分音符 = 1，八分 = 0.5，附点四分 = 1.5…），与 notes 一一对应；给出后按时值记谱（小节线、符尾/符杠、附点、休止符）。空音组表示休止符 */
+  durs?: number[];
+  /** 拍号，如 [4, 4]、[3, 4]、[6, 8]；缺省 4/4（仅在有 durs 时生效） */
+  meter?: [number, number];
+  /** 弱起小节的长度（四分音符 = 1）；缺省没有弱起 */
+  pickup?: number;
+  /** 写在音符下方的文字（唱名或歌词），与 notes 一一对应；休止符为空串 */
+  lyrics?: string[];
 }
 
 export type Mark = 'ok' | 'bad' | 'cur' | null | undefined;
