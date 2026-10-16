@@ -3,6 +3,7 @@
 import type { ExerciseDef, Level, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { detectLocale } from '../i18n';
+import { sanitizeExams, type ExamRecord } from './examHistory';
 
 export interface ItemStat {
   n: number; // 作答次数
@@ -46,6 +47,8 @@ export interface Store {
   daily: Record<string, DayStat>; // 键为本地日期 YYYY-MM-DD
   /** 视唱曲库的记录（按曲目 id），与练耳进度分开，不计入每日题数。旧数据没有该字段 */
   songs?: Record<string, SongResult>;
+  /** 模拟考试的历史成绩（按时间先后）。旧数据没有该字段 */
+  exams?: ExamRecord[];
 }
 
 const KEY = 'earforge:v1';
@@ -62,6 +65,7 @@ export function loadStore(): Store {
       s.exercises ??= {};
       s.daily = sanitizeDaily(s.daily);
       s.songs ??= {};
+      s.exams = sanitizeExams(s.exams);
       // 已有练习记录的一定是老用户，不再显示新手引导
       if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
       return s;
@@ -76,6 +80,7 @@ export function loadStore(): Store {
     exercises: {},
     daily: {},
     songs: {},
+    exams: [],
   };
 }
 
