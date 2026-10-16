@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { EXERCISES, exerciseById } from '../exercises';
 import { activeItems, itemStat, today, type Store } from '../engine/progress';
 import { peekProgress, planSession } from '../engine/planner';
+import { useT } from '../i18n/react';
 import { Quiz, type QuizResult, type QuizSource } from './Practice';
 
 interface Props {
@@ -15,6 +16,7 @@ const pct = (c: number, n: number) => (n ? Math.round((c / n) * 100) : 0);
 
 /** 今日训练：按计划跨模块出题，每题仍由各模块自己生成和记录。 */
 export function MixedPractice({ store, update, onBack, onAgain }: Props) {
+  const t = useT();
   const [plan] = useState(() => planSession(store, EXERCISES, { size: store.settings.mixSize }));
   const idx = useRef(0);
   const [shown, setShown] = useState(0);
@@ -38,12 +40,12 @@ export function MixedPractice({ store, update, onBack, onAgain }: Props) {
   return (
     <main className="page practice">
       <header className="topbar">
-        <button className="ghost" onClick={onBack} aria-label="返回">
-          ← 返回
+        <button className="ghost" onClick={onBack} aria-label={t('common.backAria')}>
+          {t('common.back')}
         </button>
         <div className="practice-title">
-          <h1>🎯 今日训练</h1>
-          <p className="muted">{finished ? '本组完成' : `第 ${Math.max(1, shown)}/${plan.length} 题 · 混合练习`}</p>
+          <h1>{t('mix.title')}</h1>
+          <p className="muted">{finished ? t('mix.done') : t('mix.progress', { i: Math.max(1, shown), n: plan.length })}</p>
         </div>
         <span className="topbar-spacer" />
       </header>
@@ -56,9 +58,9 @@ export function MixedPractice({ store, update, onBack, onAgain }: Props) {
 
       {plan.length === 0 ? (
         <section className="start">
-          <p>暂时没有可练的考点。</p>
+          <p>{t('mix.empty')}</p>
           <button className="primary" onClick={onBack}>
-            返回首页
+            {t('mix.home')}
           </button>
         </section>
       ) : finished ? (
@@ -89,6 +91,7 @@ function Summary({
   onAgain(): void;
   onBack(): void;
 }) {
+  const t = useT();
   const n = results.length;
   const c = results.filter((r) => r.allRight).length;
 
@@ -119,23 +122,21 @@ function Summary({
     .sort((a, b) => a.c / a.n - b.c / b.n || accOf(a.exId, a.item) - accOf(b.exId, b.item))
     .slice(0, 3);
 
-  const t = store.daily[today()]?.n ?? 0;
+  const todayN = store.daily[today()]?.n ?? 0;
   const goal = store.settings.dailyGoal;
 
   return (
     <section className="summary">
       <div className="summary-hero">
         <span className="summary-big">{pct(c, n)}%</span>
-        <span className="muted">
-          正确率 · 答对 {c}/{n} 题
-        </span>
-        <span className={t >= goal ? 'summary-goal done' : 'summary-goal'}>
-          {t >= goal ? `🎉 今日目标已达成（${t}/${goal}）` : `今日进度 ${t}/${goal}`}
+        <span className="muted">{t('mix.acc', { c, n })}</span>
+        <span className={todayN >= goal ? 'summary-goal done' : 'summary-goal'}>
+          {todayN >= goal ? t('mix.goalDone', { t: todayN, goal }) : t('mix.goalProgress', { t: todayN, goal })}
         </span>
       </div>
 
       <div className="panel">
-        <h2 className="chart-title">各模块表现</h2>
+        <h2 className="chart-title">{t('mix.byModule')}</h2>
         <ul className="mastery">
           {[...mods.entries()].map(([id, m]) => {
             const ex = exerciseById[id];
@@ -158,7 +159,7 @@ function Summary({
 
       {weakest.length > 0 && (
         <div className="panel">
-          <h2 className="chart-title">最需要加强的考点</h2>
+          <h2 className="chart-title">{t('mix.weakest')}</h2>
           <ol className="weak-list">
             {weakest.map((w, i) => {
               const ex = exerciseById[w.exId];
@@ -168,7 +169,7 @@ function Summary({
                   <strong>{ex.itemLabel(w.item, store.settings)}</strong>
                   <span className="muted">{ex.title}</span>
                   <span className="weak-val">
-                    本组 {w.c}/{w.n} · 掌握度 {Math.round(accOf(w.exId, w.item) * 100)}%
+                    {t('mix.weakVal', { c: w.c, n: w.n, pct: Math.round(accOf(w.exId, w.item) * 100) })}
                   </span>
                 </li>
               );
@@ -178,9 +179,9 @@ function Summary({
       )}
 
       <div className="summary-actions">
-        <button onClick={onBack}>返回首页</button>
+        <button onClick={onBack}>{t('mix.home')}</button>
         <button className="primary" onClick={onAgain}>
-          再来一组
+          {t('mix.again')}
         </button>
       </div>
     </section>

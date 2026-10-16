@@ -1,43 +1,49 @@
 import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
 import { chordLetterSteps, pitchName, spellStack } from '../music/notation';
+import { t } from '../i18n';
 import { CHORDS, chordNotes, randInt, type ChordDef } from '../music/theory';
+import { levelT, option } from './common';
 
 const byId = Object.fromEntries(CHORDS.map((c) => [c.id, c]));
 
 export const chords: ExerciseDef = {
   id: 'chords',
-  title: '和弦性质',
-  subtitle: '大、小、减、增、七和弦……听色彩辨和弦',
+  get title() {
+    return t('ex.chords.title');
+  },
+  get subtitle() {
+    return t('ex.chords.subtitle');
+  },
   icon: '♫',
-  group: '基础',
+  group: 'basics',
   levels: [
-    { name: '大三 · 小三', items: ['maj', 'min'] },
-    { name: '+ 减三 · 增三', items: ['dim', 'aug'] },
-    { name: '+ 挂留和弦', items: ['sus2', 'sus4'] },
-    { name: '+ 大七 · 属七 · 小七', items: ['maj7', 'dom7', 'min7'] },
-    { name: '+ 半减七 · 减七 · 小大七', items: ['m7b5', 'dim7', 'minMaj7'] },
+    levelT('ex.chords.level.0', ['maj', 'min']),
+    levelT('ex.chords.level.1', ['dim', 'aug']),
+    levelT('ex.chords.level.2', ['sus2', 'sus4']),
+    levelT('ex.chords.level.3', ['maj7', 'dom7', 'min7']),
+    levelT('ex.chords.level.4', ['m7b5', 'dim7', 'minMaj7']),
   ],
   options: [
-    {
-      id: 'voicing',
-      label: '演奏方式',
-      values: [
-        { id: 'block', label: '柱式' },
-        { id: 'arp', label: '琶音' },
-        { id: 'both', label: '琶音 + 柱式' },
+    option(
+      'voicing',
+      'ex.chords.voicing',
+      [
+        ['block', 'ex.chords.voicing.block'],
+        ['arp', 'ex.chords.voicing.arp'],
+        ['both', 'ex.chords.voicing.both'],
       ],
-      default: 'both',
-    },
-    {
-      id: 'inv',
-      label: '转位',
-      values: [
-        { id: 'root', label: '仅原位' },
-        { id: 'any', label: '随机转位' },
+      'both',
+    ),
+    option(
+      'inv',
+      'ex.chords.inv',
+      [
+        ['root', 'ex.chords.inv.root'],
+        ['any', 'ex.chords.inv.any'],
       ],
-      default: 'root',
-    },
+      'root',
+    ),
   ],
   itemLabel: (it) => byId[it].name,
   generate(item, ctx) {
@@ -65,9 +71,12 @@ export const chords: ExerciseDef = {
       choices: ctx.items.map((id) => ({ id, label: byId[id].name })),
       answer: [item],
       choiceEvents: (id) => build(byId[id]),
-      prompt: '这是什么和弦？',
+      prompt: t('ex.chords.prompt'),
       score: { notes: [voiced], fifths: 0 },
-      explain: `${pitchName(spelled[0], false)}${c.symbol}：${voiced.map((p) => pitchName(p)).join(' ')}`,
+      explain: t('ex.chords.explain', {
+        symbol: `${pitchName(spelled[0], false)}${c.symbol}`,
+        notes: voiced.map((p) => pitchName(p)).join(' '),
+      }),
     };
   },
 };

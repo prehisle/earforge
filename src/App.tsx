@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { exerciseById } from './exercises';
+import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
 import { Onboarding } from './ui/Onboarding';
@@ -24,57 +25,63 @@ export default function App() {
   const [rerun, setRerun] = useState(false);
   useMidiInput(store.settings.midi);
 
+  const lang = store.settings.lang;
+
   if (!store.settings.onboarded || rerun)
     return (
-      <div className="app">
-        <Onboarding
-          store={store}
-          update={update}
-          onDone={() => {
-            setRerun(false);
-            home();
-            window.scrollTo(0, 0);
-          }}
-        />
-      </div>
+      <LocaleContext.Provider value={lang}>
+        <div className="app">
+          <Onboarding
+            store={store}
+            update={update}
+            onDone={() => {
+              setRerun(false);
+              home();
+              window.scrollTo(0, 0);
+            }}
+          />
+        </div>
+      </LocaleContext.Provider>
     );
 
   return (
-    <div className="app">
-      {route.page === 'home' && (
-        <Home
-          store={store}
-          onOpen={(id) => setRoute({ page: 'practice', id })}
-          onMix={() => setRoute({ page: 'mix', round: 0 })}
-          onStats={() => setRoute({ page: 'stats' })}
-          onSettings={() => setRoute({ page: 'settings' })}
-        />
-      )}
-      {route.page === 'practice' && (
-        <Practice
-          key={`${route.id}:${route.focus?.join(',') ?? ''}`}
-          ex={exerciseById[route.id]}
-          focus={route.focus}
-          store={store}
-          update={update}
-          onBack={home}
-        />
-      )}
-      {route.page === 'mix' && (
-        <MixedPractice
-          key={route.round}
-          store={store}
-          update={update}
-          onBack={home}
-          onAgain={() => setRoute({ page: 'mix', round: route.round + 1 })}
-        />
-      )}
-      {route.page === 'stats' && (
-        <StatsPage store={store} onBack={home} onFocus={(id, focus) => setRoute({ page: 'practice', id, focus })} />
-      )}
-      {route.page === 'settings' && (
-        <SettingsPage store={store} update={update} onBack={home} onOnboard={() => setRerun(true)} />
-      )}
-    </div>
+    <LocaleContext.Provider value={lang}>
+      <div className="app">
+        {route.page === 'home' && (
+          <Home
+            store={store}
+            onOpen={(id) => setRoute({ page: 'practice', id })}
+            onMix={() => setRoute({ page: 'mix', round: 0 })}
+            onStats={() => setRoute({ page: 'stats' })}
+            onSettings={() => setRoute({ page: 'settings' })}
+          />
+        )}
+        {route.page === 'practice' && (
+          <Practice
+            key={`${route.id}:${route.focus?.join(',') ?? ''}`}
+            ex={exerciseById[route.id]}
+            focus={route.focus}
+            store={store}
+            update={update}
+            onBack={home}
+          />
+        )}
+        {route.page === 'mix' && (
+          <MixedPractice
+            key={route.round}
+            store={store}
+            update={update}
+            onBack={home}
+            onAgain={() => setRoute({ page: 'mix', round: route.round + 1 })}
+          />
+        )}
+        {route.page === 'stats' && (
+          <StatsPage store={store} onBack={home} onFocus={(id, focus) => setRoute({ page: 'practice', id, focus })} />
+        )}
+        {route.page === 'settings' && (
+          <SettingsPage store={store} update={update} onBack={home} onOnboard={() => setRerun(true)} />
+        )}
+      </div>
+    </LocaleContext.Provider>
   );
 }

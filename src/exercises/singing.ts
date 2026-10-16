@@ -1,9 +1,10 @@
 import type { ExerciseDef, Level } from '../engine/types';
 import { keyScore } from '../music/notation';
-import { keyName, mod, nameInSystem, randInt, type ModeDef } from '../music/theory';
-import { MODE_OPTION, cadenceEvents, degreeLevels, melodyEvents, modeItem, modeOf } from './common';
+import { t } from '../i18n';
+import { keyLabel, mod, nameInSystem, randInt, type ModeDef } from '../music/theory';
+import { MODE_OPTION, cadenceEvents, degreeLevels, melodyEvents, modeItem, modeOf, option } from './common';
 import { degreeLabel, semi } from './degrees';
-import { makeMelody } from './dictation';
+import { countOption, makeMelody } from './dictation';
 
 /** 视唱的级别：主三和弦 → +2、4 级 → +6、7 级（只唱自然音级）。 */
 function singingLevels(mode: ModeDef): Level[] {
@@ -13,35 +14,30 @@ function singingLevels(mode: ModeDef): Level[] {
 
 export const singing: ExerciseDef = {
   id: 'singing',
-  title: '视唱 / 模唱',
-  subtitle: '对着麦克风唱出来，实时判断音准',
+  get title() {
+    return t('ex.singing.title');
+  },
+  get subtitle() {
+    return t('ex.singing.subtitle');
+  },
   icon: '🎤',
-  group: '视唱练耳',
+  group: 'sing',
   mic: true,
   levels: singingLevels(modeOf({})),
   levelsFor: (options) => singingLevels(modeOf(options)),
   options: [
     MODE_OPTION,
-    {
-      // 原 id 为 'mode'，现让给调式选项；旧数据中的取值会被 getProgress 重置为默认
-      id: 'task',
-      label: '模式',
-      values: [
-        { id: 'sight', label: '视唱（看唱名唱）' },
-        { id: 'echo', label: '模唱（听后唱）' },
+    // 原 id 为 'mode'，现让给调式选项；旧数据中的取值会被 getProgress 重置为默认
+    option(
+      'task',
+      'ex.singing.task',
+      [
+        ['sight', 'ex.singing.task.sight'],
+        ['echo', 'ex.singing.task.echo'],
       ],
-      default: 'sight',
-    },
-    {
-      id: 'len',
-      label: '音符数',
-      values: [
-        { id: '1', label: '1 个' },
-        { id: '3', label: '3 个' },
-        { id: '5', label: '5 个' },
-      ],
-      default: '1',
-    },
+      'sight',
+    ),
+    countOption('ex.singing.len', ['1', '3', '5'], '1'),
   ],
   itemLabel: (it, s) => degreeLabel(it, s),
   generate(item, ctx) {
@@ -55,7 +51,7 @@ export const singing: ExerciseDef = {
     const answer = degs.map((d) => idOf.get(d) ?? modeItem(mode, `d${d}`));
     const targets = degs.map((d) => tonic + d);
     const sight = ctx.options.task !== 'echo';
-    const key = `${keyName(tonicPc, mode)} ${mode.label}`;
+    const key = keyLabel(tonicPc, mode);
     return {
       item,
       prelude: cadenceEvents(tonic, mode),
@@ -69,7 +65,7 @@ export const singing: ExerciseDef = {
         mode,
         true,
       ),
-      prompt: sight ? `${key} · 听完终止式后，唱出下面的音` : `${key} · 听旋律，然后唱出来`,
+      prompt: t(sight ? 'ex.singing.promptSight' : 'ex.singing.promptEcho', { key }),
       sing: {
         targets,
         display: targets.map((m) => nameInSystem(m, tonicPc, ctx.settings.naming, mode)),

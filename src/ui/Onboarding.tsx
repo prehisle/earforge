@@ -5,7 +5,10 @@ import { peekProgress } from '../engine/planner';
 import { levelsOf, type Store } from '../engine/progress';
 import type { Settings } from '../engine/types';
 import { EXERCISES } from '../exercises';
+import type { MessageKey } from '../i18n';
+import { useT } from '../i18n/react';
 import type { NamingSystem } from '../music/theory';
+import { LangSwitch } from './Seg';
 
 interface Props {
   store: Store;
@@ -14,20 +17,22 @@ interface Props {
   onDone(): void;
 }
 
-const STEPS = ['欢迎', '试音', '你的基础', '偏好', '完成'] as const;
-
-/** 各命名体系的简短说明 */
-const NAMINGS: { id: NamingSystem; label: string; desc: string }[] = [
-  { id: 'movable', label: '首调唱名', desc: 'do 永远是主音，换调不换唱名。练调性听觉最推荐' },
-  { id: 'jianpu', label: '简谱', desc: '1 2 3 4 5 6 7，和首调唱名一样随调移动' },
-  { id: 'fixed', label: '固定调唱名', desc: 'C 永远唱 do，适合习惯固定唱名的器乐学生' },
-  { id: 'letter', label: '音名', desc: 'C D E F G A B，显示实际的音高' },
+const STEPS: MessageKey[] = [
+  'onboard.step.welcome',
+  'onboard.step.sound',
+  'onboard.step.background',
+  'onboard.step.prefs',
+  'onboard.step.done',
 ];
+
+/** 引导中列出的命名体系（名称与简短说明见词典 naming.<id>.short / .desc） */
+const NAMINGS: NamingSystem[] = ['movable', 'jianpu', 'fixed', 'letter'];
 
 /** 引导中展示起始级别的模块 */
 const SHOWN = ['degrees', 'intervals', 'chords'];
 
 export function Onboarding({ store, update, onDone }: Props) {
+  const t = useT();
   const [step, setStep] = useState(0);
   const [bg, setBg] = useState<Background | null>(null);
   const [played, setPlayed] = useState(false);
@@ -74,16 +79,16 @@ export function Onboarding({ store, update, onDone }: Props) {
     <main className="page onboard" aria-labelledby={titleId}>
       <header className="onboard-head">
         <span className="logo">耳</span>
-        <ol className="onboard-dots" aria-label={`第 ${step + 1} 步，共 ${STEPS.length} 步`}>
+        <ol className="onboard-dots" aria-label={t('onboard.dots', { i: step + 1, n: STEPS.length })}>
           {STEPS.map((name, i) => (
-            <li key={name} className={i === step ? 'on' : i < step ? 'done' : ''} title={name} />
+            <li key={name} className={i === step ? 'on' : i < step ? 'done' : ''} title={t(name)} />
           ))}
         </ol>
         {last ? (
           <span className="onboard-spacer" />
         ) : (
           <button className="ghost" onClick={finish}>
-            跳过 <kbd>Esc</kbd>
+            {t('onboard.skip')} <kbd>Esc</kbd>
           </button>
         )}
       </header>
@@ -92,27 +97,34 @@ export function Onboarding({ store, update, onDone }: Props) {
         {step === 0 && (
           <>
             <h1 id={titleId} ref={heading} tabIndex={-1}>
-              欢迎来到 EarForge 耳锻
+              {t('onboard.welcome')}
             </h1>
+            <div className="field onboard-lang">
+              <label>{t('lang.label')}</label>
+              <LangSwitch value={s.lang} onChange={(v) => set('lang', v)} />
+            </div>
             <p>
-              这是一个<strong>功能性练耳</strong>工具：先听终止式建立调性，再判断每个音、和弦在调里的「功能」，
-              用<strong>首调唱名</strong>（do re mi）来记。练的是扒歌、视唱、即兴真正用得上的相对音感。
+              {t('onboard.intro1')}
+              <strong>{t('onboard.introFunctional')}</strong>
+              {t('onboard.intro2')}
+              <strong>{t('onboard.introMovable')}</strong>
+              {t('onboard.intro3')}
             </p>
-            <p className="muted">接下来用不到一分钟做几项设置，随时可以跳过，之后也能在「设置」里修改。</p>
+            <p className="muted">{t('onboard.introNote')}</p>
           </>
         )}
 
         {step === 1 && (
           <>
             <h1 id={titleId} ref={heading} tabIndex={-1}>
-              试一下声音
+              {t('onboard.soundTitle')}
             </h1>
-            <p>点下面的按钮，应该能听到一个大三和弦。</p>
+            <p>{t('onboard.soundText')}</p>
             <button className="primary big onboard-play" onClick={testSound}>
-              ▶ 播放和弦
+              {t('onboard.play')}
             </button>
             <div className="field">
-              <label htmlFor="onboard-vol">音量 {Math.round(s.volume * 100)}%</label>
+              <label htmlFor="onboard-vol">{t('settings.volume', { pct: Math.round(s.volume * 100) })}</label>
               <input
                 id="onboard-vol"
                 type="range"
@@ -124,11 +136,11 @@ export function Onboarding({ store, update, onDone }: Props) {
               />
             </div>
             <details className="onboard-help" open={played || undefined}>
-              <summary>听不到？</summary>
+              <summary>{t('onboard.cantHear')}</summary>
               <ul>
-                <li>iPhone / iPad：检查侧面的静音开关是否打开，静音模式下网页没有声音。</li>
-                <li>调高系统音量和上面的音量滑块，确认耳机或蓝牙音箱已连接。</li>
-                <li>浏览器标签页没有被设成静音；仍然不行可以刷新页面再试。</li>
+                <li>{t('onboard.help1')}</li>
+                <li>{t('onboard.help2')}</li>
+                <li>{t('onboard.help3')}</li>
               </ul>
             </details>
           </>
@@ -137,9 +149,9 @@ export function Onboarding({ store, update, onDone }: Props) {
         {step === 2 && (
           <>
             <h1 id={titleId} ref={heading} tabIndex={-1}>
-              你的音乐基础？
+              {t('onboard.bgTitle')}
             </h1>
-            <p className="muted">据此设定各练习的起始级别和每日目标。之后会根据你的正确率自动升级。</p>
+            <p className="muted">{t('onboard.bgText')}</p>
             <div className="onboard-options" role="radiogroup" aria-labelledby={titleId}>
               {BACKGROUNDS.map((b) => (
                 <button
@@ -160,32 +172,32 @@ export function Onboarding({ store, update, onDone }: Props) {
         {step === 3 && (
           <>
             <h1 id={titleId} ref={heading} tabIndex={-1}>
-              偏好设置
+              {t('onboard.prefsTitle')}
             </h1>
             <div className="field">
-              <label id="onboard-naming">唱名 / 音名显示</label>
+              <label id="onboard-naming">{t('onboard.naming')}</label>
               <div className="onboard-options" role="radiogroup" aria-labelledby="onboard-naming">
                 {NAMINGS.map((n) => (
                   <button
-                    key={n.id}
+                    key={n}
                     role="radio"
-                    aria-checked={s.naming === n.id}
-                    className={s.naming === n.id ? 'onboard-option on' : 'onboard-option'}
-                    onClick={() => set('naming', n.id)}
+                    aria-checked={s.naming === n}
+                    className={s.naming === n ? 'onboard-option on' : 'onboard-option'}
+                    onClick={() => set('naming', n)}
                   >
-                    <strong>{n.label}</strong>
-                    <span className="muted">{n.desc}</span>
+                    <strong>{t(`naming.${n}.short`)}</strong>
+                    <span className="muted">{t(`naming.${n}.desc`)}</span>
                   </button>
                 ))}
               </div>
             </div>
             <div className="field">
-              <label id="onboard-voice">演唱音区（视唱练习用）</label>
+              <label id="onboard-voice">{t('onboard.voice')}</label>
               <div className="seg wrap" role="radiogroup" aria-labelledby="onboard-voice">
                 {(
                   [
-                    ['low', '低音区（男声）'],
-                    ['high', '高音区（女声/童声）'],
+                    ['low', t('settings.voice.low')],
+                    ['high', t('settings.voice.high')],
                   ] as const
                 ).map(([v, label]) => (
                   <button
@@ -206,7 +218,7 @@ export function Onboarding({ store, update, onDone }: Props) {
         {step === 4 && (
           <>
             <h1 id={titleId} ref={heading} tabIndex={-1}>
-              准备好了 🎉
+              {t('onboard.doneTitle')}
             </h1>
             {bg ? (
               <ul className="onboard-summary">
@@ -216,37 +228,44 @@ export function Onboarding({ store, update, onDone }: Props) {
                   const lv = Math.max(p.level, startLevel(bg, ex, p.options));
                   return (
                     <li key={ex.id}>
-                      {ex.icon} {ex.title}：第 {lv + 1}/{levelsOf(ex, p.options).length} 级起步
-                      {lv > 0 && <span className="muted">（含前 {lv} 级）</span>}
+                      {t('onboard.startLevel', {
+                        icon: ex.icon,
+                        title: ex.title,
+                        level: lv + 1,
+                        total: levelsOf(ex, p.options).length,
+                      })}
+                      {lv > 0 && <span className="muted">{lv === 1 ? t('onboard.includesOne') : t('onboard.includes', { n: lv })}</span>}
                     </li>
                   );
                 })}
-                <li>🎯 每日目标：{DAILY_GOALS[bg]} 题</li>
+                <li>{t('onboard.goal', { n: DAILY_GOALS[bg] })}</li>
               </ul>
             ) : (
-              <p>所有练习从第 1 级开始，每日目标 {s.dailyGoal} 题。</p>
+              <p>{t('onboard.allFromOne', { n: s.dailyGoal })}</p>
             )}
             <p>
-              建议从首页的<strong>「今日训练」</strong>开始：它会自动混合几个练习，挑出最需要练的考点。
+              {t('onboard.suggest1')}
+              <strong>{t('onboard.suggestToday')}</strong>
+              {t('onboard.suggest2')}
             </p>
-            <p className="muted">快捷键：数字键作答 · 空格重听 · 回车下一题</p>
+            <p className="muted">{t('home.keys')}</p>
           </>
         )}
       </section>
 
       <nav className="onboard-nav">
         {step > 0 ? (
-          <button onClick={() => setStep(step - 1)}>← 上一步</button>
+          <button onClick={() => setStep(step - 1)}>{t('onboard.prev')}</button>
         ) : (
           <span />
         )}
         {last ? (
           <button className="primary big" onClick={finish}>
-            去首页 · 开始今日训练
+            {t('onboard.finish')}
           </button>
         ) : (
           <button className="primary" onClick={() => setStep(step + 1)}>
-            {step === 2 && !bg ? '先不选，下一步' : '下一步 →'}
+            {step === 2 && !bg ? t('onboard.skipStep') : t('onboard.next')}
           </button>
         )}
       </nav>

@@ -25,6 +25,13 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* 英文界面：西文字体优先，避免引号等标点落到中文字体上变成全角宽度 */
+:root:lang(en) {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+    'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC';
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
@@ -176,8 +183,15 @@ kbd {
   display: flex;
   gap: 4px;
 }
+.topbar > button {
+  /* 「← Back」等较长的英文不折行 */
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .practice-title {
   text-align: center;
+  flex: 1;
+  min-width: 0;
 }
 .practice-title p {
   font-size: 0.85rem;

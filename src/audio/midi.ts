@@ -1,6 +1,8 @@
 // MIDI 键盘输入：封装 Web MIDI API，监听所有输入设备的 note-on，并跟踪设备热插拔。
 // 浏览器不支持或用户拒绝授权时静默降级（只更新状态，不抛错）。
 
+import { t } from '../i18n';
+
 export type MidiState = 'off' | 'pending' | 'unsupported' | 'denied' | 'ready';
 
 export interface MidiStatus {
@@ -60,7 +62,7 @@ class MidiInput {
     for (const input of this.access.inputs.values()) {
       if (input.state === 'disconnected') continue;
       input.onmidimessage = (e) => e.data && this.handleMessage(e.data);
-      devices.push(input.name || '未命名设备');
+      devices.push(input.name || t('midi.unnamed'));
     }
     this.setStatus({ state: 'ready', devices });
   }

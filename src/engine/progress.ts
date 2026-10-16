@@ -2,6 +2,7 @@
 
 import type { ExerciseDef, Level, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
+import { detectLocale } from '../i18n';
 
 export interface ItemStat {
   n: number; // 作答次数
@@ -46,8 +47,13 @@ export function loadStore(): Store {
   } catch {
     /* 数据损坏则重置 */
   }
-  // 全新用户：显示新手引导
-  return { version: 1, settings: { ...DEFAULT_SETTINGS, onboarded: false }, exercises: {}, daily: {} };
+  // 全新用户：显示新手引导，界面语言跟随浏览器
+  return {
+    version: 1,
+    settings: { ...DEFAULT_SETTINGS, onboarded: false, lang: detectLocale() },
+    exercises: {},
+    daily: {},
+  };
 }
 
 /** 是否已有练习记录（任一考点作答过，或有每日记录） */
@@ -104,13 +110,14 @@ export function setOption(ex: ExerciseDef, p: ExerciseProgress, id: string, valu
 }
 
 /** 按 scoped 选项的各个取值列出全部考点（统计页分组用）；没有 scoped 选项时只有一组。 */
-export function itemGroups(ex: ExerciseDef): { label: string; items: string[] }[] {
+export function itemGroups(ex: ExerciseDef): { id: string; label: string; items: string[] }[] {
   const defaults = Object.fromEntries((ex.options ?? []).map((o) => [o.id, o.default]));
   const o = ex.options?.find((x) => x.scoped);
   const variants = o
-    ? o.values.map((v) => ({ label: v.label, options: { ...defaults, [o.id]: v.id } }))
-    : [{ label: '', options: defaults }];
+    ? o.values.map((v) => ({ id: v.id, label: v.label, options: { ...defaults, [o.id]: v.id } }))
+    : [{ id: '', label: '', options: defaults }];
   return variants.map((v) => ({
+    id: v.id,
     label: v.label,
     items: [...new Set(levelsOf(ex, v.options).flatMap((l) => l.items))],
   }));

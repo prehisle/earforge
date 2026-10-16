@@ -1,36 +1,42 @@
 import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef } from '../engine/types';
 import { intervalNumber, pitchName, spellStack } from '../music/notation';
-import { INTERVALS, INTERVAL_SONGS, pick, randInt } from '../music/theory';
+import { t } from '../i18n';
+import { INTERVALS, intervalSong, pick, randInt } from '../music/theory';
+import { level, option } from './common';
 
 const byId = Object.fromEntries(INTERVALS.map((i) => [i.id, i]));
 
 export const intervals: ExerciseDef = {
   id: 'intervals',
-  title: '音程识别',
-  subtitle: '听两个音，判断它们之间的距离',
+  get title() {
+    return t('ex.intervals.title');
+  },
+  get subtitle() {
+    return t('ex.intervals.subtitle');
+  },
   icon: '↕',
-  group: '基础',
+  group: 'basics',
   levels: [
-    { name: '纯五度 · 纯八度', items: ['P5', 'P8'] },
-    { name: '+ 大三度 · 纯四度', items: ['M3', 'P4'] },
-    { name: '+ 小三度 · 大六度', items: ['m3', 'M6'] },
-    { name: '+ 大二度 · 小二度', items: ['M2', 'm2'] },
-    { name: '+ 小六度 · 小七度', items: ['m6', 'm7'] },
-    { name: '+ 大七度 · 三全音', items: ['M7', 'TT'] },
-  ],
+    ['P5', 'P8'],
+    ['M3', 'P4'],
+    ['m3', 'M6'],
+    ['M2', 'm2'],
+    ['m6', 'm7'],
+    ['M7', 'TT'],
+  ].map((items, i) => level(() => `${i ? '+ ' : ''}${items.map((id) => byId[id].name).join(' · ')}`, items)),
   options: [
-    {
-      id: 'dir',
-      label: '方向',
-      values: [
-        { id: 'up', label: '上行' },
-        { id: 'down', label: '下行' },
-        { id: 'harm', label: '和声（同时）' },
-        { id: 'mix', label: '混合' },
+    option(
+      'dir',
+      'ex.intervals.dir',
+      [
+        ['up', 'ex.intervals.dir.up'],
+        ['down', 'ex.intervals.dir.down'],
+        ['harm', 'ex.intervals.dir.harm'],
+        ['mix', 'ex.intervals.dir.mix'],
       ],
-      default: 'up',
-    },
+      'up',
+    ),
   ],
   itemLabel: (it) => byId[it].name,
   generate(item, ctx) {
@@ -54,8 +60,10 @@ export const intervals: ExerciseDef = {
     // 记谱：上方音的字母按度数从低音数起（三全音记作增四度）
     const [pl, ph] = spellStack([low, high], [0, intervalNumber(item) - 1]);
     const [pa, pb] = dir === 'down' ? [ph, pl] : [pl, ph];
-    const song = INTERVAL_SONGS[item];
-    const dirLabel = dir === 'up' ? '上行' : dir === 'down' ? '下行' : '和声';
+    const song = intervalSong(item);
+    const dirLabel = t(
+      dir === 'up' ? 'ex.intervals.dir.up' : dir === 'down' ? 'ex.intervals.dir.down' : 'ex.intervals.dirShort.harm',
+    );
     return {
       item,
       events,
@@ -64,9 +72,11 @@ export const intervals: ExerciseDef = {
       choiceEvents: (id) => build(byId[id].semitones),
       // 弹出第二个音：按它相对第一个音的方向与半音数作答（和声音程弹上方的音）；弹第一个音本身不算作答
       midiAnswer: (m) => ctx.items.find((id) => byId[id].semitones > 0 && byId[id].semitones === sign * (m - a)) ?? null,
-      prompt: `这是什么音程？（${dirLabel}）`,
+      prompt: t('ex.intervals.prompt', { dir: dirLabel }),
       score: { notes: dir === 'harm' ? [[pl, ph]] : [[pa], [pb]], fifths: 0 },
-      explain: `${pitchName(pa)} → ${pitchName(pb)}，${iv.semitones} 个半音${song ? `。记忆：${song}` : ''}`,
+      explain:
+        t('ex.intervals.explain', { from: pitchName(pa), to: pitchName(pb), n: iv.semitones }) +
+        (song ? t('ex.intervals.song', { song }) : ''),
     };
   },
 };

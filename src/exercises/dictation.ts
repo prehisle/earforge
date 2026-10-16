@@ -1,6 +1,7 @@
-import type { ExerciseDef, Level } from '../engine/types';
+import type { ExerciseDef, Level, OptionDef } from '../engine/types';
 import { keyScore } from '../music/notation';
-import { DEGREES, keyName, mod, type ModeDef } from '../music/theory';
+import { t, type MessageKey } from '../i18n';
+import { DEGREES, keyLabel, mod, type ModeDef } from '../music/theory';
 import {
   MODE_OPTION,
   chooseTonic,
@@ -10,6 +11,7 @@ import {
   melodyEvents,
   modeItem,
   modeOf,
+  option,
 } from './common';
 import { CHROMATIC, degreeChoices, degreeLabel, semi } from './degrees';
 
@@ -19,6 +21,18 @@ function dictationLevels(mode: ModeDef): Level[] {
   // 大调沿用原有的变化音组合 ♭3 ♭7 ♯4
   const chromatic = mode.id === 'major' ? [3, 10, 6] : CHROMATIC[mode.id][0];
   return degreeLevels(mode, [s.slice(0, 3), s.slice(3, 5), s.slice(5), chromatic], 3, ' ');
+}
+
+/** 「音符数」选项（id 'len'）：取值为个数，显示为「3 个」/「3」。 */
+export function countOption(labelKey: MessageKey, counts: string[], def: string): OptionDef {
+  const o = option('len', labelKey, [], def);
+  o.values = counts.map((n) => ({
+    id: n,
+    get label() {
+      return t('ex.dictation.count', { n });
+    },
+  }));
+  return o;
 }
 
 /** 生成以 do 开头、包含指定音级、以级进为主的旋律（相对主音的半音数）。 */
@@ -50,26 +64,19 @@ export function makeMelody(pool: number[], must: number, len: number): number[] 
 
 export const dictation: ExerciseDef = {
   id: 'dictation',
-  title: '旋律听写',
-  subtitle: '听一段短旋律，按顺序写出唱名',
+  get title() {
+    return t('ex.dictation.title');
+  },
+  get subtitle() {
+    return t('ex.dictation.subtitle');
+  },
   icon: '✎',
-  group: '调性听觉',
+  group: 'tonal',
   levels: dictationLevels(modeOf({})),
   levelsFor: (options) => dictationLevels(modeOf(options)),
   options: [
     MODE_OPTION,
-    {
-      id: 'len',
-      label: '音符数',
-      values: [
-        { id: '3', label: '3 个' },
-        { id: '4', label: '4 个' },
-        { id: '5', label: '5 个' },
-        { id: '6', label: '6 个' },
-        { id: '8', label: '8 个' },
-      ],
-      default: '3',
-    },
+    countOption('ex.dictation.len', ['3', '4', '5', '6', '8'], '3'),
   ],
   itemLabel: (it, s) => degreeLabel(it, s),
   generate(item, ctx) {
@@ -102,7 +109,7 @@ export const dictation: ExerciseDef = {
         mode,
         true,
       ),
-      prompt: `${keyName(tonicPc, mode)} ${mode.label} · 依次写出 ${mel.length} 个音（第一个是 do）`,
+      prompt: t('ex.dictation.prompt', { key: keyLabel(tonicPc, mode), n: mel.length }),
       explain: mel.map((d) => DEGREES[d].movableDo).join(' '),
     };
   },

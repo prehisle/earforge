@@ -1,6 +1,7 @@
 // 五线谱：手绘 SVG，画谱号、调号、符头、临时记号、加线与符干（四分音符或全音符）。
 // 拼写与谱位由 music/notation 计算；颜色一律用 currentColor，高亮用 CSS 类（见 index.css「五线谱」）。
 
+import { t } from '../i18n';
 import type { ReactNode } from 'react';
 import {
   TOP_LINE,
@@ -333,7 +334,7 @@ export function Staff({ score, marks, scale = 1.3 }: Props) {
       height={h * scale}
       fill="currentColor"
       role="img"
-      aria-label={`五线谱：${label}`}
+      aria-label={t('staff.aria', { notes: label })}
     >
       {lines}
       {out}
