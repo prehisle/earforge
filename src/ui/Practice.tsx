@@ -261,7 +261,14 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   // 键盘快捷键
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
+      // Ctrl/⌘/Alt + 数字是浏览器快捷键（切换标签页），不作答
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // 长按的自动重复：不连续跳题、作答或重播（也不让回车「点击」获得焦点的选项）
+      if (e.repeat && /^(Enter| |ArrowRight|[1-9])$/.test(e.key)) {
+        e.preventDefault();
+        return;
+      }
       if (!q) {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
