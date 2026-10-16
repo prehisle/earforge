@@ -40,9 +40,12 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
     props.current = { listenAfter, onStep };
   });
   const listener = useRef<PitchListener | null>(null);
+  const alive = useRef(true);
 
-  const start = async (cancelled: () => boolean = () => false) => {
+  const start = async (cancelled: () => boolean = () => !alive.current) => {
     const l = new PitchListener();
+    // 先登记：等待授权期间卸载时，清理函数也能停掉它（否则麦克风会一直开着）
+    listener.current = l;
     try {
       await l.start((p) => {
         const st = state.current;
@@ -82,10 +85,9 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
         l.stop();
         return;
       }
-      listener.current = l;
       setRunning(true);
     } catch {
-      setMicError(t('sing.micError'));
+      if (!cancelled()) setMicError(t('sing.micError'));
     }
   };
 
@@ -120,9 +122,11 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
     // 自动尝试开启（若已授权则无感）
     // 放到微任务里启动：不在 effect 中同步 setState；StrictMode 的首次挂载被取消时也不会白白请求麦克风
     let cancelled = false;
-    void Promise.resolve().then(() => (cancelled ? undefined : start(() => cancelled)));
+    alive.current = true;
+    void Promise.resolve().then(() => (cancelled ? undefined : start(() => cancelled || !alive.current)));
     return () => {
       cancelled = true;
+      alive.current = false;
       listener.current?.stop();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
