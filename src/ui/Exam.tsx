@@ -181,25 +181,6 @@ function ExamList({ store, onBack, onPick }: { store: Store; onBack(): void; onP
   );
 }
 
-/** 首页入口卡片 */
-export function ExamCard({ store, onOpen }: { store: Store; onOpen(): void }) {
-  const t = useT();
-  const list = store.exams ?? [];
-  const last = list[list.length - 1];
-  return (
-    <button className="card" onClick={onOpen}>
-      <span className="card-icon">📝</span>
-      <span className="card-body">
-        <span className="card-title">{t('group.exam')}</span>
-        <span className="card-sub">{t('exam.cardSub', { n: EXAM_PRESETS.length })}</span>
-        <span className="card-meta">
-          {last ? t('exam.cardLast', { name: t(EXAM_PRESETS.find((p) => p.id === last.preset)?.title ?? 'exam.title'), score: last.score }) : t('exam.never')}
-        </span>
-      </span>
-    </button>
-  );
-}
-
 // ───── 考前说明 ─────
 
 function ExamIntro({

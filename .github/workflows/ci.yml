@@ -33,6 +33,8 @@ jobs:
         run: npm test
       - name: build
         run: npx vite build
+      - name: size budget
+        run: npm run size
       - name: build (subpath /earforge/)
         run: npx vite build --outDir dist-subpath
         env:

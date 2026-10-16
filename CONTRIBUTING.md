@@ -19,12 +19,19 @@ npm test             # 单元测试（vitest）
 npm run lint         # oxlint
 npm run typecheck    # tsc -b
 npm run build        # 类型检查 + 生产构建，输出 dist/
-npm run check        # 提交前一键检查：lint（警告也算失败）+ 单元测试 + 构建
+npm run check        # 提交前一键检查：lint（警告也算失败）+ 单元测试 + 构建 + 首屏体积预算
+npm run size         # 只查首屏体积预算（需先构建，见下）
 npm run e2e          # 浏览器端到端测试（见第 5 节）
 ```
 
 部署到子路径（如 GitHub Pages 项目页 `https://<user>.github.io/earforge/`）时用 `BASE_PATH=/earforge/ npm run build`；
 默认是 `/`。manifest、service worker 与预缓存清单都按相对路径生成，子路径下也能离线使用。
+
+**首屏体积预算**：`scripts/size-budget.mjs` 读取 `dist/index.html`，统计入口脚本、modulepreload 的分块（即首屏必须下载的 JS）与样式表的
+raw / gzip / brotli 大小，gzip 超出预算时失败（`npm run check` 与 CI 都会跑；也可 `node scripts/size-budget.mjs <目录>` 查其他构建）。
+预算写在脚本开头，比当前大小略高。新功能的代码不要放进首屏：页面放进 `src/ui/lazyPages.tsx` 按需加载，
+首页只用到的小块（如考试入口卡片 `ExamCard.tsx`、试卷列表 `engine/examPresets.ts`）单独成文件；英文词典也是按需加载的分块（见 `src/i18n/index.ts`）。
+所有分块仍由 service worker 预缓存，离线可用。确有必要时调高预算，并在提交说明里写明原因。
 
 ### 2. 架构概览
 
@@ -144,12 +151,15 @@ npm test             # unit tests (vitest)
 npm run lint         # oxlint
 npm run typecheck    # tsc -b
 npm run build        # typecheck + production build into dist/
-npm run check        # pre-commit check: lint (warnings fail) + unit tests + build
+npm run check        # pre-commit check: lint (warnings fail) + unit tests + build + first-load size budget
+npm run size         # size budget only (needs a build first, see below)
 npm run e2e          # browser end-to-end suite (section 5)
 ```
 
 To deploy under a subpath (e.g. a GitHub Pages project site `https://<user>.github.io/earforge/`), build with
 `BASE_PATH=/earforge/ npm run build`. The default is `/`. The manifest, service worker and precache list use relative paths, so offline mode works under a subpath too.
+
+**First-load size budget**: `scripts/size-budget.mjs` reads `dist/index.html` and reports raw / gzip / brotli sizes of the entry script, the modulepreloaded chunks (the JS needed for the first screen) and the stylesheet. It fails when a gzip size exceeds its budget. `npm run check` and CI run it; `node scripts/size-budget.mjs <dir>` checks another build. The budgets sit at the top of the script, slightly above the current sizes. Keep new code out of the first load: put pages in `src/ui/lazyPages.tsx`, and split small pieces the home screen needs into their own files (like the exam card `ExamCard.tsx` and the preset list `engine/examPresets.ts`). The English dictionary is also a lazily loaded chunk (see `src/i18n/index.ts`). The service worker still precaches every chunk, so the app keeps working offline. If you really need a bigger budget, raise it and explain why in the commit message.
 
 ### 2. Architecture
 

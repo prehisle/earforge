@@ -16,7 +16,7 @@ import { useT } from '../i18n/react';
 import type { ExerciseDef } from '../engine/types';
 import { SONG_COUNT } from '../songs/count';
 import { hasSung } from '../songs/results';
-import { ExamCard } from './Exam';
+import { ExamCard } from './ExamCard';
 
 interface Props {
   store: Store;

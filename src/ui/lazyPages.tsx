@@ -1,8 +1,10 @@
-// 非首屏页面按需加载（统计与趋势图、曲库与曲目数据、视唱练习、设置、新手引导、关于与帮助、练习组合），缩小首屏脚本。
+// 非首屏页面按需加载（练习页与题目面板、今日训练、模拟考试、统计与趋势图、曲库与曲目数据、视唱练习、设置、新手引导、
+// 关于与帮助、练习组合、分享落地页），缩小首屏脚本。
 // 首屏渲染后立即在后台预取这些分块：之后切换页面是同步的，不出现加载占位；
 // 离线时由 service worker 预缓存提供（见 public/sw.js 与 vite.config.ts）。
 
-import { Suspense, lazy, useState, type ComponentType } from 'react';
+import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react';
+import { audio } from '../audio/engine';
 import { PageLoading } from './AppShell';
 
 interface LazyPage<P> {
@@ -41,8 +43,24 @@ function Render<P extends object>({ page, props }: { page: LazyPage<P>; props: P
   );
 }
 
+/**
+ * 出题类页面（练习、今日训练、考试、练习组合）：打开后空闲时预热音频上下文，
+ * 点「开始」时第一题不用同步等待新建 AudioContext（4 倍降速的手机模拟下约 150ms）。
+ * 打开页面的点击已是用户手势，上下文可以直接进入运行状态。
+ */
+function useWarmAudio() {
+  useEffect(() => {
+    const id = setTimeout(() => audio.warmUp(), 50);
+    return () => clearTimeout(id);
+  }, []);
+}
+
 type PropsOf<T> = T extends ComponentType<infer P> ? P : never;
 
+const practice = lazyPage(() => import('./Practice').then((m) => m.Practice));
+const mixed = lazyPage(() => import('./Mixed').then((m) => m.MixedPractice));
+const exam = lazyPage(() => import('./Exam').then((m) => m.ExamPage));
+const shared = lazyPage(() => import('./SharedSet').then((m) => m.SharedSetPage));
 const stats = lazyPage(() => import('./Stats').then((m) => m.StatsPage));
 const settings = lazyPage(() => import('./Settings').then((m) => m.SettingsPage));
 const onboarding = lazyPage(() => import('./Onboarding').then((m) => m.Onboarding));
@@ -55,6 +73,21 @@ const setRun = lazyPage(() => import('./SetRun').then((m) => m.SetRun));
 const resultView = lazyPage(() => import('./ResultView').then((m) => m.ResultView));
 const gradebook = lazyPage(() => import('./Gradebook').then((m) => m.GradebookPage));
 
+export function Practice(props: PropsOf<typeof import('./Practice').Practice>) {
+  useWarmAudio();
+  return <Render page={practice} props={props} />;
+}
+export function MixedPractice(props: PropsOf<typeof import('./Mixed').MixedPractice>) {
+  useWarmAudio();
+  return <Render page={mixed} props={props} />;
+}
+export function ExamPage(props: PropsOf<typeof import('./Exam').ExamPage>) {
+  useWarmAudio();
+  return <Render page={exam} props={props} />;
+}
+export function SharedSetPage(props: PropsOf<typeof import('./SharedSet').SharedSetPage>) {
+  return <Render page={shared} props={props} />;
+}
 export function StatsPage(props: PropsOf<typeof import('./Stats').StatsPage>) {
   return <Render page={stats} props={props} />;
 }
@@ -82,6 +115,7 @@ export function SetBuilder(props: PropsOf<typeof import('./SetBuilder').SetBuild
   return <Render page={setBuilder} props={props} />;
 }
 export function SetRun(props: PropsOf<typeof import('./SetRun').SetRun>) {
+  useWarmAudio();
   return <Render page={setRun} props={props} />;
 }
 export function ResultView(props: PropsOf<typeof import('./ResultView').ResultView>) {
@@ -91,8 +125,9 @@ export function GradebookPage(props: PropsOf<typeof import('./Gradebook').Gradeb
   return <Render page={gradebook} props={props} />;
 }
 
-// 首屏之后在后台预取（失败无妨：真正打开页面时会再试，并由出错兜底提示）
+// 首屏之后在后台预取（失败无妨：真正打开页面时会再试，并由出错兜底提示）。
+// 练习页排在最前：从首页点开练习是最常见的下一步。
 if (typeof window !== 'undefined')
   setTimeout(() => {
-    for (const p of [onboarding, stats, library, settings, songPractice, about, sets, setBuilder, setRun, resultView, gradebook]) p.load().catch(() => {});
+    for (const p of [practice, onboarding, mixed, exam, shared, stats, library, settings, songPractice, about, sets, setBuilder, setRun, resultView, gradebook]) p.load().catch(() => {});
   }, 0);

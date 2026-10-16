@@ -2,7 +2,7 @@
 
 import type { ExerciseDef, Level, Settings } from './types';
 import { DEFAULT_SETTINGS } from './types';
-import { detectLocale, LOCALES } from '../i18n';
+import { detectLocale, LOCALES, type Locale } from '../i18n';
 import { NAMING_SYSTEMS } from '../music/theory';
 import { TIMBRE_SETTINGS } from '../audio/timbres';
 import { sanitizeExams, type ExamRecord } from './examHistory';
@@ -87,6 +87,24 @@ export function loadStore(): Store {
   const raw = readRaw();
   syncedRaw = raw;
   return parseStore(raw);
+}
+
+/**
+ * 首次渲染之前判断界面语言（main.tsx 据此决定是否先加载英文词典），与 parseStore 的结果一致：
+ * 有存储时取设置里的语言（缺省或无效为中文），没有或损坏时跟随浏览器。
+ */
+export function storedLocale(): Locale {
+  const raw = readRaw();
+  try {
+    const s: unknown = raw ? JSON.parse(raw) : null;
+    if (isObj(s)) {
+      const lang = isObj(s.settings) ? s.settings.lang : undefined;
+      return LOCALES.includes(lang as Locale) ? (lang as Locale) : DEFAULT_SETTINGS.lang;
+    }
+  } catch {
+    /* 损坏：同全新用户 */
+  }
+  return detectLocale();
 }
 
 /** 其他标签页写过存储时返回重新读取的数据（并记为已同步），否则返回 null（内存里的就是最新的）。 */
