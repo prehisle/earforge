@@ -16,6 +16,7 @@ import { useT } from '../i18n/react';
 import type { ExerciseDef } from '../engine/types';
 import { SONGS } from '../songs/library';
 import { hasSung } from '../songs/results';
+import { ExamCard } from './Exam';
 
 interface Props {
   store: Store;
@@ -24,11 +25,12 @@ interface Props {
   onStats(): void;
   onSettings(): void;
   onSongs(): void;
+  onExam(): void;
 }
 
 const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
-export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam }: Props) {
   const t = useT();
   const day = store.daily[today()];
   const days = streak(store);
@@ -147,6 +149,13 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs }: Pro
           </div>
         </section>
       ))}
+
+      <section>
+        <h2 className="group-title">{t('group.exam')}</h2>
+        <div className="cards">
+          <ExamCard store={store} onOpen={onExam} />
+        </div>
+      </section>
 
       <footer className="foot muted">
         {t('home.foot')}

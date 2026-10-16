@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { exerciseById } from './exercises';
+import { ExamPage } from './ui/Exam';
 import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
@@ -20,7 +21,8 @@ type Route =
   | { page: 'stats' }
   | { page: 'settings' }
   | { page: 'songs' }
-  | { page: 'song'; id: string };
+  | { page: 'song'; id: string }
+  | { page: 'exam' };
 
 export default function App() {
   const [store, update] = useStore();
@@ -60,6 +62,7 @@ export default function App() {
             onStats={() => setRoute({ page: 'stats' })}
             onSettings={() => setRoute({ page: 'settings' })}
             onSongs={() => setRoute({ page: 'songs' })}
+            onExam={() => setRoute({ page: 'exam' })}
           />
         )}
         {route.page === 'practice' && (
@@ -101,6 +104,17 @@ export default function App() {
             store={store}
             update={update}
             onBack={() => setRoute({ page: 'songs' })}
+          />
+        )}
+        {route.page === 'exam' && (
+          <ExamPage
+            store={store}
+            update={update}
+            onBack={home}
+            onFocus={(id, focus) => {
+              setRoute({ page: 'practice', id, focus });
+              window.scrollTo(0, 0);
+            }}
           />
         )}
         {route.page === 'settings' && (
