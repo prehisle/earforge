@@ -18,7 +18,8 @@ import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
-import { keyForFocusedButton } from './keys';
+import { ChoiceGrid } from './ChoiceGrid';
+import { choiceIndexForKey, choiceKeyLabel, keyForFocusedButton } from './keys';
 import { ModuleTip } from './ModuleTip';
 import { NotatePanel } from './NotatePanel';
 import { RhythmNotation } from './RhythmNotation';
@@ -279,7 +280,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       // Ctrl/⌘/Alt + 数字是浏览器快捷键（切换标签页），不作答
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       // 长按的自动重复：不连续跳题、作答或重播（也不让回车「点击」获得焦点的选项）
-      if (e.repeat && /^(Enter| |ArrowRight|[1-9])$/.test(e.key)) {
+      if (e.repeat && (/^(Enter| |ArrowRight)$/.test(e.key) || choiceIndexForKey(e) >= 0)) {
         e.preventDefault();
         return;
       }
@@ -300,13 +301,12 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
           e.preventDefault();
           next();
         }
-      } else if (e.shiftKey && /^(Digit|Numpad)[1-9]$/.test(e.code)) {
-        // Shift + 数字：试听该选项
-        const c = q.choices[Number(e.code.slice(-1)) - 1];
-        if (c && canPreview(c.id)) onChoice(c.id);
-      } else if (/^[1-9]$/.test(e.key)) {
-        const c = q.choices[Number(e.key) - 1];
-        if (c) answer(c.id);
+      } else if (choiceIndexForKey(e) >= 0) {
+        // 作答键（1–9、0、Q–P，见 keys.ts）；Shift + 作答键：试听该选项
+        const c = q.choices[choiceIndexForKey(e)];
+        if (c && e.shiftKey) {
+          if (canPreview(c.id)) onChoice(c.id);
+        } else if (c) answer(c.id);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -388,8 +388,9 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
         <NotatePanel key={qid} question={q} naming={store.settings.naming} onStep={(i, ok) => finishStep(q, i, ok)} done={done} />
       ) : (
         /* ───── 选项按钮 ───── */
-        <div className={`choices n${Math.min(q.choices.length, 8)}`}>
-          {q.choices.map((c, i) => {
+        <ChoiceGrid
+          choices={q.choices}
+          render={(c, i) => {
             // 答完后按对比步骤标出正确与点错的选项（多步题可切换步骤）
             const isAnswer = done && c.id === q.answer[cmpAt] && (q.answer.length === 1 || !!q.choiceEvents);
             const isBad = done ? !!misses[cmpAt]?.includes(c.id) : wrong.has(c.id);
@@ -400,7 +401,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
                 key={c.id}
                 className={cls}
                 onClick={() => onChoice(c.id)}
-                title={listen ? t('quiz.listenTitle', { n: i + 1 }) : undefined}
+                title={listen ? t('quiz.listenTitle', { n: choiceKeyLabel(i) ?? i + 1 }) : undefined}
               >
                 {c.rhythm ? (
                   <RhythmNotation rhythm={c.rhythm} label={c.label} />
@@ -408,12 +409,12 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
                   <span className="choice-label">{c.label}</span>
                 )}
                 {c.sub && <span className="choice-sub">{c.sub}</span>}
-                {i < 9 && <kbd className="choice-key">{i + 1}</kbd>}
+                {choiceKeyLabel(i) && <kbd className="choice-key">{choiceKeyLabel(i)}</kbd>}
                 {listen && <span className="choice-listen">{t('quiz.listen')}</span>}
               </button>
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {done && q.choiceEvents && misses[cmpAt]?.length ? (

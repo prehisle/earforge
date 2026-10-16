@@ -1259,8 +1259,13 @@ input[type='range'] {
   align-items: baseline;
   gap: 4px;
 }
+.module-tip-keys dt {
+  flex: none;
+}
+/* 键名不折行（如「1–9 · 0 · Q–P」「Shift+作答键」），说明文字在右侧换行 */
 .module-tip-keys dt kbd {
   margin-left: 0;
+  white-space: nowrap;
 }
 .module-tip-keys dd {
   margin: 0;
@@ -2500,6 +2505,36 @@ input[type='range'] {
   }
   .choices > .choice .choice-label {
     padding-inline: 14px;
+  }
+}
+
+/* ───── 分组的选项（如和声听写的主 / 下属 / 属 / 副属）───── */
+/* 选项多（最多 19 个）：每组一个小标题，按钮矮一些、列窄一些，手机上一行 4 个 */
+.choice-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.choice-group-label {
+  display: block;
+  margin: 0 0 4px 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.choices.grouped {
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+}
+.choices.grouped > .choice {
+  min-height: 60px;
+}
+@media (min-width: 521px) {
+  .choices.grouped {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  .choices.grouped > .choice .choice-label {
+    padding-inline: 10px;
   }
 }
 

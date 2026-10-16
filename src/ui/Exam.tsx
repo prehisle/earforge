@@ -27,7 +27,8 @@ import { exerciseById } from '../exercises';
 import { eventsEnd, shiftEvents } from '../exercises/common';
 import { joinList } from '../i18n';
 import { useLocale, useT } from '../i18n/react';
-import { keyForFocusedButton } from './keys';
+import { ChoiceGrid } from './ChoiceGrid';
+import { choiceIndexForKey, choiceKeyLabel, keyForFocusedButton } from './keys';
 import { RhythmNotation } from './RhythmNotation';
 import { Staff } from './Staff';
 
@@ -427,7 +428,7 @@ function ExamRun({
       // Ctrl/⌘/Alt + 数字是浏览器快捷键（切换标签页），不作答
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       // 长按的自动重复：回车会连续跳过多题直至交卷，空格会用光重听次数
-      if (e.repeat && /^(Enter| |[1-9])$/.test(e.key)) {
+      if (e.repeat && (/^(Enter| )$/.test(e.key) || choiceIndexForKey(e) >= 0)) {
         e.preventDefault();
         return;
       }
@@ -438,8 +439,9 @@ function ExamRun({
       } else if (e.key === 'Enter') {
         e.preventDefault();
         next();
-      } else if (/^[1-9]$/.test(e.key) && !e.shiftKey) {
-        const c = q.choices[Number(e.key) - 1];
+      } else if (choiceIndexForKey(e) >= 0 && !e.shiftKey) {
+        // 作答键：1–9、0、Q–P（见 keys.ts）
+        const c = q.choices[choiceIndexForKey(e)];
         if (c) dispatch({ type: 'answer', id: c.id, now: Date.now() });
       }
     };
@@ -522,8 +524,10 @@ function ExamRun({
           </div>
         )}
 
-        <div className={`choices n${Math.min(q.choices.length, 8)} exam-choices`}>
-          {q.choices.map((c, i) => (
+        <ChoiceGrid
+          choices={q.choices}
+          className="exam-choices"
+          render={(c, i) => (
             <button
               key={c.id}
               className={answers[run.cursor] === c.id ? 'choice picked' : 'choice'}
@@ -532,10 +536,10 @@ function ExamRun({
             >
               {c.rhythm ? <RhythmNotation rhythm={c.rhythm} label={c.label} /> : <span className="choice-label">{c.label}</span>}
               {c.sub && <span className="choice-sub">{c.sub}</span>}
-              {i < 9 && <kbd className="choice-key">{i + 1}</kbd>}
+              {choiceKeyLabel(i) && <kbd className="choice-key">{choiceKeyLabel(i)}</kbd>}
             </button>
-          ))}
-        </div>
+          )}
+        />
 
         <div className="exam-next">
           {missing > 0 && <span className="muted">{t('exam.missing', { n: missing })}</span>}

@@ -69,6 +69,22 @@ describe('新手引导：按基础设定起始级别', () => {
       }
   });
 
+  it('和声听写：零基础从 Ⅰ Ⅳ Ⅴ 起，学过乐器加 ⅵ ⅱ，备考直接到六和弦与属七（含小调）', () => {
+    const ex = exerciseById.harmony;
+    expect(startLevel('beginner', ex)).toBe(0);
+    expect(startLevel('player', ex)).toBe(1);
+    expect(startLevel('exam', ex)).toBe(3);
+    const s = fresh();
+    applyBackground(s, 'exam', EXERCISES);
+    const items = activeItems(ex, s.exercises.harmony);
+    for (const it of ['I', 'vi', 'I6', 'V7', 'V42']) expect(items).toContain(it);
+    expect(items).not.toContain('I64');
+    const m = fresh();
+    getProgress(m, ex).options.mode = 'minor';
+    applyBackground(m, 'exam', EXERCISES);
+    expect(activeItems(ex, m.exercises.harmony)).toContain('minor:iio6');
+  });
+
   it('不在 store 中造假统计：只改级别，不写考点记录与每日记录', () => {
     const s = fresh();
     applyBackground(s, 'exam', EXERCISES);

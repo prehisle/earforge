@@ -406,6 +406,32 @@ function harmonyScore(chords: HarmonyChord[], voicings: number[][], tonicPc: num
 
 const BEAT = 1.2;
 
+/** 选项分组：和弦的和声功能。终止四六和弦按属功能（属的装饰）归组 */
+const FUNCTION_OF: Record<Key, 'T' | 'PD' | 'D' | 'sec'> = {
+  I: 'T',
+  I6: 'T',
+  vi: 'T',
+  IV: 'PD',
+  IV6: 'PD',
+  ii: 'PD',
+  ii6: 'PD',
+  ii7: 'PD',
+  ii65: 'PD',
+  I64: 'D',
+  V: 'D',
+  V6: 'D',
+  V7: 'D',
+  V65: 'D',
+  V43: 'D',
+  V42: 'D',
+  viio6: 'D',
+  'V/V': 'sec',
+  'V7/V': 'sec',
+};
+
+/** 选项的排列顺序：按功能分组，同组相邻（ChoiceGrid 按相邻的同名分组分段） */
+const CHOICE_ORDER: Key[] = (['T', 'PD', 'D', 'sec'] as const).flatMap((f) => KEYS.filter((k) => FUNCTION_OF[k] === f));
+
 export const harmony: ExerciseDef = {
   id: 'harmony',
   get title() {
@@ -467,10 +493,12 @@ export const harmony: ExerciseDef = {
     }
     for (const k of keys) vocab.add(k);
     const chords = keys.map((k) => table[k]);
-    const choices = KEYS.filter((k) => vocab.has(k)).map((k) => ({
+    // 选项按功能分组（主 / 下属 / 属 / 副属），组内按 CHOICE_ORDER 排列
+    const choices = CHOICE_ORDER.filter((k) => vocab.has(k)).map((k) => ({
       id: table[k].id,
       label: table[k].label,
       sub: chordSymbol(table[k], keyPc, mode),
+      group: t(`ex.harmony.group.${FUNCTION_OF[k]}`),
     }));
     const answer = chords.map((c) => c.id);
     const play = (vs: number[][]): NoteEvent[] => vs.map((notes, i) => ({ notes, time: i * BEAT, dur: BEAT * 0.95 }));
