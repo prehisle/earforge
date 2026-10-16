@@ -20,8 +20,8 @@ await run(async (t) => {
       const page = await t.open({ target: ctx, lang: lang === 'zh' ? 'zh-CN' : 'en-US', dark, onboarding: 'keep', tag });
       const T =
         lang === 'zh'
-          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别', harmony: '和声听写', about: '使用指南与快捷键', sets: '自定义练习', tpl: '音程 + 和弦性质', save: '保存' }
-          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', harmony: 'Harmonic Dictation', about: 'Guide & shortcuts', sets: 'Custom practice', tpl: 'Intervals + chord qualities', save: 'Save' };
+          ? { start: '开始练习', back: '返回', stats: '统计', settings: '设置', lib: '视唱曲库', degrees: '调内音级', inversions: '和弦转位', scales: '音阶与调式', intervals: '音程识别', harmony: '和声听写', bassLine: '低音线听写', about: '使用指南与快捷键', sets: '自定义练习', tpl: '音程 + 和弦性质', save: '保存' }
+          : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', harmony: 'Harmonic Dictation', bassLine: 'Bass-Line Dictation', about: 'Guide & shortcuts', sets: 'Custom practice', tpl: 'Intervals + chord qualities', save: 'Save' };
       // 按文字或 aria-label 匹配
       const click = async (text, sel = 'button') => {
         for (const el of await page.$$(sel)) {
@@ -66,11 +66,12 @@ await run(async (t) => {
       await audit('practice-answered');
       await click(T.back);
       await sleep(200);
-      // 新练习：和弦转位、音阶与调式、和声听写
+      // 新练习：和弦转位、音阶与调式、和声听写、低音线听写
       for (const [id, title] of [
         ['inversions', T.inversions],
         ['scales', T.scales],
         ['harmony', T.harmony],
+        ['bassLine', T.bassLine],
       ]) {
         await click(title, '.card');
         await sleep(200);

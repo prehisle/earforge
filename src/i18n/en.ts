@@ -654,6 +654,16 @@ export const en: Record<MessageKey, string> = {
   'tip.harmony':
     'A cadence establishes the key, then you hear a four-part progression that starts on the tonic. Name each chord in order: Roman numeral plus inversion. Follow the bass line to find the inversion (the small figures are figured bass: ⁶ first inversion, ⁶₄ second inversion, ⁶₅ ⁴₃ ⁴₂ seventh-chord inversions), then listen for the chord’s function and color. Afterwards, tap a box above to switch steps and tap a choice to hear it in place.',
 
+  'ex.bassLine.title': 'Bass-Line Dictation',
+  'ex.bassLine.subtitle': 'Hear four-part progressions and write the bass line in solfège: inversions, V7 inversions, cadential 6/4, the ♯4 of secondary dominants',
+  'ex.bassLine.prompt': '{key} · Write the bass of each of the {n} chords, in order (the first is {first})',
+  'ex.bassLine.explain': 'Bass {bass} ({chords})',
+  'ex.bassLine.bass': 'Bass',
+  'ex.bassLine.bass.boost': 'Bring out the bass',
+  'ex.bassLine.bass.even': 'Balanced (exam)',
+  'tip.bassLine':
+    'A cadence establishes the key, then you hear a four-part progression that starts on the tonic (bass do). Write the bass note of each chord in order. Follow only the lowest voice and hear its steps and leaps as you would in melodic dictation; inverted chords do not have the root in the bass (I6 has mi, V6 has ti), and higher levels add the ♯4 (fi) of secondary dominants. The "Bass" option either brings out the bass or keeps the voices balanced. Afterwards, tap a box above to switch steps and tap a choice to hear that bass note in place.',
+
   'ex.dictation.title': 'Melodic Dictation',
   'ex.dictation.subtitle': 'Hear a short melody and write down its notes in order',
   'ex.dictation.len': 'Notes',

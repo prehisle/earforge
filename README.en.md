@@ -53,6 +53,7 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 - **Custom practice sets and share links**: combine items, options and weights from several exercises into one mixed set (5 templates to start from), saved locally. Share it as a link that others can start or save; with *fixed questions* on, everyone who opens the link gets exactly the same questions, handy for teachers assigning homework. The set lives after the `#` in the URL and never reaches a server.
 - **Melody + rhythm dictation**: a conservatory-style task. Write pitches and durations in a staff editor with the keyboard, on-screen buttons or a MIDI keyboard. Pitch and rhythm are graded separately.
 - **Harmonic dictation**: hear a four-part progression (4 or 6 chords) and name each chord with its inversion, from I IV V up through first inversions, V7 and its inversions, the cadential 6/4, ii7, vii°6 and the secondary dominant V/V, in major and minor. Progressions follow functional-harmony rules with smooth voice leading and no parallel fifths or octaves. Options are grouped by function (tonic / predominant / dominant / secondary dominants), and a grand staff appears after you answer. The graded and conservatory mock exams include a harmonic dictation section.
+- **Bass-line dictation**: the same four-part progressions, but you write only the bass line in solfège (stepwise basses from inversions and V7 inversions, the ♯4 of secondary dominants), with an option to bring out the bass; afterwards you can swap any step's bass note and listen.
 - **Staff notation**: correct key signatures and accidentals, with full rhythmic notation (time signatures, beams, dots, ties, triplets, automatic line breaks).
 
 <table>
@@ -112,6 +113,7 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 | Scale Degrees | Cadence + one note: name it as do re mi… (including chromatic notes), in 5 modes | 5: do mi sol → re fa → la ti → chromatic |
 | Chords in a Key | Identify I IV V vi… in a key, as single chords or four-chord progressions, major and minor | 4: I IV V → vi → ii → iii vii° |
 | Harmonic Dictation | Four-part progressions (4 or 6 chords): name each chord with its inversion, major and minor | 6: I IV V → vi ii → first inversions → V7 and inversions → cadential 6/4, ii7, vii°6 → secondary dominant V/V |
+| Bass-Line Dictation | The same four-part progressions: write the bass of each chord in solfège, major and minor | 6: do fa sol → la re → first inversions mi ti → V7 inversions → cadential 6/4, passing chords → V6/V with fi |
 | Melodic Dictation | Short melodies of 3–8 notes; enter the notes in order | 4: do re mi → … → chromatic |
 | Melody + Rhythm | Short melodies with rhythm; write pitches and durations in the staff editor | 9: quarters and halves → eighths → dotted → sixteenths → syncopation and ties → 6/8 → chromatic |
 | Intervals | Ascending, descending or harmonic, with reference songs, including compound intervals | 12: P5 and octave → … → 9ths to 15ths |
@@ -192,7 +194,7 @@ Done (see [CHANGELOG.md](CHANGELOG.md)):
 
 Ideas for next steps (discussion welcome in Issues):
 
-- [ ] More harmonic dictation: two voices, bass lines, more chromatic chords
+- [ ] More harmonic dictation: two voices, more chromatic chords
 - [ ] More public-domain sight-singing pieces
 
 ## Contributing

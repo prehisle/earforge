@@ -113,6 +113,7 @@ await run(async (t) => {
       ['Chord Inversions', 2],
       ['Scales & Modes', 2],
       ['Harmonic Dictation', 2],
+      ['Bass-Line Dictation', 2],
     ]) {
       const slug = title.replace(/ /g, '_');
       await clickText(title, '.card');

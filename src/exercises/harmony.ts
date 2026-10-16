@@ -33,7 +33,7 @@ const KEYS = [
   'V/V',
   'V7/V',
 ] as const;
-type Key = (typeof KEYS)[number];
+export type Key = (typeof KEYS)[number];
 
 /** 内部键 → [根音级数（0 起）, 是否七和弦, 转位]；V/V 为副属和弦（根音 re） */
 const SHAPE: Record<Key, [number, boolean, number]> = {
@@ -72,7 +72,7 @@ const MINOR_ID: Partial<Record<Key, string>> = {
 };
 
 // 各级别新增的和弦。小调的 ⅱ° 原位不用，ⅱ°⁶ 提前到第 2 级
-const LEVEL_KEYS: Record<'major' | 'minor', Key[][]> = {
+export const LEVEL_KEYS: Record<'major' | 'minor', Key[][]> = {
   major: [
     ['I', 'IV', 'V'],
     ['vi', 'ii'],
@@ -128,7 +128,7 @@ function makeChord(key: Key, minor: boolean): HarmonyChord {
   return { id: minor ? modeItem(MODE_BY_ID.minor, bare) : bare, key, minor, label, tones, seventh, inv };
 }
 
-const CHORDS: Record<'major' | 'minor', Record<Key, HarmonyChord>> = {
+export const CHORDS: Record<'major' | 'minor', Record<Key, HarmonyChord>> = {
   major: Object.fromEntries(KEYS.map((k) => [k, makeChord(k, false)])) as Record<Key, HarmonyChord>,
   minor: Object.fromEntries(KEYS.map((k) => [k, makeChord(k, true)])) as Record<Key, HarmonyChord>,
 };
@@ -177,10 +177,10 @@ export function canEnd(prev: Key, last: Key): boolean {
 
 /** 小调里不用的连接：ⅳ⁶（低音 le）→ Ⅴ⁶₅（低音 ti）的低音只能走增二度或减七度 */
 const MINOR_SKIP = new Set(['IV6>V65']);
-const minorSkip = (a: Key, b: Key) => MINOR_SKIP.has(`${a}>${b}`);
+export const minorSkip = (a: Key, b: Key) => MINOR_SKIP.has(`${a}>${b}`);
 
 /** 解决时需要的和弦（自选考点里没有也要放进词汇表） */
-const NEEDS: Partial<Record<Key, Key[]>> = { V42: ['I6'] };
+export const NEEDS: Partial<Record<Key, Key[]>> = { V42: ['I6'] };
 
 /**
  * 以 Ⅰ 开头、长 len、在第 2 个及之后至少出现一次 item 的合法进行，在所有合法进行中均匀抽取。
@@ -234,7 +234,7 @@ export const UPPER_RANGE = [55, 79] as const;
 /** 上方声部相邻两个和弦间最多移动的半音数（纯五度） */
 export const MAX_UPPER_MOVE = 7;
 
-const HARD = 1e6;
+export const HARD = 1e6;
 
 /** 一个和弦在某调中的全部候选排列：[低音, 次中, 中, 高]（升序），附带自身的代价。 */
 function candidates(ch: HarmonyChord, tonicPc: number): { v: number[]; cost: number }[] {
@@ -394,7 +394,7 @@ function chordSymbol(ch: HarmonyChord, tonicPc: number, mode: ModeDef): string {
 }
 
 /** 谱上按三度叠置拼写和弦音（Ⅴ/Ⅴ 的 fi 在 G♯ 小调写 C𝄪 而不是 D），调号随调 */
-function harmonyScore(chords: HarmonyChord[], voicings: number[][], tonicPc: number, mode: ModeDef): Score {
+export function harmonyScore(chords: HarmonyChord[], voicings: number[][], tonicPc: number, mode: ModeDef): Score {
   const tl = tonicLetter(tonicPc, mode);
   const notes = voicings.map((v, i) => {
     const ch = chords[i];
