@@ -64,6 +64,42 @@ export async function freshStart(page) {
   await skipOnboarding(page);
 }
 
+/** 从 React fiber 读出练习页当前题目的答案与选项 id（仅测试用）；没有选项题时返回 null */
+export const readQuestion = (page) =>
+  page.evaluate(() => {
+    const el = document.querySelector('.choices');
+    if (!el) return null;
+    const k = Object.keys(el).find((x) => x.startsWith('__reactFiber$'));
+    for (let f = el[k]; f; f = f.return)
+      for (let h = f.memoizedState; h && typeof h === 'object' && 'next' in h; h = h.next) {
+        const v = h.memoizedState;
+        if (v?.q && Array.isArray(v.q.answer) && v.ex?.id)
+          return { ex: v.ex.id, item: v.q.item, answer: v.q.answer, choices: v.q.choices.map((c) => c.id) };
+      }
+    return null;
+  });
+
+/**
+ * 按答案作答当前题：correct 为 false 时第一步先点一个错误选项（该题记为答错），再依次点正确答案。
+ * 返回反馈是否为「答对」。
+ */
+export async function answerQuestion(page, correct = true) {
+  const q = await readQuestion(page);
+  if (!q) throw new Error('读不到题目 / no question');
+  const choices = await page.$$('.choices .choice');
+  if (!correct) {
+    const wrong = q.choices.findIndex((id) => id !== q.answer[0]);
+    await choices[wrong].click();
+    await sleep(60);
+  }
+  for (const a of q.answer) {
+    await (await page.$$('.choices .choice'))[q.choices.indexOf(a)].click();
+    await sleep(60);
+  }
+  await page.waitForSelector('.feedback', { timeout: 5000 });
+  return page.$eval('.feedback', (e) => e.classList.contains('good'));
+}
+
 class Scenario {
   constructor() {
     this.base = config.base;

@@ -207,13 +207,13 @@ describe('答题流程 reducer', () => {
 
   it('作答可修改；多步题自动跳到下一个空格', () => {
     let s = initRun([3], 0, null, T0);
-    s = run(s, { type: 'answer', id: 'a' });
+    s = run(s, { type: 'answer', id: 'a', now: T0 });
     expect(s.cursor).toBe(1);
-    s = run(s, { type: 'cursor', step: 2 }, { type: 'answer', id: 'c' });
+    s = run(s, { type: 'cursor', step: 2 }, { type: 'answer', id: 'c', now: T0 });
     expect(s.cursor).toBe(1); // 回到未答的第 2 格
-    s = run(s, { type: 'answer', id: 'b' });
+    s = run(s, { type: 'answer', id: 'b', now: T0 });
     expect(s.answers[0]).toEqual(['a', 'b', 'c']);
-    s = run(s, { type: 'cursor', step: 0 }, { type: 'answer', id: 'x' });
+    s = run(s, { type: 'cursor', step: 0 }, { type: 'answer', id: 'x', now: T0 });
     expect(s.answers[0]).toEqual(['x', 'b', 'c']);
     expect(s.cursor).toBe(1);
     expect(run(s, { type: 'cursor', step: 5 }).cursor).toBe(1);
@@ -221,11 +221,11 @@ describe('答题流程 reducer', () => {
 
   it('最后一题「下一题」即交卷；交卷后忽略其他操作', () => {
     let s = initRun([1, 1], 1, null, T0);
-    s = run(s, { type: 'answer', id: 'a' }, { type: 'next', now: T0 + 1000 }, { type: 'next', now: T0 + 5000 });
+    s = run(s, { type: 'answer', id: 'a', now: T0 }, { type: 'next', now: T0 + 1000 }, { type: 'next', now: T0 + 5000 });
     expect(s.status).toBe('done');
     expect(s.timedOut).toBe(false);
     expect(s.endedAt).toBe(T0 + 5000);
-    const after = run(s, { type: 'answer', id: 'z' }, { type: 'play' }, { type: 'tick', now: T0 + 1e9 });
+    const after = run(s, { type: 'answer', id: 'z', now: T0 }, { type: 'play' }, { type: 'tick', now: T0 + 1e9 });
     expect(after).toBe(s);
   });
 
@@ -233,7 +233,7 @@ describe('答题流程 reducer', () => {
     let s = initRun([1, 1, 1], 2, 60, T0);
     expect(secsLeft(s, T0)).toBe(60);
     expect(secsLeft(s, T0 + 30_500)).toBe(30);
-    s = run(s, { type: 'answer', id: 'a' }, { type: 'next', now: T0 + 10_000 }, { type: 'tick', now: T0 + 59_999 });
+    s = run(s, { type: 'answer', id: 'a', now: T0 }, { type: 'next', now: T0 + 10_000 }, { type: 'tick', now: T0 + 59_999 });
     expect(s.status).toBe('running');
     s = run(s, { type: 'tick', now: T0 + 60_000 });
     expect(s.status).toBe('done');
@@ -241,6 +241,20 @@ describe('答题流程 reducer', () => {
     expect(s.endedAt).toBe(T0 + 60_000);
     expect(s.answers).toEqual([['a'], [null], [null]]);
     expect(secsLeft(s, T0 + 99_000)).toBe(0);
+  });
+
+  it('截止时间之后的作答不被接受，直接按超时交卷（计时器还没收卷时按下选项）', () => {
+    let s = initRun([1, 1], 0, 10, T0);
+    s = run(s, { type: 'answer', id: 'a', now: T0 + 9_999 });
+    expect(s.answers[0]).toEqual(['a']);
+    s = run(s, { type: 'next', now: T0 + 9_999 }, { type: 'answer', id: 'b', now: T0 + 10_000 });
+    expect(s.status).toBe('done');
+    expect(s.timedOut).toBe(true);
+    expect(s.endedAt).toBe(T0 + 10_000);
+    expect(s.answers).toEqual([['a'], [null]]);
+    // 不限时的考试不受影响
+    const free = run(initRun([1], 0, null, T0), { type: 'answer', id: 'x', now: T0 + 1e10 });
+    expect(free.answers).toEqual([['x']]);
   });
 
   it('时间已过时点「下一题」也按超时交卷；不限时不会超时', () => {

@@ -1,4 +1,4 @@
-// 英文界面：新手引导、各练习（出题 / 反馈 / 选项）、节奏模仿、视唱、今日训练、统计、设置，
+// 英文界面：新手引导、各练习（出题 / 反馈 / 选项，含和弦转位、音阶与调式、复音程）、节奏模仿、视唱、今日训练、统计、设置，
 // 在 375 / 1024 × 浅色 / 深色下扫描漏翻的中文与溢出；最后切回中文再切回英文。原 i18n.mjs
 // 可选：E2E_FILTER=375-light 只跑一个配置。
 import { CJK, run, sleep } from '../lib/harness.mjs';
@@ -110,6 +110,8 @@ await run(async (t) => {
       ['Intervals', 4],
       ['Chord Quality', 3],
       ['Rhythmic Dictation', 3],
+      ['Chord Inversions', 2],
+      ['Scales & Modes', 2],
     ]) {
       const slug = title.replace(/ /g, '_');
       await clickText(title, '.card');
@@ -149,6 +151,22 @@ await run(async (t) => {
     await sleep(300);
     await answer();
     await scan('intervals-harmonic', false);
+    await clickText('Back');
+
+    // 复音程：预置「只练复音程」（音程最后一级的自选考点）后重新加载
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('earforge:v1'));
+      s.exercises.intervals = { ...s.exercises.intervals, level: 11, custom: ['m9', 'M9', 'm10', 'M10', 'P11', 'A11', 'P12', 'm13', 'M13', 'm14', 'M14', 'P15'] };
+      localStorage.setItem('earforge:v1', JSON.stringify(s));
+    });
+    await page.reload({ waitUntil: 'networkidle0' });
+    await sleep(200);
+    await clickText('Intervals', '.card');
+    await scan('intervals-compound-intro', width < 500);
+    await clickText('Start');
+    await sleep(300);
+    await answer();
+    await scan('intervals-compound');
     await clickText('Back');
 
     // 节奏模仿：等待自动开始并结束

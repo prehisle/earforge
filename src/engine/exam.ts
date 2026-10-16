@@ -280,7 +280,7 @@ export interface RunState {
 
 export type RunAction =
   | { type: 'play' }
-  | { type: 'answer'; id: string }
+  | { type: 'answer'; id: string; now: number }
   | { type: 'cursor'; step: number }
   | { type: 'next'; now: number }
   | { type: 'tick'; now: number }
@@ -329,6 +329,8 @@ export function runReducer(s: RunState, a: RunAction): RunState {
       return { ...s, plays };
     }
     case 'answer': {
+      // 已到截止时间（计时器还没来得及收卷）：不再接受作答，直接按超时收卷
+      if (s.deadline !== null && a.now >= s.deadline) return finish(s, a.now, true);
       const answers = s.answers.map((x) => [...x]);
       const cur = answers[s.idx];
       cur[s.cursor] = a.id;

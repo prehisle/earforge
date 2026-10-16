@@ -182,4 +182,22 @@ describe('MIDI 输入', () => {
     send(0x90, 61, 100);
     expect(got.length).toBe(3);
   });
+
+  it('授权提示还开着时关闭 MIDI，之后被拒绝：保持「关闭」而不是「被拒绝」；开着时被拒绝才显示', async () => {
+    let reject!: () => void;
+    vi.stubGlobal('navigator', { requestMIDIAccess: () => new Promise((_, r) => (reject = () => r(new Error('denied')))) });
+    vi.resetModules();
+    const { midi: fresh } = await import('../audio/midi');
+    const pending = fresh.enable();
+    expect(fresh.status.state).toBe('pending');
+    fresh.disable();
+    reject();
+    await pending;
+    expect(fresh.status.state).toBe('off');
+
+    const again = fresh.enable();
+    reject();
+    await again;
+    expect(fresh.status.state).toBe('denied');
+  });
 });

@@ -130,7 +130,9 @@ export function MeasuredStaff({ score, marks, scale, width, current, autoScroll 
     lastCur.current = curIdx;
     if (!autoScroll || curIdx < 0) return;
     const sys = wrap.current?.querySelector('[data-cur-sys]');
-    sys?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    // 系统设置了「减少动态效果」时直接跳到当前行，不做平滑滚动
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    sys?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
   }, [curIdx, autoScroll]);
 
   const cssW = Math.max(200, width ?? measured ?? 640);

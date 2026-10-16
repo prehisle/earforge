@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { audio } from '../audio/engine';
-import { loadStore, saveStore, type Store } from '../engine/progress';
+import { loadStore, refreshStore, STORE_KEY, updateStore, type Store } from '../engine/progress';
 import { setLocale, translate } from '../i18n';
 
-/** 全局存储：同步地在最新副本上修改并持久化（调用方可立即读取修改结果），并同步音频设置与界面语言。 */
+/**
+ * 全局存储：同步地在最新副本上修改并持久化（调用方可立即读取修改结果），并同步音频设置与界面语言。
+ * 多标签页安全：修改前先读取其他标签页写入的数据（见 progress.ts 的 refreshStore）。
+ */
 export function useStore(): [Store, (fn: (s: Store) => void) => void] {
   const [store, setStore] = useState<Store>(() => {
     const s = loadStore();
@@ -27,13 +30,26 @@ export function useStore(): [Store, (fn: (s: Store) => void) => void] {
     document.title = translate(lang, 'app.title');
   }, [store.settings.lang]);
 
+  // 其他标签页写入后（storage 事件只发给其他标签页）：换成最新数据，界面随之刷新
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== STORE_KEY) return;
+      const s = refreshStore();
+      if (!s) return;
+      latest.current = s;
+      setLocale(s.settings.lang);
+      setStore(s);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const update = useCallback((fn: (s: Store) => void) => {
-    const next = structuredClone(latest.current);
-    fn(next);
+    // 修改前先看其他标签页是否写过（storage 事件是异步的，可能还没到）：在最新数据上修改，不覆盖对方的记录
+    const next = updateStore(latest.current, fn);
     latest.current = next;
     // 先切换模块级语言，再触发重新渲染
     setLocale(next.settings.lang);
-    saveStore(next);
     setStore(next);
   }, []);
 

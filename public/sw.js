@@ -3,7 +3,10 @@
 //   并把 BUILD 换成文件列表的哈希。sw.js 因此每次发布都会变化，浏览器安装新版本时一次性缓存全部分块，
 //   即使从没打开过的页面（统计、曲库、设置……）离线时也能打开；启用后删除旧版本的缓存。
 // - 路径都相对 sw.js 所在目录（ROOT），部署在子路径（如 /earforge/）下同样适用。
-// - 页面导航走网络优先（保证更新），失败时用缓存的首页 ROOT；其余同源资源缓存优先，未命中则联网并顺手缓存。
+// - 页面导航走网络优先（保证更新），失败或 3 秒没有响应（网络很差）时用缓存的首页 ROOT；
+//   其余同源资源缓存优先，未命中则联网并顺手缓存。
+// - 重定向：导航请求的重定向模式是 manual，返回 redirected 为 true 的响应会让导航失败
+//   （安装时 addAll 跟随重定向缓存的首页就可能是这样）。从缓存返回时重新构造响应，联网得到的重定向响应不缓存。
 // - 采样钢琴（tonejs.github.io，返回 Access-Control-Allow-Origin: *）单独缓存、缓存优先，应用升级时保留。
 const BUILD = 'dev';
 const PRECACHE = [];
@@ -11,6 +14,27 @@ const CACHE = `earforge-v3-${BUILD}`;
 const SAMPLE_CACHE = 'earforge-samples-v1';
 const SAMPLE_PREFIX = 'https://tonejs.github.io/audio/salamander/';
 const ROOT = new URL('./', self.location).href;
+const NAV_TIMEOUT = 3000;
+
+/** 去掉 redirected 标记：用同样的内容、状态与响应头重新构造（导航请求不能用跟随过重定向的响应） */
+const clean = (res) =>
+  res && res.redirected ? new Response(res.body, { status: res.status, statusText: res.statusText, headers: res.headers }) : res;
+
+/** 页面导航：网络优先，超时或失败时用缓存的首页；超时后网络仍在后台完成并更新缓存 */
+function navigate(e) {
+  const net = fetch(e.request).then((res) => {
+    // 只缓存同源、未经重定向的成功响应；必须同步 clone：返回后响应体会被页面读取
+    if (res.ok && res.type === 'basic' && !res.redirected) {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(ROOT, copy));
+    }
+    return res;
+  });
+  e.waitUntil(net.then(() => undefined, () => undefined));
+  const cached = () => caches.match(ROOT).then(clean);
+  const timeout = new Promise((r) => setTimeout(r, NAV_TIMEOUT)).then(() => cached().then((hit) => hit || net));
+  return Promise.race([net, timeout]).catch(() => cached().then((hit) => hit || Response.error()));
+}
 
 self.addEventListener('install', (e) => {
   const urls = ['./', './manifest.webmanifest', './favicon.svg', ...PRECACHE].map((u) => new URL(u, ROOT).href);
@@ -53,18 +77,7 @@ self.addEventListener('fetch', (e) => {
   }
   if (new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then((res) => {
-          // 必须同步 clone：返回后响应体会被页面读取
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(ROOT, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match(ROOT)),
-    );
+    e.respondWith(navigate(e));
     return;
   }
   // 缓存优先（预缓存的分块都在这里命中）；未命中则联网，成功的同源响应顺手缓存
