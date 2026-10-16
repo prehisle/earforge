@@ -18,6 +18,7 @@ import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
+import { keyForFocusedButton } from './keys';
 import { ModuleTip } from './ModuleTip';
 import { NotatePanel } from './NotatePanel';
 import { RhythmNotation } from './RhythmNotation';
@@ -97,6 +98,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const nextRef = useRef<() => void>(() => {});
   const timer = useRef<number | undefined>(undefined);
   const holdNext = useRef(false); // 答完后点了试听：取消本题的自动跳题
+  const recorded = useRef(''); // 已记录的「题号:步骤」：同一任务里连到的两次作答（如 MIDI 和弦）只记一次
+  const turn = useRef(0); // 每出一题（或卸载）加一：等待播放解决和弦期间已换题时不再安排自动跳题
   const midiStatus = useMidiStatus();
   const latest = useRef({ source, onResult, onComplete });
   const q = cur?.q ?? null;
@@ -117,6 +120,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
 
   const next = () => {
     window.clearTimeout(timer.current);
+    turn.current++;
     const d = latest.current.source.next();
     if (!d) {
       audio.stopAll();
@@ -146,12 +150,16 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
 
   useEffect(() => () => {
     window.clearTimeout(timer.current);
+    turn.current++;
     audio.stopAll();
   }, []);
 
   /** 某一步作答完成（firstTry 表示首次即答对）。 */
   const finishStep = (question: Question, idx: number, firstTry: boolean) => {
     if (!cur) return;
+    const key = `${qid}:${idx}`;
+    if (recorded.current === key) return;
+    recorded.current = key;
     const { ex } = cur;
     const results = [...stepResults, firstTry];
     setStepResults(results);
@@ -186,9 +194,12 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       steps: results.map((ok, i) => ({ item: question.stepItems?.[i] ?? question.item, ok })),
       allRight,
     });
+    const my = turn.current;
     void (async () => {
       let wait = 1.1;
       if (question.resolution && question.resolution.length > 1) wait += await play(question, 'resolution');
+      // 等待播放期间已手动下一题或离开页面：不要给新题（或已卸载的组件）安排自动跳题
+      if (my !== turn.current) return;
       if (allRight && store.settings.autoNext && !question.sing && !question.tap && !holdNext.current) {
         timer.current = window.setTimeout(() => nextRef.current(), wait * 1000);
       }
@@ -261,7 +272,15 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   // 键盘快捷键
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
+      // Ctrl/⌘/Alt + 数字是浏览器快捷键（切换标签页），不作答
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // 长按的自动重复：不连续跳题、作答或重播（也不让回车「点击」获得焦点的选项）
+      if (e.repeat && /^(Enter| |ArrowRight|[1-9])$/.test(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      if (keyForFocusedButton(e)) return;
       if (!q) {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

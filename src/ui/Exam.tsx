@@ -27,6 +27,7 @@ import { exerciseById } from '../exercises';
 import { eventsEnd, shiftEvents } from '../exercises/common';
 import { joinList } from '../i18n';
 import { useLocale, useT } from '../i18n/react';
+import { keyForFocusedButton } from './keys';
 import { RhythmNotation } from './RhythmNotation';
 import { Staff } from './Staff';
 
@@ -361,12 +362,18 @@ function ExamRun({
   // 计时
   useEffect(() => {
     if (run.deadline === null) return;
-    const id = window.setInterval(() => {
+    const tick = () => {
       const n = Date.now();
       setNow(n);
       dispatch({ type: 'tick', now: n });
-    }, 250);
-    return () => window.clearInterval(id);
+    };
+    const id = window.setInterval(tick, 250);
+    // 后台标签页的定时器会被大幅节流：切回来时立即按墙上时间检查一次，过了时限就先交卷，不能再作答
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
   }, [run.deadline]);
 
   // 交卷
@@ -383,11 +390,12 @@ function ExamRun({
     void audio.play(questionEvents(q));
   };
 
-  // 每题出现时自动播放一次（计入播放次数）；ref 防止 StrictMode 重复
+  // 每题出现时自动播放一次（计入播放次数）；真正播放时才记下题号：
+  // StrictMode 的模拟卸载会清掉第一次的定时器，若先记题号，重新挂载时就不再自动播放
   useEffect(() => {
     if (autoPlayed.current === run.idx) return;
-    autoPlayed.current = run.idx;
     const id = window.setTimeout(() => {
+      autoPlayed.current = run.idx;
       dispatch({ type: 'play' });
       void audio.play(questionEvents(questions[run.idx].q));
     }, 150);
@@ -401,7 +409,15 @@ function ExamRun({
   // 键盘：数字作答、空格重听、回车下一题
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
+      // Ctrl/⌘/Alt + 数字是浏览器快捷键（切换标签页），不作答
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // 长按的自动重复：回车会连续跳过多题直至交卷，空格会用光重听次数
+      if (e.repeat && /^(Enter| |[1-9])$/.test(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      if (keyForFocusedButton(e)) return;
       if (e.key === ' ') {
         e.preventDefault();
         play();
@@ -482,7 +498,9 @@ function ExamRun({
                 key={i}
                 className={`slot exam-slot${i === run.cursor ? ' cur' : ''}${a !== null ? ' filled' : ''}`}
                 onClick={() => dispatch({ type: 'cursor', step: i })}
-                aria-label={t('quiz.step', { n: i + 1 })}
+                // 读屏也要读出这一步填了什么（aria-label 会覆盖按钮里的文字）
+                aria-label={`${t('quiz.step', { n: i + 1 })}: ${a === null ? t('exam.blank') : label(a)}`}
+                aria-current={i === run.cursor ? 'step' : undefined}
               >
                 {label(a)}
               </button>

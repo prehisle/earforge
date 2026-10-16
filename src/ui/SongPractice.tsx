@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
 import { PitchListener } from '../audio/pitch';
 import type { Store } from '../engine/progress';
@@ -169,8 +169,9 @@ export function SongPractice({ song, store, update, onBack }: Props) {
     setPlaying(true);
     void schedule(events, ci.dur, (rel) => {
       if (rel >= total + 0.25) {
-        if (loop) {
-          play();
+        // 读最新的开关与 play（这一帧的闭包可能是开始播放时的旧值：中途取消循环会一直循环下去）
+        if (latest.current.loop) {
+          latest.current.play();
           return false;
         }
         setPlaying(false);
@@ -182,6 +183,12 @@ export function SongPractice({ song, store, update, onBack }: Props) {
       return true;
     });
   };
+
+  // 循环播放时读最新的「循环」开关、节拍器与伴奏设置
+  const latest = useRef({ loop, play });
+  useLayoutEffect(() => {
+    latest.current = { loop, play };
+  });
 
   const playKey = () => {
     halt();

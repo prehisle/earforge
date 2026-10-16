@@ -74,12 +74,25 @@ export class PitchListener {
   private ctx: AudioContext | null = null;
   private raf = 0;
   private unwatch: () => void = () => {};
+  /** 已停止（含 start 尚未完成时就被停止）；每个实例只用一次 */
+  private stopped = false;
 
   async start(onPitch: (p: PitchResult | null) => void): Promise<void> {
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false },
     });
-    this.ctx = new AudioContext();
+    // 等待授权期间已调用 stop()（如离开页面）：立刻关掉麦克风，不再开始监听
+    if (this.stopped) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    this.stream = stream;
+    try {
+      this.ctx = new AudioContext();
+    } catch (e) {
+      this.stop();
+      throw e;
+    }
     // 切回前台时恢复被挂起的麦克风分析上下文
     const ctx = this.ctx;
     this.unwatch = watchVisibility(() => {
@@ -100,11 +113,12 @@ export class PitchListener {
   }
 
   stop(): void {
+    this.stopped = true;
     this.unwatch();
     this.unwatch = () => {};
     cancelAnimationFrame(this.raf);
     this.stream?.getTracks().forEach((t) => t.stop());
-    this.ctx?.close();
+    void this.ctx?.close().catch(() => {});
     this.stream = null;
     this.ctx = null;
   }

@@ -2,7 +2,7 @@
 // 放在 App 之外（main.tsx），不依赖 LocaleContext：语言取模块级的当前语言（useStore 首次渲染前已设好）。
 
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
-import { backupJson, onStorageStatus, storageOk } from '../engine/progress';
+import { backupJson, onStorageStatus, storageOk, today } from '../engine/progress';
 import { t } from '../i18n';
 import { useT } from '../i18n/react';
 
@@ -12,7 +12,7 @@ function downloadBackup(json: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `earforge-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `earforge-${today()}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

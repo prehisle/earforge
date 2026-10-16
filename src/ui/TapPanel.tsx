@@ -54,21 +54,37 @@ class Onset extends AudioWorkletProcessor {
 registerProcessor('earforge-onset', Onset);
 `;
 
+/** 每个 AudioContext 只注册一次处理器（重复 registerProcessor 同名处理器在部分浏览器会让 addModule 失败） */
+const workletLoaded = new WeakMap<BaseAudioContext, Promise<void>>();
+
+function loadOnsetWorklet(ctx: AudioContext): Promise<void> {
+  let p = workletLoaded.get(ctx);
+  if (!p) {
+    const url = URL.createObjectURL(new Blob([ONSET_WORKLET], { type: 'text/javascript' }));
+    p = ctx.audioWorklet.addModule(url).finally(() => URL.revokeObjectURL(url));
+    // 失败后允许重试
+    p.catch(() => workletLoaded.delete(ctx));
+    workletLoaded.set(ctx, p);
+  }
+  return p;
+}
+
 class ClapListener {
   private stream: MediaStream | null = null;
   private nodes: AudioNode[] = [];
+  /** 已停止（含 start 尚未完成时就被停止）；每个实例只用一次 */
+  private stopped = false;
 
   async start(ctx: AudioContext, onClap: (ctxTime: number) => void): Promise<void> {
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false },
     });
-    const url = URL.createObjectURL(new Blob([ONSET_WORKLET], { type: 'text/javascript' }));
-    try {
-      await ctx.audioWorklet.addModule(url);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-    const src = ctx.createMediaStreamSource(this.stream);
+    this.stream = stream;
+    // 等待授权期间已停止（如答完离开本题）：立刻关掉麦克风
+    if (this.stopped) return this.stop();
+    await loadOnsetWorklet(ctx);
+    if (this.stopped) return this.stop();
+    const src = ctx.createMediaStreamSource(stream);
     const node = new AudioWorkletNode(ctx, 'earforge-onset');
     const mute = ctx.createGain();
     mute.gain.value = 0;
@@ -80,6 +96,7 @@ class ClapListener {
   }
 
   stop(): void {
+    this.stopped = true;
     for (const n of this.nodes) n.disconnect();
     this.stream?.getTracks().forEach((t) => t.stop());
     this.nodes = [];
@@ -138,9 +155,10 @@ export function TapPanel({ question, onStep, done }: Props) {
   const start = async () => {
     stopLoop();
     const run = ++st.current.run;
-    const ctx = audio.context;
-    if (ctx.state !== 'running') await ctx.resume();
+    // 用引擎的 resume：iOS 切回前台后 ctx.resume() 可能一直不返回（或被拒绝），这里最多等一会儿
+    await audio.resume();
     if (run !== st.current.run) return;
+    const ctx = audio.context;
     const listen = !tap.showNotation;
     const demo = listen ? question.events : [];
     const lead = listen ? (tap.countIn * beat + total) : 0; // 示范结束后紧接着预备拍
@@ -229,12 +247,15 @@ export function TapPanel({ question, onStep, done }: Props) {
     setClapError(null);
     setClap('starting');
     const l = new ClapListener();
+    // 先登记：等待授权期间卸载时，清理函数也能停掉它（否则麦克风会一直开着）
+    clapper.current = l;
     try {
       await l.start(audio.context, hit);
-      clapper.current = l;
-      setClap('on');
+      if (clapper.current === l) setClap('on');
     } catch {
       l.stop();
+      if (clapper.current !== l) return;
+      clapper.current = null;
       setClap('off');
       setClapError(t('tap.micError'));
     }
