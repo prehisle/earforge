@@ -42,8 +42,12 @@ Exercise levels start gently and can be skipped ahead in the welcome tour. It of
 npm install
 npm run dev      # dev server
 npm test         # unit tests
-npm run build    # production build (outputs dist/, deployable to any static host)
+npm run build    # production build (outputs dist/, deployable to any static host; use BASE_PATH=/earforge/ for a subpath)
+npm run check    # lint + unit tests + build
+npm run e2e      # browser end-to-end tests (puppeteer-core + local Chrome)
 ```
+
+Before contributing, please read [CONTRIBUTING.md](CONTRIBUTING.md). It covers the architecture, adding exercises and songs (including the public-domain policy), tests and commit style.
 
 Stack: Vite + React + TypeScript, with no runtime dependencies besides React. UI strings live in `src/i18n/` (`zh.ts` is the source of truth; `en.ts` must have the same keys, enforced by TypeScript and a unit test).
 

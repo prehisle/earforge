@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .claude/
+
+# e2e：截图 / 日志 / 构建产物，以及下载的浏览器与生成的假麦克风音频
+e2e-output*
+e2e/.cache
