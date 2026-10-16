@@ -43,7 +43,8 @@ class MidiInput {
       },
       () => {
         this.requesting = null;
-        this.setStatus({ state: 'denied', devices: [] });
+        // 授权提示还开着时用户已关闭 MIDI：保持「关闭」，不显示「被拒绝」
+        if (this.enabled) this.setStatus({ state: 'denied', devices: [] });
       },
     );
     await this.requesting;
