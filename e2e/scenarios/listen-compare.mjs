@@ -27,8 +27,12 @@ await run(async (t) => {
   await clickText(page, '设置');
   await sleep(100);
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  const midiPanel = () => page.evaluate(() => [...document.querySelectorAll('.panel')].at(-1).textContent);
-  for (const b of await (await page.$$('.panel')).at(-1).$$('button')) if ((await b.evaluate((e) => e.textContent)) === '开') await b.click();
+  // MIDI 面板按内容定位（设置页末尾后来又加了「关于与帮助」面板）
+  const midiPanel = () => page.evaluate(() => [...document.querySelectorAll('.panel')].find((p) => p.textContent.includes('MIDI')).textContent);
+  const panels = await page.$$('.panel');
+  let midiEl = null;
+  for (const p of panels) if ((await p.evaluate((e) => e.textContent)).includes('MIDI')) midiEl = p;
+  for (const b of await midiEl.$$('button')) if ((await b.evaluate((e) => e.textContent)) === '开') await b.click();
   await sleep(200);
   const mp = await midiPanel();
   check(mp.includes('模拟键盘 KX-49') && mp.includes('已连接'), '设置页显示设备名');
