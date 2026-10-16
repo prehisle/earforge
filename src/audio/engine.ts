@@ -53,6 +53,8 @@ class AudioEngine {
   private gestureWait = false;
   private master: GainNode | null = null;
   private active = new Set<AudioScheduledSourceNode>();
+  /** 每次 play / stopAll 加一：等待 resume 期间被取代或被停止的播放不再安排 */
+  private gen = 0;
   timbre: Timbre = 'piano';
   volume = 0.8;
   private samples: Map<number, AudioBuffer> | null = null;
@@ -103,6 +105,7 @@ class AudioEngine {
   }
 
   stopAll(): void {
+    this.gen++;
     for (const src of this.active) {
       try {
         src.stop();
@@ -153,14 +156,19 @@ class AudioEngine {
 
   /** 播放一组事件，返回总时长（秒）。会先停止正在播放的声音。 */
   async play(events: NoteEvent[]): Promise<number> {
-    await this.resume();
     this.stopAll();
+    const gen = this.gen;
+    await this.resume();
+    // 等待期间又调用了 play / stopAll（如离开页面）：这次播放作废
+    if (gen !== this.gen) return 0;
     return this.schedule(events);
   }
 
   /** 叠加播放一组事件（不停止正在播放的声音），返回总时长（秒）。stopAll 同样能停止它。 */
   async playExtra(events: NoteEvent[]): Promise<number> {
+    const gen = this.gen;
     await this.resume();
+    if (gen !== this.gen) return 0;
     return this.schedule(events);
   }
 
@@ -381,7 +389,11 @@ class AudioEngine {
 
   private track(src: AudioScheduledSourceNode): void {
     this.active.add(src);
-    src.onended = () => this.active.delete(src);
+    src.onended = () => {
+      this.active.delete(src);
+      // 断开已结束的声源：其后的增益/滤波节点不再有输入，可被回收
+      src.disconnect();
+    };
   }
 }
 
