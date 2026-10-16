@@ -19,6 +19,7 @@ import {
 } from '../engine/shareLink';
 import type { SetPart } from '../engine/practiceSet';
 import { EXERCISES, exerciseById } from '../exercises';
+import { normalizeSet, SET_EXERCISES } from '../engine/setRunner';
 
 const bytesB64 = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64 = (s: string) => bytesB64(new TextEncoder().encode(s));
@@ -28,17 +29,17 @@ const unB64 = (c: string) => new TextDecoder().decode(Uint8Array.from(atob(c.rep
 function randomSet(r: () => number): SharedSet {
   const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
   const parts: SetPart[] = Array.from({ length: 1 + Math.floor(r() * 4) }, () => {
-    const ex = pick(EXERCISES);
+    const ex = pick(SET_EXERCISES);
     const options: Record<string, string> = {};
     for (const o of ex.options ?? []) if (r() < 0.5) options[o.id] = pick(o.values).id;
     const all = [...new Set(levelsOf(ex, { ...Object.fromEntries((ex.options ?? []).map((o) => [o.id, o.default])), ...options }).flatMap((l) => l.items))];
     const items = all.filter(() => r() < 0.5);
     const part: SetPart = { ex: ex.id, items: items.length ? items : [all[0]], options };
-    if (r() < 0.2) part.weight = 1 + Math.floor(r() * 4);
+    if (r() < 0.2) part.weight = 1 + Math.floor(r() * 3);
     return part;
   });
   const names = ['', '期中复习', 'Week 3 | intervals ~;,=', '😀 和弦 & <b>x</b>', 'a'.repeat(40)];
-  const set: SharedSet = { name: pick(names), parts, count: 1 + Math.floor(r() * 50) };
+  const set: SharedSet = { name: pick(names), parts, count: 5 + Math.floor(r() * 50) };
   if (r() < 0.5) set.seed = Math.floor(r() * 0x100000000);
   return set;
 }
@@ -47,7 +48,7 @@ function randomSet(r: () => number): SharedSet {
 function canon(s: SharedSet) {
   return {
     ...s,
-    parts: s.parts.map((p) => {
+    parts: s.parts.filter((p, i, a) => a.findIndex((x) => x.ex === p.ex) === i).map((p) => {
       const ex = exerciseById[p.ex];
       const options = Object.fromEntries(Object.entries(p.options).filter(([k, v]) => ex.options?.find((o) => o.id === k)?.default !== v));
       const out: SetPart = { ...p, options };
@@ -172,18 +173,18 @@ describe('分享码', () => {
     const got = decodeSet(sealText(text))!;
     expect(got.count).toBe(100);
     expect(got.seed).toBeUndefined();
+    // 同一练习只保留第一个（与本地组合的规范化一致）
     expect(got.parts).toEqual([
       { ex: 'intervals', items: ['m3', 'M3'], options: { dir: 'harm' }, weight: 2 },
       { ex: 'chords', items: ['maj'], options: {} },
-      { ex: 'intervals', items: ['m3'], options: {} },
-      { ex: 'intervals', items: ['m3'], options: {}, weight: 100 },
     ]);
     expect([...got.name].length).toBe(MAX_NAME);
     expect(got.name.startsWith('名字 <script>')).toBe(true); // 名称只按文本显示（React 转义）
 
-    const many = Array.from({ length: 30 }, () => 'iv~m3').join(';');
-    expect(decodeSet(sealText(`0||${many}|n`))!.parts.length).toBe(MAX_PARTS);
-    expect(decodeSet(sealText(`0||${many}|n`))!.count).toBe(1);
+    // 练习数上限：可用的练习不足 MAX_PARTS 个，重复的又会去掉，这里只确认不会超出
+    const many = Array.from({ length: 30 }, (_, i) => SET_EXERCISES.map((e) => `${CODES[e.id]}~${levelsOf(e, {})[0].items[0]}`)[i % SET_EXERCISES.length]).join(';');
+    expect(decodeSet(sealText(`0||${many}|n`))!.parts.length).toBe(Math.min(MAX_PARTS, SET_EXERCISES.length));
+    expect(decodeSet(sealText(`0||${many}|n`))!.count).toBe(5);
   });
 
   it('作用域考点（调式）省略前缀后能还原', () => {
@@ -207,5 +208,67 @@ describe('分享码', () => {
     expect(b.seed).toBe(SAMPLE.seed);
     expect(Math.abs(b.created - Date.now())).toBeLessThan(1000);
     expect(toPracticeSet({ ...SAMPLE, seed: undefined }).seed).toBeUndefined();
+  });
+});
+
+describe('复查：分享码与本地组合的一致性、粘贴来的链接', () => {
+  const lone = (s: string) => [...s].some((c) => c.length === 1 && c.charCodeAt(0) >= 0xd800 && c.charCodeAt(0) <= 0xdfff);
+
+  it('名称含 emoji 时截断不拆开代理对，保存后的组合仍能分享', () => {
+    const name = `a${'😀'.repeat(45)}`;
+    const saved = normalizeSet({ name, parts: SAMPLE.parts, count: 20 })!;
+    expect(lone(saved.name)).toBe(false);
+    expect([...saved.name].length).toBe(MAX_NAME);
+    const { id, created, ...shared } = saved;
+    void id;
+    void created;
+    expect(decodeSet(encodeSet(shared))?.name).toBe(saved.name);
+    // 名称里本来就有孤立代理项（如外部数据）：编码前替换掉，链接仍有效
+    expect(decodeSet(encodeSet({ ...SAMPLE, name: 'x\ud83dy' }))?.name).toBe('x�y');
+  });
+
+  it('解码结果与本地规范化一致：不含麦克风练习、题数 ≥ 5、权重 1–3、练习不重复', () => {
+    const text = ['3', '', ['iv~m3,M3~~100', 'sg~d0', 'rt~q', 'iv~P5', 'ch~maj,min~~2.6'].join(';'), 'x'].join('|');
+    const got = decodeSet(sealText(text))!;
+    expect(got.count).toBe(5);
+    expect(got.parts).toEqual([
+      { ex: 'intervals', items: ['m3', 'M3'], options: {}, weight: 3 },
+      { ex: 'chords', items: ['maj', 'min'], options: {}, weight: 3 },
+    ]);
+    // 随机组合：解码后再本地规范化不变（直接开始与保存后开始出同样的题）
+    const r = mulberry32(7);
+    for (let i = 0; i < 200; i++) {
+      const got2 = decodeSet(encodeSet(randomSet(r)));
+      if (!got2) continue;
+      const n = normalizeSet(got2)!;
+      expect({ name: n.name, parts: n.parts, count: n.count, seed: n.seed }).toEqual({ seed: undefined, ...got2 });
+    }
+  });
+
+  it('seed 边界：0 与 2³²−1', () => {
+    for (const seed of [0, 0xffffffff]) expect(decodeSet(encodeSet({ ...SAMPLE, seed }))?.seed).toBe(seed);
+  });
+
+  it('聊天软件改动过的链接：尾随标点、追加参数、百分号编码、换行与空格', () => {
+    const code = encodeSet(SAMPLE);
+    const base = 'https://x.io/earforge/';
+    const urls = [
+      `${base}?from=singlemessage&isappinstalled=0#s=${code}`,
+      `${base}#s=${code}%EF%BC%89`, // 全角右括号（地址栏里被百分号编码）
+      `${base}#s=${code}）`,
+      `${base}#s=${code}.`,
+      `${base}#s=${code},`,
+      `${base}#s=${code}?from=singlemessage`,
+      `${base}#s=${code}&from=timeline`,
+      `${base}#s%3D${code}`,
+      `${base}#s=${code.slice(0, 20)}%0A${code.slice(20)}`,
+      `${base}#s=${code.slice(0, 20)} ${code.slice(20)}`,
+    ];
+    for (const u of urls) {
+      expect(hasSharedSet(u), u).toBe(true);
+      expect(readSharedSet(u), u).toEqual(SAMPLE);
+    }
+    expect(hasSharedSet(`${base}#top`)).toBe(false);
+    expect(hasSharedSet(`${base}#xs=1`)).toBe(false);
   });
 });

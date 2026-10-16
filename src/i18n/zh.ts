@@ -36,6 +36,8 @@ export const zh = {
   'share.home': '返回首页',
   'share.invalidTitle': '链接无法打开',
   'share.invalidBody': '这个分享链接不完整或已损坏（可能复制时被截断了）。请让对方重新发送完整的链接。',
+  'share.full': '「我的组合」已满 {n} 个，请先删除一些再保存。',
+  'share.leaveConfirm': '打开分享的组合会离开当前页面，本次进度不会保留。继续吗？',
 
   // ───── 首页 ─────
   'home.stats': '统计',
@@ -130,6 +132,8 @@ export const zh = {
   'sets.share': '分享',
   'sets.deleteConfirm': '删除组合「{name}」？此操作不可撤销。',
   'sets.copySuffix': '{name}（副本）',
+  'sets.copySuffixN': '{name}（副本 {n}）',
+  'sets.full': '最多保存 {n} 个组合，已满。请先删除不用的组合，再新建或复制。',
   'sets.untitled': '未命名组合',
   'sets.meta': '{n} 题 · {mods}',
   'sets.seeded': '固定题目',
