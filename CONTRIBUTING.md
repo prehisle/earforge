@@ -107,8 +107,8 @@ UI 只负责播放、收集作答与显示。乐理、出题、评分尽量写�
     或运行 `npm run e2e:browser` 下载 Chrome for Testing 到 `e2e/.cache/browsers`。
   - 写新场景：复制一个现有场景，用 `e2e/lib/harness.mjs` 的 `run(async (t) => …)`；
     `t.open({ lang, width, dark })` 打开页面（默认中文、跳过新手引导），`t.check(cond, '说明')` 断言，`t.shot(page, name)` 截图。
-    页面上的 JS 错误与 `console.error` 会自动算作失败。需要读答案时可用 `__EARFORGE_TEST__` 钩子（见 `src/ui/Exam.tsx`）
-    或 `e2e/lib/notate.mjs` 的做法。
+    页面上的 JS 错误与 `console.error` 会自动算作失败。需要读答案时：练习页的选项题用 harness 的 `readQuestion(page)` /
+    `answerQuestion(page, correct)`，考试用 `__EARFORGE_TEST__` 钩子（见 `src/ui/Exam.tsx`），记谱题用 `e2e/lib/notate.mjs`。
 
 ### 6. 提交信息
 
@@ -190,7 +190,7 @@ Do not add copyrighted songs (pop, film or game music, recent works). Do not cop
   - Test a subpath build with `npm run e2e -- --base /earforge/`, or a server that is already running with `npm run e2e -- --url http://localhost:4173/`. The `offline` scenario needs a production build, because the dev server does not register the service worker.
   - Screenshots and logs go to `e2e-output/`. Set `E2E_HEADFUL=1` to watch the browser.
   - The runner finds Chrome automatically. You can also set `CHROME_PATH`, or run `npm run e2e:browser` to download Chrome for Testing.
-  - To write a scenario, use `run(async (t) => …)` from `e2e/lib/harness.mjs` with `t.open()`, `t.check()` and `t.shot()`. Page errors and `console.error` count as failures.
+  - To write a scenario, use `run(async (t) => …)` from `e2e/lib/harness.mjs` with `t.open()`, `t.check()` and `t.shot()`. Page errors and `console.error` count as failures. To answer a practice question deterministically, use `readQuestion(page)` / `answerQuestion(page, correct)` from the harness.
 
 ### 6. Commit messages
 

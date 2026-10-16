@@ -28,7 +28,7 @@ const scenarioDir = join(here, 'scenarios');
 /** 对时间敏感（节拍、音频时钟、麦克风）的场景：不与其他场景并行 */
 const SERIAL = new Set(['rhythm-tap', 'song-pitch']);
 /** 耗时长的先跑，缩短总时间 */
-const SLOW_FIRST = ['exam', 'i18n-en', 'songs', 'notate', 'a11y-axe', 'listen-compare'];
+const SLOW_FIRST = ['exam', 'i18n-en', 'songs', 'notate', 'a11y-axe', 'listen-compare', 'regressions'];
 
 function parseArgs(argv) {
   const o = { names: [], build: true, base: process.env.BASE_PATH || '/', url: null, jobs: 2, retries: 0, out: 'e2e-output', list: false };
