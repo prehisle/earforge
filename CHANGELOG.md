@@ -6,6 +6,7 @@
 ## [Unreleased]
 
 ### Added
+- 新练习「和声听写」：终止式后听一段四部和声进行（4 或 6 个和弦，第一个是主和弦），逐个写出级数与转位；6 级，从 Ⅰ Ⅳ Ⅴ 到六和弦、属七及其转位、终止四六、ⅱ⁷、ⅶ°⁶ 与副属和弦 Ⅴ/Ⅴ；大调与小调。进行按功能和声文法生成，声部就近进行、没有平行五八度，答完后附五线谱。
 - 更多乐器音色（全部实时合成，零下载、离线可用）：风琴（拉杆式分音，按住多久响多久）、吉他（Karplus-Strong 拨弦，和弦从低到高扫弦）、弦乐（失谐锯齿波合奏、慢起音、轻颤音）、长笛（近正弦 + 气声 + 颤音）、马林巴（非谐分音 1 / 3.9 / 9.2，自然衰减）。各音色响度已与合成钢琴平衡（±3.5 dB 内）。
 - 可选的采样木吉他、小提琴、长笛（tonejs-instruments，CC BY 3.0），与采样钢琴一样按需下载、离线缓存，未就绪或超出音域时回退到同类合成音色。
 - 「每题随机换乐器」音色设置：每道新题（含模拟考试）随机换一种离线乐器，本题重听与选项试听沿用，练习页显示本题音色徽标；节奏练习的打击音不受影响。
@@ -106,7 +107,8 @@
 - Web Audio 合成钢琴音色；YIN 实时音高检测。
 - 首调唱名、简谱、固定调唱名、字母音名四种显示方式；深色模式；PWA 离线可用。
 
-[0.7.0]: https://github.com/<your-username>/earforge/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/<your-username>/earforge/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/<your-username>/earforge/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/<your-username>/earforge/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/<your-username>/earforge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/<your-username>/earforge/compare/v0.3.0...v0.4.0

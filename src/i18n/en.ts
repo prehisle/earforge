@@ -544,6 +544,16 @@ export const en: Record<MessageKey, string> = {
   'ex.progressions.promptFour': '{key} · Name the 4 chords in order (the first is {first})',
   'ex.progressions.prompt': '{key} · Which chord is this?',
 
+  'ex.harmony.title': 'Harmonic Dictation',
+  'ex.harmony.subtitle': 'Hear four-part progressions and name each chord with its inversion: V7, cadential 6/4, secondary dominants',
+  'ex.harmony.len': 'Chords',
+  'ex.harmony.len.4': '4 chords',
+  'ex.harmony.len.6': '6 chords',
+  'ex.harmony.minor': 'Minor',
+  'ex.harmony.prompt': '{key} · Name the {n} chords with inversions, in order (the first is {first})',
+  'tip.harmony':
+    'A cadence establishes the key, then you hear a four-part progression that starts on the tonic. Name each chord in order: Roman numeral plus inversion. Follow the bass line to find the inversion (the small figures are figured bass: ⁶ first inversion, ⁶₄ second inversion, ⁶₅ ⁴₃ ⁴₂ seventh-chord inversions), then listen for the chord’s function and color. Afterwards, tap a box above to switch steps and tap a choice to hear it in place.',
+
   'ex.dictation.title': 'Melodic Dictation',
   'ex.dictation.subtitle': 'Hear a short melody and write down its notes in order',
   'ex.dictation.len': 'Notes',
