@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { audio, type Timbre } from '../audio/engine';
 import { SAMPLE_SIZE_MB } from '../audio/sampler';
-import { importBackup, type Store } from '../engine/progress';
+import { importBackup, today, type Store } from '../engine/progress';
 import { type Notation, type Settings } from '../engine/types';
 import { useT } from '../i18n/react';
 import { NAMING_SYSTEMS, namingLabel, type NamingSystem } from '../music/theory';
@@ -27,7 +27,7 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
     const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `earforge-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `earforge-${today()}.json`;
     a.click();
     // 立即撤销会让部分浏览器（Safari、旧版 Firefox）取消下载
     const url = a.href;
