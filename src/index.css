@@ -991,6 +991,22 @@ input[type='range'] {
 .staff .staff-cur {
   color: var(--accent);
 }
+.staff-flow {
+  width: 100%;
+  min-width: 0;
+}
+.staff-measured {
+  margin: 0;
+}
+.staff .staff-cur-bar {
+  fill: var(--accent-soft);
+}
+.staff .staff-num {
+  fill: var(--muted);
+}
+.staff .staff-time {
+  font-family: 'Times New Roman', Times, Georgia, serif;
+}
 .feedback-staff {
   flex-basis: 100%;
   padding: 8px 4px 2px;
