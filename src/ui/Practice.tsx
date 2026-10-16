@@ -17,6 +17,7 @@ import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
+import { TapPanel } from './TapPanel';
 
 const GAP = 0.45; // 前奏与题目之间的间隔（秒）
 
@@ -85,6 +86,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const q = cur?.q ?? null;
 
   const play = async (question: Question, what: 'all' | 'target' | 'prelude' | 'resolution') => {
+    if (question.tap) return 0; // 打节奏题由 TapPanel 自己播放（空格也交给它）
     let events: NoteEvent[];
     if (what === 'prelude') events = question.prelude ?? [];
     else if (what === 'resolution') events = question.resolution ?? [];
@@ -170,7 +172,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
     void (async () => {
       let wait = 1.1;
       if (question.resolution && question.resolution.length > 1) wait += await play(question, 'resolution');
-      if (allRight && store.settings.autoNext && !question.sing) {
+      if (allRight && store.settings.autoNext && !question.sing && !question.tap) {
         timer.current = window.setTimeout(() => nextRef.current(), wait * 1000);
       }
     })();
@@ -225,17 +227,19 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       )}
       <p className="prompt">{q.prompt}</p>
 
-      <div className="play-row">
-        <button className="primary" onClick={() => play(q, 'all')}>
-          ▶ 重听 <kbd>空格</kbd>
-        </button>
-        {q.prelude && (
-          <>
-            <button onClick={() => play(q, 'target')}>{q.sing?.showDisplay ? '提示' : '只听题目'}</button>
-            <button onClick={() => play(q, 'prelude')}>终止式</button>
-          </>
-        )}
-      </div>
+      {!q.tap && (
+        <div className="play-row">
+          <button className="primary" onClick={() => play(q, 'all')}>
+            ▶ 重听 <kbd>空格</kbd>
+          </button>
+          {q.prelude && (
+            <>
+              <button onClick={() => play(q, 'target')}>{q.sing?.showDisplay ? '提示' : '只听题目'}</button>
+              <button onClick={() => play(q, 'prelude')}>终止式</button>
+            </>
+          )}
+        </div>
+      )}
 
       {q.answer.length > 1 && !q.sing && (
         <div className="slots">
@@ -260,6 +264,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
           onStep={(i, ok) => finishStep(q, i, ok)}
           done={done}
         />
+      ) : q.tap ? (
+        <TapPanel key={qid} question={q} onStep={(i, ok) => finishStep(q, i, ok)} done={done} />
       ) : (
         /* ───── 选项按钮 ───── */
         <div className={`choices n${Math.min(q.choices.length, 8)}`}>

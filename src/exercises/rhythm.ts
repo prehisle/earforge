@@ -30,7 +30,7 @@ const hasRest = (u: string) => UNITS[u].durs.some((d) => d < 0);
 
 /** 一小节由两个「半小节」（各 2 拍）组成：一个 2 拍单元或两个 1 拍单元；全音符独占一小节。 */
 type Half = string[];
-type Bar = Half[];
+export type Bar = Half[];
 
 export const flatten = (bars: Bar[]): number[] => bars.flat(2).flatMap((u) => UNITS[u].durs);
 
@@ -78,7 +78,7 @@ function goodBar(bar: Bar): boolean {
 }
 
 /** 生成一小节；指定 target 时保证包含该单元。 */
-function makeBar(pool: string[], target?: string): Bar {
+export function makeBar(pool: string[], target?: string): Bar {
   if (target === 'w') return [['w']];
   const ones = pool.filter((u) => beats(u) === 1);
   let bar: Bar = [];
@@ -125,9 +125,28 @@ function mutate(bars: Bar[], pool: string[]): Bar[] {
   return out;
 }
 
-const describe = (bars: Bar[]) => bars.map((b) => b.flat().map((u) => UNITS[u].name).join(' · ')).join(' ｜ ');
+export const describe = (bars: Bar[]) => bars.map((b) => b.flat().map((u) => UNITS[u].name).join(' · ')).join(' ｜ ');
 
-const SPEED: Record<string, number> = { slow: 60, mid: 80, fast: 100 };
+/** 音频：一小节预备拍，然后节奏型（木鱼）+ 轻声节拍器。 */
+export function rhythmEvents(durs: number[], bpm: number): NoteEvent[] {
+  const beat = 60 / bpm;
+  const nBeats = durs.reduce((s, d) => s + Math.abs(d), 0) / TPQ;
+  const events: NoteEvent[] = [];
+  for (let i = 0; i < 4; i++)
+    events.push({ kind: 'click', notes: [], time: i * beat, dur: 0.05, accent: i === 0, velocity: 0.9 });
+  const start = 4 * beat;
+  for (let i = 0; i < nBeats; i++)
+    events.push({ kind: 'click', notes: [], time: start + i * beat, dur: 0.05, accent: i % 4 === 0, velocity: 0.35 });
+  let t = 0;
+  for (const d of durs) {
+    const len = (Math.abs(d) / TPQ) * beat;
+    if (d > 0) events.push({ kind: 'perc', notes: [], time: start + (t / TPQ) * beat, dur: len, velocity: 0.85 });
+    t += Math.abs(d);
+  }
+  return events.sort((a, b) => a.time - b.time);
+}
+
+export const SPEED: Record<string, number> = { slow: 60, mid: 80, fast: 100 };
 
 export const rhythm: ExerciseDef = {
   id: 'rhythm',
@@ -190,25 +209,9 @@ export const rhythm: ExerciseDef = {
     const choices: Choice[] = options.map((b, i) => ({ id: `r${i}`, label: describe(b), rhythm: flatten(b) }));
     const answer = choices[options.indexOf(bars)].id;
 
-    // 音频：一小节预备拍，然后节奏型 + 轻声节拍器
-    const beat = 60 / bpm;
-    const events: NoteEvent[] = [];
-    for (let i = 0; i < 4; i++)
-      events.push({ kind: 'click', notes: [], time: i * beat, dur: 0.05, accent: i === 0, velocity: 0.9 });
-    const start = 4 * beat;
-    for (let i = 0; i < nBars * 4; i++)
-      events.push({ kind: 'click', notes: [], time: start + i * beat, dur: 0.05, accent: i % 4 === 0, velocity: 0.35 });
-    let t = 0;
-    for (const d of flatten(bars)) {
-      const len = (Math.abs(d) / TPQ) * beat;
-      if (d > 0) events.push({ kind: 'perc', notes: [], time: start + (t / TPQ) * beat, dur: len, velocity: 0.85 });
-      t += Math.abs(d);
-    }
-    events.sort((a, b) => a.time - b.time);
-
     return {
       item,
-      events,
+      events: rhythmEvents(flatten(bars), bpm),
       choices,
       answer: [answer],
       prompt: `听到的是哪个节奏？（♩ = ${bpm}，先听一小节预备拍）`,
