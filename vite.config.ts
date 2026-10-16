@@ -58,8 +58,12 @@ function swPrecache(): Plugin {
 }
 
 // https://vite.dev/config/
+/** 应用版本（关于页显示），取自 package.json */
+const APP_VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }).version
+
 export default defineConfig({
   base: basePath(),
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   plugins: [react(), swPrecache()],
   // 子 agent 的 worktree 位于 .claude/ 下，不应计入本仓库的测试
   test: { exclude: [...configDefaults.exclude, '.claude/**'] },

@@ -5,7 +5,7 @@ import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
 import { Practice } from './ui/Practice';
-import { Onboarding, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
+import { AboutPage, Onboarding, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
 import { useMidiInput } from './ui/useMidi';
 import { useStore } from './ui/useStore';
 
@@ -17,7 +17,8 @@ type Route =
   | { page: 'settings' }
   | { page: 'songs' }
   | { page: 'song'; id: string }
-  | { page: 'exam' };
+  | { page: 'exam' }
+  | { page: 'about'; from: 'home' | 'settings' };
 
 export default function App() {
   const [store, update] = useStore();
@@ -58,6 +59,7 @@ export default function App() {
             onSettings={() => setRoute({ page: 'settings' })}
             onSongs={() => setRoute({ page: 'songs' })}
             onExam={() => setRoute({ page: 'exam' })}
+            onAbout={() => setRoute({ page: 'about', from: 'home' })}
           />
         )}
         {route.page === 'practice' && (
@@ -113,8 +115,18 @@ export default function App() {
           />
         )}
         {route.page === 'settings' && (
-          <SettingsPage store={store} update={update} onBack={home} onOnboard={() => setRerun(true)} />
+          <SettingsPage
+            store={store}
+            update={update}
+            onBack={home}
+            onOnboard={() => setRerun(true)}
+            onAbout={() => {
+              setRoute({ page: 'about', from: 'settings' });
+              window.scrollTo(0, 0);
+            }}
+          />
         )}
+        {route.page === 'about' && <AboutPage onBack={() => setRoute({ page: route.from })} />}
       </div>
     </LocaleContext.Provider>
   );

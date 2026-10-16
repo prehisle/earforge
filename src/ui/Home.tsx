@@ -24,13 +24,14 @@ interface Props {
   onMix(): void;
   onStats(): void;
   onSettings(): void;
+  onAbout(): void;
   onSongs(): void;
   onExam(): void;
 }
 
 const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
-export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onAbout }: Props) {
   const t = useT();
   const day = store.daily[today()];
   const days = streak(store);
@@ -70,6 +71,9 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
           </button>
           <button className="ghost" onClick={onSettings}>
             {t('home.settings')}
+          </button>
+          <button className="ghost help-btn" onClick={onAbout} aria-label={t('about.title')} title={t('about.title')}>
+            ?
           </button>
         </nav>
       </header>

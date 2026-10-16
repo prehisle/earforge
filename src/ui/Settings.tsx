@@ -15,9 +15,11 @@ interface Props {
   onBack(): void;
   /** 重新查看新手引导 */
   onOnboard(): void;
+  /** 打开「关于与帮助」 */
+  onAbout(): void;
 }
 
-export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
+export function SettingsPage({ store, update, onBack, onOnboard, onAbout }: Props) {
   const t = useT();
   const s = store.settings;
   const file = useRef<HTMLInputElement>(null);
@@ -223,6 +225,16 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
       </section>
 
       <MidiSection on={s.midi} onToggle={(v) => set('midi', v)} />
+
+      <section className="panel">
+        <div className="field">
+          <label>{t('about.title')}</label>
+          <div className="seg wrap">
+            <button onClick={onAbout}>{t('about.open')}</button>
+          </div>
+          <p className="muted onboard-note">{t('about.openNote')}</p>
+        </div>
+      </section>
     </main>
   );
 }
