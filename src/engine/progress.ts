@@ -6,6 +6,7 @@ import { detectLocale, LOCALES } from '../i18n';
 import { NAMING_SYSTEMS } from '../music/theory';
 import { TIMBRE_SETTINGS } from '../audio/timbres';
 import { sanitizeExams, type ExamRecord } from './examHistory';
+import { sanitizeGradebook, type SavedResult } from './gradebook';
 import type { PracticeSet } from './practiceSet';
 import { sanitizeSets } from './setRunner';
 
@@ -55,6 +56,8 @@ export interface Store {
   exams?: ExamRecord[];
   /** 自定义练习组合（用户自己的内容，清空练习记录时保留）。旧数据没有该字段 */
   sets?: PracticeSet[];
+  /** 成绩单：收到的成绩链接（老师端，见 gradebook.ts；清空练习记录时保留）。旧数据没有该字段 */
+  gradebook?: SavedResult[];
 }
 
 const KEY = 'earforge:v1';
@@ -115,6 +118,7 @@ export function parseStore(raw: string | null): Store {
       s.songs = sanitizeSongs(s.songs);
       s.exams = sanitizeExams(s.exams);
       s.sets = sanitizeSets(s.sets);
+      s.gradebook = sanitizeGradebook(s.gradebook);
       // 已有练习记录的一定是老用户，不再显示新手引导
       if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
       return s;
@@ -131,6 +135,7 @@ export function parseStore(raw: string | null): Store {
     songs: {},
     exams: [],
     sets: [],
+    gradebook: [],
   };
 }
 
@@ -249,6 +254,7 @@ export function importBackup(st: Store, raw: unknown): void {
   if (raw.songs !== undefined) st.songs = sanitizeSongs(raw.songs);
   if (raw.exams !== undefined) st.exams = sanitizeExams(raw.exams);
   if (raw.sets !== undefined) st.sets = sanitizeSets(raw.sets);
+  if (raw.gradebook !== undefined) st.gradebook = sanitizeGradebook(raw.gradebook);
   st.settings = mergeSettings(raw.settings, { ...DEFAULT_SETTINGS, lang: st.settings.lang });
 }
 

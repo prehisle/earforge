@@ -6,6 +6,7 @@ import { setSource } from '../engine/setRunner';
 import { useT } from '../i18n/react';
 import { Summary } from './Mixed';
 import { Quiz, type QuizResult } from './Practice';
+import { ResultShare } from './ResultShare';
 
 interface Props {
   store: Store;
@@ -43,6 +44,9 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
   const [shown, setShown] = useState(0);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [finished, setFinished] = useState(false);
+  // 成绩链接的用时与完成时间
+  const [started] = useState(() => Date.now());
+  const [finishedAt, setFinishedAt] = useState(0);
   const back = backLabel ?? t('sets.backList');
 
   const quizSource = source && {
@@ -96,7 +100,12 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
           onBack={onBack}
           backLabel={back}
           againLabel={fixed ? t('sets.againSame') : undefined}
-        />
+        >
+          {/* 固定题目：可把成绩发给老师（每个人题目相同，老师能对照每一题） */}
+          {fixed && set && results.length === source?.total && (
+            <ResultShare set={set} results={results} started={started} finished={finishedAt} />
+          )}
+        </Summary>
       ) : (
         <Quiz
           store={store}
@@ -106,7 +115,10 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
           showModule
           genSettings={fixed ? SEEDED_GEN_SETTINGS : undefined}
           onResult={(r) => setResults((rs) => [...rs, r])}
-          onComplete={() => setFinished(true)}
+          onComplete={() => {
+            setFinishedAt(Date.now());
+            setFinished(true);
+          }}
         />
       )}
     </main>

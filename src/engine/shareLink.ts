@@ -52,7 +52,7 @@ const BY_CODE: Record<string, string> = Object.fromEntries(Object.entries(CODES)
 
 // ───── base64url（UTF-8） ─────
 
-function toBase64Url(text: string): string {
+export function toBase64Url(text: string): string {
   const bytes = new TextEncoder().encode(text);
   let bin = '';
   for (const b of bytes) bin += String.fromCharCode(b);
@@ -60,7 +60,7 @@ function toBase64Url(text: string): string {
 }
 
 /** 非法输入（字符集、长度、UTF-8）返回 null */
-function fromBase64Url(code: string): string | null {
+export function fromBase64Url(code: string): string | null {
   if (!/^[A-Za-z0-9_-]*$/.test(code) || code.length % 4 === 1) return null;
   try {
     const bin = atob(code.replace(/-/g, '+').replace(/_/g, '/'));
@@ -175,7 +175,7 @@ export function encodeSet(set: SharedSet): string {
 }
 
 /** FNV-1a（UTF-16 码元），取 36 进制 4 位 */
-function checksum(text: string): string {
+export function checksum(text: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
   return (h % 36 ** 4).toString(36).padStart(4, '0');

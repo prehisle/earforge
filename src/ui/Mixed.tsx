@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { EXERCISES, exerciseById } from '../exercises';
 import { activeItems, itemStat, today, type Store } from '../engine/progress';
 import { peekProgress, planSession } from '../engine/planner';
@@ -88,6 +88,7 @@ export function Summary({
   onBack,
   backLabel,
   againLabel,
+  children,
 }: {
   store: Store;
   results: QuizResult[];
@@ -97,6 +98,8 @@ export function Summary({
   backLabel?: string;
   /** 再练按钮的文字，缺省为「再来一组」 */
   againLabel?: string;
+  /** 放在按钮上方的附加内容（如固定题目组合的「分享成绩」） */
+  children?: ReactNode;
 }) {
   const t = useT();
   const n = results.length;
@@ -184,6 +187,8 @@ export function Summary({
           </ol>
         </div>
       )}
+
+      {children}
 
       <div className="summary-actions">
         <button onClick={onBack}>{backLabel ?? t('mix.home')}</button>
