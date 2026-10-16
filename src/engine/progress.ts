@@ -61,7 +61,7 @@ export function loadStore(): Store {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Store;
-      s.settings = { ...DEFAULT_SETTINGS, ...s.settings };
+      s.settings = mergeSettings(s.settings);
       s.exercises = sanitizeExercises(s.exercises);
       s.daily = sanitizeDaily(s.daily);
       s.songs = sanitizeSongs(s.songs);
@@ -113,6 +113,26 @@ export function sanitizeDaily(raw: unknown): Record<string, DayStat> {
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const finite = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 
+/** 合并设置：缺失或类型不对的字段用 base（缺省为默认设置）的值，避免残缺数据让页面报错（如 tipsSeen 不是数组）。 */
+export function mergeSettings(raw: unknown, base: Settings = DEFAULT_SETTINGS): Settings {
+  const out: Settings = { ...base, tipsSeen: [...base.tipsSeen] };
+  if (!isObj(raw)) return out;
+  const o = out as unknown as Record<string, unknown>;
+  for (const [k, v] of Object.entries(raw)) {
+    if (!(k in base)) {
+      o[k] = v; // 未知字段原样保留（新版本写入的设置）
+      continue;
+    }
+    const d = (base as unknown as Record<string, unknown>)[k];
+    if (Array.isArray(d)) {
+      if (Array.isArray(v)) o[k] = v.filter((x) => typeof x === 'string');
+    } else if (typeof v === typeof d && (typeof v !== 'number' || Number.isFinite(v))) o[k] = v;
+  }
+  // 词典只有 zh / en：其他取值会让翻译函数取不到词典而报错
+  if (out.lang !== 'en' && out.lang !== 'zh') out.lang = base.lang;
+  return out;
+}
+
 /** 规范化各练习的进度（读取本地数据与导入备份时用）：补全缺失的字段，丢弃格式不对的条目，避免出题与统计时报错。 */
 export function sanitizeExercises(raw: unknown): Record<string, ExerciseProgress> {
   const out: Record<string, ExerciseProgress> = {};
@@ -162,7 +182,7 @@ export function importBackup(st: Store, raw: unknown): void {
   st.daily = sanitizeDaily(raw.daily);
   if (raw.songs !== undefined) st.songs = sanitizeSongs(raw.songs);
   if (raw.exams !== undefined) st.exams = sanitizeExams(raw.exams);
-  st.settings = { ...DEFAULT_SETTINGS, lang: st.settings.lang, ...(isObj(raw.settings) ? (raw.settings as Partial<Settings>) : {}) };
+  st.settings = mergeSettings(raw.settings, { ...DEFAULT_SETTINGS, lang: st.settings.lang });
 }
 
 /** 是否已有练习记录（任一考点作答过，或有每日记录） */

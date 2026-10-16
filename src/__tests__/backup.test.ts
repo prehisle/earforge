@@ -1,7 +1,7 @@
 // 本地数据的迁移与备份导入：旧版本/残缺数据不报错，导入时恢复曲库记录。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EXERCISES, exerciseById } from '../exercises';
-import { activeItems, canLevelUp, currentLevel, getProgress, importBackup, itemStat, loadStore, sanitizeExercises, type Store } from '../engine/progress';
+import { activeItems, canLevelUp, currentLevel, getProgress, importBackup, itemStat, loadStore, mergeSettings, sanitizeExercises, type Store } from '../engine/progress';
 import { DEFAULT_SETTINGS } from '../engine/types';
 import { rankItems, weakItems } from '../engine/planner';
 
@@ -87,5 +87,23 @@ describe('读取本地数据', () => {
   it('sanitizeExercises 保留正常的数据不变', () => {
     const p = { level: 3, custom: ['a', 'b'], items: { a: { n: 5, c: 4, acc: 0.8, last: 12 } }, options: { mode: 'minor' }, scoped: { 'mode:major': { level: 1, custom: null } } };
     expect(sanitizeExercises({ x: p })).toEqual({ x: p });
+  });
+});
+
+describe('合并设置', () => {
+  it('类型不对的字段回到默认值，正常字段保留', () => {
+    const s = mergeSettings({ tipsSeen: null, volume: 'loud', dailyGoal: 50, lang: 'fr', autoNext: false, naming: 'fixed' });
+    expect(s.tipsSeen).toEqual([]);
+    expect(s.volume).toBe(DEFAULT_SETTINGS.volume);
+    expect(s.dailyGoal).toBe(50);
+    expect(s.lang).toBe('zh');
+    expect(s.autoNext).toBe(false);
+    expect(s.naming).toBe('fixed');
+  });
+
+  it('不共享默认设置里的数组', () => {
+    const s = mergeSettings(undefined);
+    s.tipsSeen.push('x');
+    expect(DEFAULT_SETTINGS.tipsSeen).toEqual([]);
   });
 });
