@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { levelsOf } from '../engine/progress';
-import { mulberry32, newSeed, questionSeed, seededSource, withSeed } from '../engine/seeded';
-import { DEFAULT_SETTINGS, type ExerciseDef, type Question } from '../engine/types';
+import { mulberry32, newSeed, questionSeed, SEEDED_GEN_SETTINGS, seededSource, withSeed } from '../engine/seeded';
+import { SET_EXERCISES } from '../engine/setRunner';
+import { DEFAULT_SETTINGS, type ExerciseDef, type Question, type Settings } from '../engine/types';
 import { EXERCISES } from '../exercises';
 
 /** 可比较的题目投影（去掉函数） */
@@ -121,4 +122,66 @@ describe('固定题目：每个练习同一 seed 出同一题', () => {
       // 不同 seed 通常出不同的题（个别考点本身只有一种题，如固定的单音节奏）
       expect(differ / total).toBeGreaterThan(0.5);
     });
+});
+
+/** 与显示无关的题目内容：去掉选项名称、题干等随唱名体系 / 语言变化的文字 */
+function content(q: Question) {
+  return {
+    item: q.item,
+    prelude: q.prelude,
+    events: q.events,
+    resolution: q.resolution,
+    choices: q.choices.map((c) => [c.id, c.rhythm, c.group]),
+    answer: q.answer,
+    stepItems: q.stepItems,
+    tap: q.tap,
+    sing: q.sing && { targets: q.sing.targets, showDisplay: q.sing.showDisplay },
+    score: q.score,
+    notate: q.notate,
+  };
+}
+
+describe('固定题目：不同用户设置下题目相同', () => {
+  // 两个设置尽量不同的用户（调、音区、唱名、记谱、音色……）
+  const userA: Settings = { ...DEFAULT_SETTINGS, keyMode: 'random', voice: 'low' };
+  const userB: Settings = {
+    ...DEFAULT_SETTINGS,
+    keyMode: 'C',
+    voice: 'high',
+    naming: 'fixed',
+    notation: 'staff',
+    timbre: 'random',
+    autoNext: false,
+    midi: true,
+    volume: 0.3,
+  };
+  const genWith = (user: Settings, normalize: boolean, ex: ExerciseDef, item: string, items: string[], options: Record<string, string>, seed: number) => {
+    const settings = normalize ? { ...user, ...SEEDED_GEN_SETTINGS } : user;
+    return content(withSeed(seed, () => ex.generate(item, { settings, items, options })));
+  };
+
+  for (const ex of SET_EXERCISES)
+    it(ex.id, () => {
+      for (const options of optionSets(ex)) {
+        const items = [...new Set(levelsOf(ex, options).flatMap((l) => l.items))];
+        for (const [i, item] of items.entries()) {
+          const seed = questionSeed(77, i);
+          expect(genWith(userB, true, ex, item, items, options, seed), `${ex.id} ${item} ${JSON.stringify(options)}`).toEqual(
+            genWith(userA, true, ex, item, items, options, seed),
+          );
+        }
+      }
+    });
+
+  it('不统一设置时，固定 C 调的用户会拿到不同的题（说明统一是必要的）', () => {
+    const ex = SET_EXERCISES.find((x) => x.id === 'degrees')!;
+    const options = Object.fromEntries((ex.options ?? []).map((o) => [o.id, o.default]));
+    const items = levelsOf(ex, options)[0].items;
+    const differ = items.filter(
+      (item, i) =>
+        JSON.stringify(genWith(userA, false, ex, item, items, options, questionSeed(77, i))) !==
+        JSON.stringify(genWith(userB, false, ex, item, items, options, questionSeed(77, i))),
+    );
+    expect(differ.length).toBeGreaterThan(0);
+  });
 });

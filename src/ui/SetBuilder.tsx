@@ -3,6 +3,7 @@ import { EXERCISES, exerciseById } from '../exercises';
 import { activeItems, type Store } from '../engine/progress';
 import { peekProgress } from '../engine/planner';
 import type { PracticeSet, SetPart } from '../engine/practiceSet';
+import { newSeed } from '../engine/seeded';
 import { findSet, saveSet } from '../engine/sets';
 import {
   canUseInSet,
@@ -63,6 +64,8 @@ export function SetBuilder({ store, update, id, template, onBack, onSaved }: Pro
     return tpl ? templateSet(tpl, t(tpl.name)) : { name: '', parts: [], count: SET_COUNT_DEFAULT };
   });
   const [countText, setCountText] = useState(String(draft.count));
+  // 固定题目：关掉再打开时沿用原来的 seed（已分享出去的链接仍对应同一套题），只有「换一套题」才换
+  const [lastSeed, setLastSeed] = useState(draft.seed);
   const [tried, setTried] = useState(false);
 
   const setPart = (i: number, part: SetPart) => setDraft((d) => ({ ...d, parts: d.parts.map((p, k) => (k === i ? part : p)) }));
@@ -76,10 +79,25 @@ export function SetBuilder({ store, update, id, template, onBack, onSaved }: Pro
     setCountText(text);
     setDraft((d) => ({ ...d, count: Number(text) }));
   };
+  const setFixed = (on: boolean) => {
+    const seed = on ? (lastSeed ?? newSeed()) : undefined;
+    if (seed !== undefined) setLastSeed(seed);
+    setDraft((d) => {
+      const next = { ...d, seed };
+      if (seed === undefined) delete next.seed;
+      return next;
+    });
+  };
+  const reseed = () => {
+    const seed = newSeed();
+    setLastSeed(seed);
+    setDraft((d) => ({ ...d, seed }));
+  };
   const applyTemplate = (tplId: string) => {
     const tpl = SET_TEMPLATES.find((x) => x.id === tplId);
     if (!tpl) return;
-    const next = templateSet(tpl, t(tpl.name));
+    // 模板不改动固定题目的开关
+    const next: Draft = draft.seed === undefined ? templateSet(tpl, t(tpl.name)) : { ...templateSet(tpl, t(tpl.name)), seed: draft.seed };
     setDraft(next);
     setCountText(String(next.count));
   };
@@ -151,6 +169,23 @@ export function SetBuilder({ store, update, id, template, onBack, onSaved }: Pro
               onChange={(e) => setCount(e.target.value)}
             />
           </div>
+        </div>
+        <div className="set-fixed">
+          <label className="set-fixed-toggle">
+            <input type="checkbox" checked={draft.seed !== undefined} onChange={(e) => setFixed(e.target.checked)} />
+            {t('sets.fixed')}
+          </label>
+          <p className="muted set-fixed-hint">{t('sets.fixedHint')}</p>
+          {draft.seed !== undefined && (
+            <div className="set-fixed-reseed">
+              <button onClick={reseed}>{t('sets.reseed')}</button>
+              {editing?.seed !== undefined && draft.seed !== editing.seed && (
+                <span className="muted" role="status">
+                  {t('sets.reseeded')}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

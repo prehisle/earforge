@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Store } from '../engine/progress';
 import type { PracticeSet } from '../engine/practiceSet';
-import { mulberry32, seededSource } from '../engine/seeded';
+import { mulberry32, SEEDED_GEN_SETTINGS, seededSource } from '../engine/seeded';
 import { setSource } from '../engine/setRunner';
 import { useT } from '../i18n/react';
 import { Summary } from './Mixed';
@@ -12,8 +12,6 @@ interface Props {
   update(fn: (s: Store) => void): void;
   /** 要练的组合（已保存的或分享链接里的）；找不到时为 null */
   set: PracticeSet | null;
-  /** 本组出题顺序用的随机数（固定题目时传入带种子的），缺省 Math.random */
-  rng?: () => number;
   onBack(): void;
   /** 返回按钮的文字（缺省「返回组合列表」） */
   backLabel?: string;
@@ -21,16 +19,27 @@ interface Props {
 }
 
 /** 练一组自定义组合：有限题数，题目上方显示所属练习，结束后显示小结。作答照常记入各练习的统计。 */
-export function SetRun({ store, update, set, rng, onBack, backLabel, onAgain }: Props) {
+export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props) {
   const t = useT();
   // 固定题目：选题顺序与每题的出题都由组合的 seed 决定（打开同一链接的人题目相同）
+  // （不能用 { ...base } 包装：会把 shown 这个 getter 固定成 0）
   const [source] = useState(() => {
     if (!set) return null;
-    if (set.seed === undefined) return setSource(set, rng);
+    if (set.seed === undefined) return setSource(set);
     const base = setSource(set, mulberry32(set.seed));
     const seeded = seededSource(base, set.seed);
-    return { ...base, next: () => seeded.next() };
+    return {
+      next: () => seeded.next(),
+      hasNext: () => base.hasNext(),
+      get total() {
+        return base.total;
+      },
+      get shown() {
+        return base.shown;
+      },
+    };
   });
+  const fixed = set?.seed !== undefined;
   const [shown, setShown] = useState(0);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [finished, setFinished] = useState(false);
@@ -54,7 +63,10 @@ export function SetRun({ store, update, set, rng, onBack, backLabel, onAgain }: 
         <div className="practice-title">
           <h1>🧩 {set?.name || t('sets.untitled')}</h1>
           {source && (
-            <p className="muted">{finished ? t('mix.done') : t('sets.progress', { i: Math.max(1, shown), n: source.total })}</p>
+            <p className="muted">
+              {finished ? t('mix.done') : t('sets.progress', { i: Math.max(1, shown), n: source.total })}
+              {fixed && ` · ${t('sets.seeded')}`}
+            </p>
           )}
         </div>
         <span className="topbar-spacer" />
@@ -66,6 +78,9 @@ export function SetRun({ store, update, set, rng, onBack, backLabel, onAgain }: 
         </div>
       )}
 
+      {/* 固定题目统一用随机调出题；用户设了固定 C 调时说明一下为什么不是 C 调 */}
+      {fixed && !finished && store.settings.keyMode === 'C' && <p className="muted set-fixed-note">{t('sets.fixedKeyNote')}</p>}
+
       {!quizSource ? (
         <section className="start">
           <p>{t('sets.notFound')}</p>
@@ -74,7 +89,14 @@ export function SetRun({ store, update, set, rng, onBack, backLabel, onAgain }: 
           </button>
         </section>
       ) : finished ? (
-        <Summary store={store} results={results} onAgain={onAgain} onBack={onBack} backLabel={back} />
+        <Summary
+          store={store}
+          results={results}
+          onAgain={onAgain}
+          onBack={onBack}
+          backLabel={back}
+          againLabel={fixed ? t('sets.againSame') : undefined}
+        />
       ) : (
         <Quiz
           store={store}
@@ -82,6 +104,7 @@ export function SetRun({ store, update, set, rng, onBack, backLabel, onAgain }: 
           source={quizSource}
           autoStart
           showModule
+          genSettings={fixed ? SEEDED_GEN_SETTINGS : undefined}
           onResult={(r) => setResults((rs) => [...rs, r])}
           onComplete={() => setFinished(true)}
         />

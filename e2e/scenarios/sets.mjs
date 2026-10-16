@@ -1,6 +1,6 @@
 // 练习组合：编辑页新建（3 个练习、校验提示、选项 / 比重 / 题数）→ 保存 → 重新加载 → 练完一组到小结 → 再来一组 →
 // 编辑 → 复制 → 分享 → 删除 → 从模板新建；375px 手机截图；英文界面走一遍（模板 → 自定义题数 → 练完）。
-import { CJK, clickText, overflowPx, readStore, run, sleep } from '../lib/harness.mjs';
+import { CJK, clickText, overflowPx, readStore, run, sleep, textOf } from '../lib/harness.mjs';
 
 await run(async (t) => {
   const page = await t.open({ tag: 'sets-zh' });
@@ -145,16 +145,35 @@ await run(async (t) => {
   const names = await page.$$eval('.set-item h2', (x) => x.map((e) => e.textContent));
   t.check(names.length === 2 && names[1] === '我的组合 2（副本）', `复制（${names.join(' / ')}）`);
 
-  // 7. 分享：分享模块可用时复制链接（无剪贴板权限时显示链接），否则按钮禁用
+  // 7. 分享：复制链接（替换剪贴板以读出内容）；复制失败时显示链接供手动复制
   const share = await itemBtn(0, '分享');
-  if (await share.evaluate((e) => e.disabled)) t.check(true, '分享模块未就绪：分享按钮禁用');
-  else {
-    await share.click();
-    await page.waitForSelector('.set-share', { timeout: 3000 }).catch(() => {});
-    const txt = await page.$eval('.set-share', (e) => e.textContent).catch(() => '');
-    const link = await page.$eval('.set-share input', (e) => e.value).catch(() => '');
-    t.check(txt.includes('链接已复制') || /^https?:/.test(link), `分享：复制或显示链接（${txt} ${link}）`);
-  }
+  t.check(!(await share.evaluate((e) => e.disabled)), '分享按钮可用');
+  await page.evaluate(() => {
+    window.__copied = [];
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (s) => void window.__copied.push(s) },
+    });
+  });
+  await share.click();
+  await page.waitForSelector('.set-share', { timeout: 3000 }).catch(() => {});
+  const copied = await page.evaluate(() => window.__copied);
+  t.check((await textOf(page, '.set-share').catch(() => '')).includes('链接已复制'), '分享：提示链接已复制');
+  t.check(copied.length === 1 && copied[0].startsWith(`${t.base}#s=`), `分享：复制的是本应用的分享链接（${copied[0]?.length ?? 0} 字符）`);
+  await clickText(page, '关闭', '.set-share button');
+  t.check(!(await page.$('.set-share')), '关闭分享提示');
+  // 剪贴板不可用：显示链接，可全选
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async () => Promise.reject(new DOMException('denied', 'NotAllowedError')) },
+    });
+  });
+  await (await itemBtn(0, '分享')).click();
+  await page.waitForSelector('.set-share input', { timeout: 3000 }).catch(() => {});
+  const link = await page.$eval('.set-share input', (e) => e.value).catch(() => '');
+  t.check(link === copied[0], '复制失败时显示同一链接供手动复制');
+  await clickText(page, '关闭', '.set-share button');
 
   // 8. 删除（确认）
   await (await itemBtn(1, '删除')).click();

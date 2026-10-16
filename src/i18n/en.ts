@@ -131,7 +131,6 @@ export const en: Record<MessageKey, string> = {
   'sets.duplicate': 'Duplicate',
   'sets.delete': 'Delete',
   'sets.share': 'Share',
-  'sets.shareNA': 'Sharing is not available right now',
   'sets.deleteConfirm': 'Delete the set "{name}"? This cannot be undone.',
   'sets.copySuffix': '{name} (copy)',
   'sets.untitled': 'Untitled set',
@@ -177,6 +176,13 @@ export const en: Record<MessageKey, string> = {
   'sets.progress': 'Question {i} of {n}',
   'sets.notFound': 'This set could not be found (it may have been deleted).',
   'sets.backList': 'Back to sets',
+  'sets.againSame': 'Again (same questions)',
+  'sets.fixed': 'Fixed questions (the same every time, and for everyone who opens the link)',
+  'sets.fixedHint': 'Handy for giving a whole class the same questions. When off, questions are random each time.',
+  'sets.reseed': 'New questions',
+  'sets.reseeded': 'Switched to new questions (takes effect when saved; links shared earlier keep the old ones)',
+  'sets.fixedKeyNote': 'Fixed questions always use random keys (your "Always C" setting is ignored) so everyone gets the same questions.',
+  'sets.sharedFixed': 'This set has fixed questions: anyone who opens the link gets exactly the same questions as you.',
 
   // ───── stats ─────
   'stats.title': 'Stats',

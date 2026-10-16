@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { exerciseById } from './exercises';
 import { ExamPage } from './ui/Exam';
+import { translate } from './i18n';
 import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
@@ -178,16 +179,22 @@ export default function App() {
             }}
           />
         )}
-        {route.page === 'setRun' && (
-          <SetRun
-            key={`${route.id ?? ''}:${route.round ?? 0}`}
-            store={store}
-            update={update}
-            set={route.set ?? (route.id ? (findSet(store, route.id) ?? null) : null)}
-            onBack={() => setRoute({ page: 'sets' })}
-            onAgain={() => setRoute({ ...route, round: (route.round ?? 0) + 1 })}
-          />
-        )}
+        {route.page === 'setRun' &&
+          (() => {
+            // 从分享链接直接开始的（未保存）组合：返回首页；已保存的（含在落地页点过保存的）返回组合列表
+            const unsaved = !!route.set && !findSet(store, route.set.id);
+            return (
+              <SetRun
+                key={`${route.id ?? route.set?.id ?? ''}:${route.round ?? 0}`}
+                store={store}
+                update={update}
+                set={route.set ?? (route.id ? (findSet(store, route.id) ?? null) : null)}
+                onBack={unsaved ? home : () => setRoute({ page: 'sets' })}
+                backLabel={unsaved ? translate(lang, 'mix.home') : undefined}
+                onAgain={() => setRoute({ ...route, round: (route.round ?? 0) + 1 })}
+              />
+            );
+          })()}
         {route.page === 'shared' && (
           <SharedSetPage
             set={route.set}

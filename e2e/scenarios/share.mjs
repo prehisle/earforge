@@ -1,4 +1,4 @@
-// 分享链接：带 #s= 的网址打开落地页（新用户的新手引导延后）→ 开始练习 → 换一个全新的浏览器上下文打开同一链接，
+// 分享链接：带 #s= 的网址打开落地页（新用户的新手引导延后）→ 保存 → 开始练习 → 返回组合列表 → 换一个全新的浏览器上下文打开同一链接，
 // 固定题目的前 3 题完全相同；无效链接显示错误；应用打开期间粘贴链接（hashchange）也能进入；落地页无障碍审计。
 // 支持子路径部署（--base /earforge/）。
 import { createRequire } from 'node:module';
@@ -34,7 +34,7 @@ const readQ = (page) =>
             prompt: v.q.prompt,
             choices: v.q.choices.map((c) => [c.id, c.label]),
             answer: v.q.answer,
-            notes: v.q.events.map((e) => [e.midi, e.time]),
+            notes: v.q.events.map((e) => [e.notes, e.time]),
           });
       }
     return null;
@@ -97,7 +97,11 @@ await run(async (t) => {
   t.check(qa.every(Boolean), '开始练习：作答 3 题');
   await t.shot(a, '2-run', { fullPage: false });
 
-  // 回到首页：这时才显示新手引导
+  // 已保存：返回到组合列表；再回到首页，这时才显示新手引导
+  await clickText(a, '返回');
+  await sleep(300);
+  t.check(!!(await a.$('.sets')) && (await textOf(a, '.set-list')).includes(NAME), '已保存的分享组合：返回到组合列表');
+  t.check(!(await a.$('.onboard')), '组合列表：新手引导仍延后');
   await clickText(a, '返回');
   await sleep(300);
   t.check(!!(await a.$('.onboard')), '回到首页后显示延后的新手引导');
