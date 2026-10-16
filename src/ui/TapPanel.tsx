@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { audio, type NoteEvent } from '../audio/engine';
 import type { Question } from '../engine/types';
 import { TPQ } from '../exercises/rhythm';
@@ -108,7 +108,9 @@ export function TapPanel({ question, onStep, done }: Props) {
   // 回调里读最新状态
   const st = useRef({ phase: 'idle' as Phase, start: 0, taps: [] as number[], reported: false, run: 0 });
   const props = useRef({ onStep });
-  props.current = { onStep };
+  useLayoutEffect(() => {
+    props.current = { onStep };
+  });
   const raf = useRef(0);
   const clapper = useRef<ClapListener | null>(null);
 
@@ -205,14 +207,15 @@ export function TapPanel({ question, onStep, done }: Props) {
 
   // 自动开始；卸载时停止
   useEffect(() => {
+    const s = st.current; // 同一个对象，整个生命周期不替换
     const t = window.setTimeout(() => void start(), 400);
     return () => {
       window.clearTimeout(t);
-      st.current.run++;
+      s.run++;
       stopLoop();
       clapper.current?.stop();
       clapper.current = null;
-      if (st.current.phase !== 'idle' && st.current.phase !== 'result') audio.stopAll();
+      if (s.phase !== 'idle' && s.phase !== 'result') audio.stopAll();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
