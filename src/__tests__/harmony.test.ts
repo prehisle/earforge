@@ -14,7 +14,8 @@ import {
   sequence,
   type HarmonyChord,
 } from '../exercises/harmony';
-import { mod } from '../music/theory';
+import { LETTERS, tonicLetter } from '../music/notation';
+import { MODE_BY_ID, mod } from '../music/theory';
 
 const RANDOM: Settings = { ...DEFAULT_SETTINGS, keyMode: 'random' };
 
@@ -231,5 +232,49 @@ describe('和声听写：注册', () => {
     expect(harmony.heavy).toBe(true);
     expect(levelsOf(harmony, {}).length).toBe(6);
     expect(levelsOf(harmony, { mode: 'minor' })[0].items).toEqual(['minor:i', 'minor:iv', 'minor:V']);
+  });
+});
+
+describe('和声听写：回归', () => {
+  /** 和弦根音相对主音的字母级数（Ⅴ/Ⅴ 的根音是 re） */
+  const DEG: Record<string, number> = { I: 0, I6: 0, I64: 0, ii: 1, ii6: 1, ii7: 1, ii65: 1, IV: 3, IV6: 3, V: 4, V6: 4, V7: 4, V65: 4, V43: 4, V42: 4, vi: 5, viio6: 6, 'V/V': 1, 'V7/V': 1 };
+
+  it('谱上按三度叠置拼写和弦音：升号多的小调里 Ⅴ/Ⅴ 的 fi 写重升（G♯ 小调 C𝄪，不写 D）', () => {
+    const tonics = new Set<number>();
+    for (let k = 0; k < 600; k++) {
+      const q = harmony.generate('minor:V7/V', { settings: RANDOM, items: ['minor:V/V', 'minor:V7/V'], options: { mode: 'minor', len: '4' } });
+      const tonic = tonicOf(q);
+      tonics.add(mod(tonic, 12));
+      const tl = tonicLetter(mod(tonic, 12), MODE_BY_ID.minor);
+      chordsOf(q).forEach((ch, i) =>
+        q.score!.notes[i].forEach((p) => {
+          const idx = ch.tones.indexOf(mod(p.midi - tonic, 12));
+          const want = (tl + DEG[ch.key] + 2 * idx) % 7;
+          expect(LETTERS[p.letter], `${ch.id} tonic ${tonic} midi ${p.midi}`).toBe(LETTERS[want]);
+          expect(Math.abs(p.alt)).toBeLessThanOrEqual(2);
+        }),
+      );
+    }
+    // 升号多的小调（C♯ G♯ D♯）都抽到过
+    for (const pc of [1, 3, 8]) expect(tonics).toContain(pc);
+  });
+
+  it('小调低音不出现增二度及其转位减七度（le ↔ ti），ⅳ⁶ 不接 Ⅴ⁶₅', () => {
+    const items = ['minor:i', 'minor:iv', 'minor:V', 'minor:iv6', 'minor:V65'];
+    for (const len of ['4', '6'])
+      for (let k = 0; k < 400; k++) {
+        const q = harmony.generate(k % 2 ? 'minor:iv6' : 'minor:V65', { settings: RANDOM, items, options: { mode: 'minor', len } });
+        const tonic = tonicOf(q);
+        const ks = chordsOf(q).map(keyOf);
+        const vs = q.events.map((e) => e.notes);
+        for (let i = 1; i < vs.length; i++) {
+          const where = `${ks.join(' ')} @${i}`;
+          expect(`${ks[i - 1]} ${ks[i]}`, where).not.toBe('IV6 V65');
+          for (let v = 0; v < 4; v++) {
+            const pair = [mod(vs[i - 1][v] - tonic, 12), mod(vs[i][v] - tonic, 12)].sort().join(',');
+            expect(pair, where).not.toBe('11,8');
+          }
+        }
+      }
   });
 });

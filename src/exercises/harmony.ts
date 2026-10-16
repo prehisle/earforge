@@ -5,7 +5,7 @@
 import type { NoteEvent } from '../audio/engine';
 import type { ExerciseDef, Level } from '../engine/types';
 import { t } from '../i18n';
-import { keyScore, pitchName, spellInKey } from '../music/notation';
+import { keyFifths, pitchName, spellInKey, spellWithLetter, tonicLetter, type Score } from '../music/notation';
 import { HARMONIC_MINOR_SCALE, MAJOR_SCALE, MODE_BY_ID, keyLabel, mod, type ModeDef } from '../music/theory';
 import { cadenceEvents, chooseTonic, level, modeItem, option } from './common';
 
@@ -175,14 +175,24 @@ export function canEnd(prev: Key, last: Key): boolean {
   return false;
 }
 
+/** 小调里不用的连接：ⅳ⁶（低音 le）→ Ⅴ⁶₅（低音 ti）的低音只能走增二度或减七度 */
+const MINOR_SKIP = new Set(['IV6>V65']);
+const minorSkip = (a: Key, b: Key) => MINOR_SKIP.has(`${a}>${b}`);
+
 /** 解决时需要的和弦（自选考点里没有也要放进词汇表） */
 const NEEDS: Partial<Record<Key, Key[]>> = { V42: ['I6'] };
 
 /**
  * 以 Ⅰ 开头、长 len、在第 2 个及之后至少出现一次 item 的合法进行，在所有合法进行中均匀抽取。
- * 没有合法进行时返回 null。
+ * 没有合法进行时返回 null。skip(a, b) 为真的连接不用（小调）。
  */
-export function sequence(len: number, vocab: Key[], item: Key, rnd: () => number = Math.random): Key[] | null {
+export function sequence(
+  len: number,
+  vocab: Key[],
+  item: Key,
+  rnd: () => number = Math.random,
+  skip: (a: Key, b: Key) => boolean = () => false,
+): Key[] | null {
   const ok = new Set(vocab);
   const memo = new Map<string, number>();
   // 从第 pos 个和弦 c 出发（之前是否已出现 item）有多少种合法的结尾
@@ -196,7 +206,7 @@ export function sequence(len: number, vocab: Key[], item: Key, rnd: () => number
     memo.set(k, n);
     return n;
   };
-  const nexts = (pos: number, c: Key) => NEXT[c].filter((nx) => ok.has(nx) && (pos + 1 < len - 1 || canEnd(c, nx)));
+  const nexts = (pos: number, c: Key) => NEXT[c].filter((nx) => ok.has(nx) && !skip(c, nx) && (pos + 1 < len - 1 || canEnd(c, nx)));
   if (count(0, 'I', false) === 0) return null;
   const seq: Key[] = ['I'];
   let seen = false;
@@ -304,8 +314,8 @@ function moveCost(ca: HarmonyChord, a: number[], cb: HarmonyChord, b: number[], 
       if ((k < 3 && b[k] > a[k + 1]) || b[k] < a[k - 1]) cost += 6;
     }
     if (Math.abs(d) === 6) cost += 5; // 三全音跳进
-    // 小调的增二度（le ↔ ti）
-    if (Math.abs(d) === 3 && ((rel(a[k]) === 8 && rel(b[k]) === 11) || (rel(a[k]) === 11 && rel(b[k]) === 8))) cost += HARD;
+    // 小调的增二度（le ↔ ti），及其转位减七度（低音可以跳这么远）
+    if ((rel(a[k]) === 8 && rel(b[k]) === 11) || (rel(a[k]) === 11 && rel(b[k]) === 8)) cost += HARD;
     // 七音：级进下行解决，或作为共同音保持
     if (ca.seventh && mod(a[k] - tonicPc, 12) === mod(ca.tones[3], 12) && !(d === 0 || d === -1 || d === -2)) cost += HARD;
     // 导音 ti 进主和弦：外声部必须上行到 do，内声部可下行到 sol
@@ -383,6 +393,17 @@ function chordSymbol(ch: HarmonyChord, tonicPc: number, mode: ModeDef): string {
   return `${name(ch.tones[0])}${q}${ch.inv ? `/${name(ch.tones[ch.inv])}` : ''}`;
 }
 
+/** 谱上按三度叠置拼写和弦音（Ⅴ/Ⅴ 的 fi 在 G♯ 小调写 C𝄪 而不是 D），调号随调 */
+function harmonyScore(chords: HarmonyChord[], voicings: number[][], tonicPc: number, mode: ModeDef): Score {
+  const tl = tonicLetter(tonicPc, mode);
+  const notes = voicings.map((v, i) => {
+    const ch = chords[i];
+    const root = tl + SHAPE[ch.key][0];
+    return v.map((m) => spellWithLetter(m, (root + 2 * ch.tones.indexOf(mod(m - tonicPc, 12))) % 7));
+  });
+  return { notes, fifths: keyFifths(tonicPc, mode), stems: false };
+}
+
 const BEAT = 1.2;
 
 export const harmony: ExerciseDef = {
@@ -437,7 +458,8 @@ export const harmony: ExerciseDef = {
     let keys: Key[] = [];
     let voicings: number[][] = [];
     for (let tries = 0, cost = Infinity; tries < 20 && cost >= HARD; tries++) {
-      keys = sequence(len, [...vocab], target) ?? sequence(len, all, target)!;
+      const skip = minor ? minorSkip : undefined;
+      keys = sequence(len, [...vocab], target, Math.random, skip) ?? sequence(len, all, target, Math.random, skip)!;
       ({ voicings, cost } = voiceProgression(
         keys.map((k) => table[k]),
         keyPc,
@@ -465,7 +487,7 @@ export const harmony: ExerciseDef = {
       choices,
       answer,
       stepItems: answer,
-      score: keyScore(voicings, keyPc, mode),
+      score: harmonyScore(chords, voicings, keyPc, mode),
       prompt: t('ex.harmony.prompt', { key: keyLabel(keyPc, mode), n: len, first: table.I.label }),
       explain: chords.map((c) => c.label).join(' → '),
     };
