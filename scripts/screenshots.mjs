@@ -47,7 +47,7 @@ async function songTimeline() {
 }
 
 // ───── 合成的练习记录（在页面里运行，用浏览器的本地日期） ─────
-function seed(lang) {
+function seed(lang, extra = {}) {
   let r = 20261015;
   const rnd = () => (r = (r * 1103515245 + 12345) % 2147483648) / 2147483648;
   const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -90,7 +90,7 @@ function seed(lang) {
   const prog = (level, items) => ({ level, custom: null, options: {}, items });
   const store = {
     version: 1,
-    settings: { onboarded: true, dailyGoal: 30, lang, notation: 'both', voice: 'low', naming: 'movable', keyMode: 'random' },
+    settings: { onboarded: true, dailyGoal: 30, lang, notation: 'both', voice: 'low', naming: 'movable', keyMode: 'random', ...extra.settings },
     exercises: {
       degrees: prog(2, { d0: item(90, 0.96), d4: item(85, 0.93), d7: item(80, 0.92), d2: item(60, 0.88), d5: item(55, 0.84), d9: item(30, 0.7), d11: item(26, 0.58) }),
       intervals: prog(3, { P5: item(90, 0.95), P8: item(80, 0.97), M3: item(70, 0.9), P4: item(66, 0.82), m3: item(50, 0.86), M6: item(44, 0.79), M2: item(20, 0.62), m2: item(18, 0.55) }),
@@ -102,6 +102,8 @@ function seed(lang) {
       inversions: prog(1, { t0: item(30, 0.85), t1: item(28, 0.75), t2: item(12, 0.55) }),
       scales: prog(1, { major: item(20, 0.95), minor: item(20, 0.9), harmonic: item(10, 0.6) }),
       rhythmDictation: prog(1, { 'qh.0': item(14, 0.85), 'qh.1': item(8, 0.6) }),
+      // 和声听写在最高级（选项按功能分成四组）
+      harmony: { ...prog(5, { V: item(20, 0.8), IV: item(18, 0.7), V65: item(8, 0.5), 'V/V': item(6, 0.4) }), options: { mode: 'major', len: '4' } },
       singing: prog(1, { d0: item(20, 0.95), d4: item(18, 0.85), d7: item(18, 0.83), d2: item(6, 0.66) }),
     },
     daily,
@@ -218,10 +220,10 @@ async function main() {
 async function shootLang(browser, lang, timeline, errors) {
   const T =
     lang === 'zh'
-      ? { start: '开始练习', back: '返回', stats: '统计', lib: '视唱曲库', exam: '模拟考试', rdict: '节奏旋律听写', degrees: '调内音级' }
-      : { start: 'Start', back: 'Back', stats: 'Stats', lib: 'Sight-Singing Library', exam: 'mock exams', rdict: 'Melody + Rhythm', degrees: 'Scale Degrees' };
+      ? { start: '开始练习', back: '返回', stats: '统计', lib: '视唱曲库', exam: '模拟考试', rdict: '节奏旋律听写', degrees: '调内音级', harmony: '和声听写', settings: '设置' }
+      : { start: 'Start', back: 'Back', stats: 'Stats', lib: 'Sight-Singing Library', exam: 'mock exams', rdict: 'Melody + Rhythm', degrees: 'Scale Degrees', harmony: 'Harmonic Dictation', settings: 'Settings' };
 
-  async function open({ width = 1100, height = 760, scale = 1, dark = false, fresh = false, init = null, initArg } = {}) {
+  async function open({ width = 1100, height = 760, scale = 1, dark = false, fresh = false, init = null, initArg, settings } = {}) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(`${lang}: ${e}`));
@@ -240,7 +242,7 @@ async function shootLang(browser, lang, timeline, errors) {
       globalThis.__shotClock = 0;
       Date.now = () => now() + globalThis.__shotClock;
     });
-    if (!fresh) await page.evaluateOnNewDocument(seed, lang);
+    if (!fresh) await page.evaluateOnNewDocument(seed, lang, { settings });
     if (init) await page.evaluateOnNewDocument(init, initArg);
     await page.setViewport({ width, height, deviceScaleFactor: scale });
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }]);
@@ -274,21 +276,6 @@ async function shootLang(browser, lang, timeline, errors) {
     await page.screenshot({ path, type: 'webp', quality: 80 });
     written.push(path);
   };
-  /** 依次点选项直到出现反馈（多步题逐步） */
-  const answer = async (page) => {
-    for (let guard = 0; guard < 60 && !(await page.$('.feedback')); guard++) {
-      const choices = await page.$$('.choice:not(.bad)');
-      if (!choices.length) break;
-      for (const c of choices) {
-        await c.click().catch(() => {});
-        await sleep(40);
-        if (await page.$('.feedback')) break;
-        if (!(await c.evaluate((e) => e.classList.contains('bad')).catch(() => false))) break;
-      }
-    }
-    await page.waitForSelector('.feedback', { timeout: 8000 });
-  };
-
   // 首页
   if (want('home')) {
     const { ctx, page } = await open({ height: 900 });
@@ -296,34 +283,41 @@ async function shootLang(browser, lang, timeline, errors) {
     await ctx.close();
   }
 
-  // 练习：答完一题（含五线谱与反馈）。随机数种子固定，先试答一遍记下正确答案，再在新页面里答对
-  const goodIdx = async (page) => page.$$eval('.choice', (xs) => xs.findIndex((x) => x.classList.contains('good')));
-  const practice = async (dark, known) => {
-    const { ctx, page } = await open({ dark, height: 900 });
+  /** 从 React 状态读出当前题的答案（同 e2e/lib/harness.mjs 的 readQuestion），按答案逐步答对 */
+  const answerRight = async (page) => {
+    const q = await page.evaluate(() => {
+      const el = document.querySelector('.choices');
+      const k = el && Object.keys(el).find((x) => x.startsWith('__reactFiber$'));
+      for (let f = k ? el[k] : null; f; f = f.return)
+        for (let h = f.memoizedState; h && typeof h === 'object' && 'next' in h; h = h.next) {
+          const v = h.memoizedState;
+          if (v?.q && Array.isArray(v.q.answer)) return { answer: v.q.answer, choices: v.q.choices.map((c) => c.id) };
+        }
+      return null;
+    });
+    if (!q) throw new Error(`${lang}: cannot read the question`);
+    for (const a of q.answer) {
+      await (await page.$$('.choice'))[q.choices.indexOf(a)].click();
+      await sleep(120);
+    }
+    await page.waitForSelector('.feedback', { timeout: 8000 });
+  };
+
+  // 练习：答对两题（第二题含五线谱与反馈）。关掉「答对后自动下一题」，停在反馈上
+  for (const dark of lang === 'zh' ? [false, true] : [false]) {
+    const name = dark ? 'practice-dark' : 'practice';
+    if (!want(name)) continue;
+    const { ctx, page } = await open({ dark, height: 900, settings: { autoNext: false } });
     await click(page, T.degrees, '.card');
     await click(page, T.start);
     await page.waitForSelector('.choice');
     await sleep(600);
-    const found = [];
-    for (let q = 0; q < 2; q++) {
-      if (q) {
-        await page.keyboard.press('Enter');
-        await sleep(700);
-      }
-      if (known) await (await page.$$('.choice'))[known[q]].click();
-      else await answer(page);
-      await page.waitForSelector('.feedback');
-      found.push(await goodIdx(page));
-    }
+    await answerRight(page);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !document.querySelector('.feedback'));
+    await sleep(600);
+    await answerRight(page);
     await sleep(500);
-    return { ctx, page, found };
-  };
-  for (const dark of lang === 'zh' ? [false, true] : [false]) {
-    const name = dark ? 'practice-dark' : 'practice';
-    if (!want(name)) continue;
-    const trial = await practice(dark);
-    await trial.ctx.close();
-    const { ctx, page } = await practice(dark, trial.found);
     await shot(page, name);
     await ctx.close();
   }
@@ -386,6 +380,34 @@ async function shootLang(browser, lang, timeline, errors) {
     await page.waitForSelector('.exam-total');
     await sleep(300);
     await shot(page, 'exam-result');
+    await ctx.close();
+  }
+
+  // 和声听写：最高级（选项按功能分组），每题随机换乐器；按题目答案逐个和弦答对，答完显示大谱表
+  if (want('harmony')) {
+    const { ctx, page } = await open({ height: 900, settings: { timbre: 'random', autoNext: false } });
+    await click(page, T.harmony, '.card');
+    await click(page, T.start);
+    await page.waitForSelector('.choice-groups .choice');
+    await sleep(600);
+    await answerRight(page);
+    await page.waitForSelector('.feedback-staff svg');
+    await sleep(500);
+    await shot(page, 'harmony', { fullPage: true });
+    await ctx.close();
+  }
+
+  // 设置页的音色：合成 / 采样 / 随机三组（选中「每题随机换乐器」）
+  if (want('settings-timbre')) {
+    const { ctx, page } = await open({ height: 900, settings: { timbre: 'random' } });
+    await click(page, T.settings);
+    await page.waitForSelector('.timbre-groups');
+    await sleep(400);
+    await page.mouse.move(0, 0);
+    const panel = await page.evaluateHandle(() => document.querySelector('.timbre-groups').closest('.panel'));
+    const path = join(OUT, `settings-timbre-${lang}.webp`);
+    await panel.screenshot({ path, type: 'webp', quality: 80 });
+    written.push(path);
     await ctx.close();
   }
 

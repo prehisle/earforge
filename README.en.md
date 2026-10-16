@@ -51,9 +51,15 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 ### Exam prep
 - **Mock exams**: three papers (quick check, graded exam, conservatory entrance). There is no feedback while you answer, with optional time and replay limits. Afterwards you get a report with section scores, weak items and a question-by-question review where you can replay and compare. Past results are kept.
 - **Melody + rhythm dictation**: a conservatory-style task. Write pitches and durations in a staff editor with the keyboard, on-screen buttons or a MIDI keyboard. Pitch and rhythm are graded separately.
+- **Harmonic dictation**: hear a four-part progression (4 or 6 chords) and name each chord with its inversion, from I IV V up through first inversions, V7 and its inversions, the cadential 6/4, ii7, vii°6 and the secondary dominant V/V, in major and minor. Progressions follow functional-harmony rules with smooth voice leading and no parallel fifths or octaves. Options are grouped by function (tonic / predominant / dominant / secondary dominants), and a grand staff appears after you answer. The graded and conservatory mock exams include a harmonic dictation section.
 - **Staff notation**: correct key signatures and accidentals, with full rhythmic notation (time signatures, beams, dots, ties, triplets, automatic line breaks).
 
-![Mock exam report](docs/screenshots/exam-result-en.webp)
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/harmony-en.webp" alt="Harmonic dictation: options grouped by function, with the progression and a grand staff after answering"></td>
+    <td width="50%"><img src="docs/screenshots/exam-result-en.webp" alt="Mock exam report: section scores, weak spots and question review"></td>
+  </tr>
+</table>
 
 ### Sight-singing
 - **Sight-singing library**: 48 graded pieces, both original drills and public-domain folk and classical melodies. Transpose them to your range, sing along with a metronome and get note-by-note pitch scoring, or practise note by note.
@@ -67,16 +73,21 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 - **Backup**: export and import a JSON backup to move your progress between devices.
 
 ### And more
-- **Many instrument sounds**: piano, electric piano, sine, organ, guitar (Karplus-Strong plucked string), strings, flute and marimba, all synthesized in real time with Web Audio (no download, works offline, loudness-matched); optional real samples of piano, acoustic guitar, violin and flute (downloaded on demand and cached for offline use).
-- **Random instrument per question**: each new question uses a different instrument (replays and answer previews keep it), so you learn to recognize intervals and chords in any timbre, not just on the piano.
+- **Many instrument sounds**: synthesized piano, electric piano, sine, organ, guitar (Karplus-Strong plucked string), strings, flute and marimba, all generated in real time with Web Audio (no download, works offline, loudness-matched). Optional real samples of piano (~1.4 MB), acoustic guitar (~2.2 MB), violin (~4.4 MB) and flute (~1.8 MB) are downloaded on demand and cached for offline use; until they are ready, or outside their sampled range, the matching synthesized sound plays instead.
+- **Random instrument per question**: each new question (mock exams included) picks a different instrument from piano, electric piano, organ, guitar, strings, flute, marimba and any sampled instruments you have downloaded. Replays and answer previews keep it, and the practice page shows which one is playing. You learn to recognize intervals and chords in any timbre, not just on the piano.
 - **MIDI keyboard input**: play your answers in scale degrees, melodic dictation, intervals, chord inversions and the notation editor.
 - **English and Chinese, light and dark**: follows your system's color scheme. New users get the language of their browser, and you can switch in Settings.
-- **Accessibility**: full keyboard control (see the shortcut list under "About & help" in the app), screen-reader announcements for answer feedback, WCAG AA color contrast, and 0 axe-core violations.
+- **Keyboard shortcuts**: answer multiple-choice questions with 1–9, 0 and Q–P (up to 20 options, shown on each button), hold Shift with an answer key to audition, Space to replay, Enter for the next question. The notation editor and rhythm tapping are fully keyboard-driven too; the full list is under "About & help" in the app.
+- **Accessibility**: full keyboard control, screen-reader announcements for answer feedback, WCAG AA color contrast, and 0 axe-core violations.
 - **Mobile-friendly**: designed for touch, with compact narrow-screen layouts.
 
 <p align="center">
   <img src="docs/screenshots/mobile-en.webp" alt="Home page on a phone" width="300">
   <img src="docs/screenshots/practice-dark-zh.webp" alt="Practice page in dark mode (Chinese interface)" width="520">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-timbre-en.webp" alt="Sound settings: synthesized, real samples, and random instrument per question" width="600">
 </p>
 
 ## Exercises
@@ -119,6 +130,8 @@ npm run check    # pre-commit check: lint (warnings fail) + unit tests + build
 npm run e2e      # browser end-to-end tests (puppeteer-core + local Chrome)
 ```
 
+There are currently 469 unit tests (vitest, 23 files) and 17 browser end-to-end scenarios (`e2e/scenarios/`).
+
 Stack: Vite + React + TypeScript, with no runtime dependencies besides React and no backend.
 
 ### Deploy to GitHub Pages
@@ -157,11 +170,11 @@ Done (see [CHANGELOG.md](CHANGELOG.md)):
 - [x] Rhythmic staff notation, sight-singing library, trend charts (0.5)
 - [x] Melody + rhythm dictation, mock exams, lazy loading and accessibility (0.6)
 - [x] Scales and modes, chord inversions, compound intervals, in-repo e2e and CI, GitHub Pages deployment, in-app help (0.7)
+- [x] Harmonic dictation (four-part, also in mock exams), more instruments and a random instrument per question, 20 answer keys (0.8)
 
 Ideas for next steps (discussion welcome in Issues):
 
-- [x] More instruments (synthesized organ / guitar / strings / flute / marimba, sampled guitar / violin / flute) and a random instrument per question
-- [ ] Harmonic dictation (two voices, bass lines)
+- [ ] More harmonic dictation: two voices, bass lines, more chromatic chords
 - [ ] More public-domain sight-singing pieces
 - [ ] Custom exercise sets and shareable practice links
 
@@ -171,7 +184,7 @@ Issues and pull requests are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING
 
 The song library only accepts EarForge originals and **public-domain** melodies (traditional tunes, or works whose composer died more than 70 years ago). Transcribe the original melody yourself, and state the source and why it is in the public domain in your PR.
 
-The README screenshots are generated by `scripts/screenshots.mjs` (`npm run build && node scripts/screenshots.mjs`).
+The README screenshots are generated by `scripts/screenshots.mjs` (`npm run build && node scripts/screenshots.mjs`, one set each in Chinese and English; `--only harmony,settings` shoots a subset and `--url` uses a running site).
 
 ## License and credits
 
