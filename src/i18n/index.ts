@@ -30,7 +30,7 @@ export function detectLocale(lang: string | undefined = globalThis.navigator?.la
  * 插值：{name} 替换为参数；{n:单数|复数} 按 n 是否为 1 选择（英文复数用，中文词典不需要）。
  */
 export function format(template: string, params?: Params): string {
-  if (!params) return template;
+  if (!params || !template.includes('{')) return template;
   return template.replace(/\{(\w+)(?::([^|{}]*)\|([^{}]*))?\}/g, (m, key: string, one?: string, other?: string) => {
     const v = params[key];
     if (v === undefined) return m;

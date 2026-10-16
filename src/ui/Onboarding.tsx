@@ -234,7 +234,7 @@ export function Onboarding({ store, update, onDone }: Props) {
                         level: lv + 1,
                         total: levelsOf(ex, p.options).length,
                       })}
-                      {lv > 0 && <span className="muted">{t('onboard.includes', { n: lv })}</span>}
+                      {lv > 0 && <span className="muted">{lv === 1 ? t('onboard.includesOne') : t('onboard.includes', { n: lv })}</span>}
                     </li>
                   );
                 })}

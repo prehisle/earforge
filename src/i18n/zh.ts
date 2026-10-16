@@ -185,6 +185,7 @@ export const zh = {
   'onboard.doneTitle': '准备好了 🎉',
   'onboard.startLevel': '{icon} {title}：第 {level}/{total} 级起步',
   'onboard.includes': '（含前 {n} 级）',
+  'onboard.includesOne': '（含前 1 级）',
   'onboard.goal': '🎯 每日目标：{n} 题',
   'onboard.allFromOne': '所有练习从第 1 级开始，每日目标 {n} 题。',
   'onboard.suggest1': '建议从首页的',

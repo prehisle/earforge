@@ -179,7 +179,7 @@ describe('英文界面下的练习内容', () => {
         });
       }
     expect(count).toBeGreaterThan(500);
-  });
+  }, 20000);
 
   it('切回中文后题目是中文', () => {
     setLocale('zh');

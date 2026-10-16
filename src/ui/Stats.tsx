@@ -65,7 +65,14 @@ export function StatsPage({ store, onBack, onFocus }: Props) {
             </div>
           ))}
           {hover !== null && (
-            <div className="tooltip" style={{ left: `${((hover + 0.5) / rows.length) * 100}%` }}>
+            <div
+              className="tooltip"
+              style={{
+                left: `${((hover + 0.5) / rows.length) * 100}%`,
+                // 靠近两端时不居中，避免提示框超出图表（窄屏会出现横向滚动）
+                transform: hover < 4 ? 'translateX(-12px)' : hover >= rows.length - 4 ? 'translateX(calc(-100% + 12px))' : undefined,
+              }}
+            >
               <strong>{rows[hover].d.slice(5)}</strong>
               <span>{t('stats.nQ', { n: rows[hover].n })}</span>
               {rows[hover].n > 0 && (
