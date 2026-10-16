@@ -1,9 +1,11 @@
 import type { Choice, ExerciseDef, Level, Settings } from '../engine/types';
 import { keyScore } from '../music/notation';
-import { DEGREES, keyName, mod, nameInSystem, randInt, type ModeDef, type ModeId } from '../music/theory';
+import { t } from '../i18n';
+import { DEGREES, keyLabel, mod, nameInSystem, randInt, type ModeDef, type ModeId } from '../music/theory';
 import {
   MODE_OPTION,
   bareItem,
+  option,
   chooseTonic,
   cadenceEvents,
   degreeLevels,
@@ -65,23 +67,27 @@ export function degreeChoices(items: string[], settings: Settings, tonicPc: numb
 
 export const degrees: ExerciseDef = {
   id: 'degrees',
-  title: '调内音级',
-  subtitle: '先听终止式建立调性，再辨认单音是第几级',
+  get title() {
+    return t('ex.degrees.title');
+  },
+  get subtitle() {
+    return t('ex.degrees.subtitle');
+  },
   icon: '①',
-  group: '调性听觉',
+  group: 'tonal',
   levels: degreesLevels(modeOf({})),
   levelsFor: (options) => degreesLevels(modeOf(options)),
   options: [
     MODE_OPTION,
-    {
-      id: 'octave',
-      label: '音域',
-      values: [
-        { id: 'one', label: '一个八度' },
-        { id: 'wide', label: '两个八度' },
+    option(
+      'octave',
+      'ex.degrees.octave',
+      [
+        ['one', 'ex.degrees.octave.one'],
+        ['wide', 'ex.degrees.octave.wide'],
       ],
-      default: 'one',
-    },
+      'one',
+    ),
   ],
   itemLabel: (it, s) => degreeLabel(it, s),
   generate(item, ctx) {
@@ -105,10 +111,10 @@ export const degrees: ExerciseDef = {
         choices.map((c) => c.id),
         tonic,
       ),
-      prompt: `${keyName(tonicPc, mode)} ${mode.label} · 这个音是哪一级？`,
+      prompt: t('ex.degrees.prompt', { key: keyLabel(tonicPc, mode) }),
       // 五线谱：题目音（高亮）及其解决到 do 的路径
       score: { ...keyScore(resolutionPath(note, tonic, mode).map((n) => [n]), tonicPc, mode, true), marks: ['cur'] },
-      explain: `${DEGREES[semi(item)].movableDo}（${DEGREES[semi(item)].jianpu}）— 听它如何解决到 do`,
+      explain: t('ex.degrees.explain', { solfa: DEGREES[semi(item)].movableDo, jianpu: DEGREES[semi(item)].jianpu }),
     };
   },
 };

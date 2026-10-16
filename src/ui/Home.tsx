@@ -11,6 +11,9 @@ import {
 import { NEWBIE_QUESTIONS, totalAnswered } from '../engine/onboarding';
 import { STARTER_IDS, peekProgress, planModules, rankItems } from '../engine/planner';
 import { EXERCISES as ALL, exerciseById } from '../exercises';
+import { joinList } from '../i18n';
+import { useT } from '../i18n/react';
+import type { ExerciseDef } from '../engine/types';
 
 interface Props {
   store: Store;
@@ -20,14 +23,15 @@ interface Props {
   onSettings(): void;
 }
 
-const GROUPS = ['调性听觉', '基础', '视唱练耳'] as const;
+const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
 export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
-  const t = store.daily[today()];
+  const t = useT();
+  const day = store.daily[today()];
   const days = streak(store);
   // 只读取，不写回：getProgress 对新练习会创建默认值
   const snapshot = structuredClone(store);
-  const n = t?.n ?? 0;
+  const n = day?.n ?? 0;
   const goal = store.settings.dailyGoal;
   const reached = n >= goal;
   // 今日训练预览：涉及的模块与最需要练的考点
@@ -42,8 +46,8 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
   // 起始级别可能由新手引导按基础调高过
   const starters = STARTER_IDS.map((id) => {
     const ex = exerciseById[id];
-    return `「${ex.title}」第 ${peekProgress(store, ex).level + 1} 级`;
-  }).join('和');
+    return t('home.starter', { title: ex.title, level: peekProgress(store, ex).level + 1 });
+  }).join(t('home.starterJoin'));
 
   return (
     <main className="page">
@@ -51,65 +55,65 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
         <div className="brand">
           <span className="logo">耳</span>
           <div>
-            <h1>EarForge 耳锻</h1>
-            <p className="muted">开源 · 免费 · 离线可用的练耳训练</p>
+            <h1>{t('app.brand')}</h1>
+            <p className="muted">{t('app.tagline')}</p>
           </div>
         </div>
         <nav className="topnav">
           <button className="ghost" onClick={onStats}>
-            统计
+            {t('home.stats')}
           </button>
           <button className="ghost" onClick={onSettings}>
-            设置
+            {t('home.settings')}
           </button>
         </nav>
       </header>
 
       <section className={newbie ? 'today spotlight' : 'today'}>
         <div className="today-body">
-          {newbie && <span className="start-here">✨ 第一次来？从这里开始</span>}
-          <h2>🎯 今日训练</h2>
+          {newbie && <span className="start-here">{t('home.startHere')}</span>}
+          <h2>{t('home.today')}</h2>
           <p className="today-sub">
-            {store.settings.mixSize} 题混合练习 · {mods.map((ex) => ex.title).join(' · ')}
+            {t('home.todaySub', { n: store.settings.mixSize, mods: mods.map((ex) => ex.title).join(' · ') })}
           </p>
           <p className="muted today-focus">
             {fresh
-              ? `从${starters}开始，自动挑选最需要练的考点。`
+              ? t('home.focusFresh', { starters })
               : focus.length > 0
-                ? `重点：${focus.join('、')}；掌握好的考点按间隔复习。`
-                : '自动挑选掌握度最低、最久没练的考点。'}
+                ? t('home.focusWeak', { items: joinList(focus) })
+                : t('home.focusAuto')}
           </p>
         </div>
         <button className="primary big" onClick={onMix}>
-          开始今日训练
+          {t('home.startToday')}
         </button>
       </section>
 
       <section className="tiles">
         <div className={reached ? 'tile goal done' : 'tile goal'}>
-          <span className="tile-label">今日练习</span>
+          <span className="tile-label">{t('home.todayCount')}</span>
           <span className="tile-value">
             {n}
             <span className="tile-of">/{goal}</span>
           </span>
-          <span className="meter" title={`每日目标 ${goal} 题`}>
+          <span className="meter" title={t('home.goalTitle', { n: goal })}>
             <span className="meter-fill" style={{ width: `${Math.min(1, n / goal) * 100}%` }} />
           </span>
-          {reached && <span className="goal-cheer">🎉 今日目标达成</span>}
+          {reached && <span className="goal-cheer">{t('home.goalReached')}</span>}
         </div>
         <div className="tile">
-          <span className="tile-label">今日正确率</span>
-          <span className="tile-value">{t && t.n ? `${Math.round((t.c / t.n) * 100)}%` : '—'}</span>
+          <span className="tile-label">{t('home.todayAcc')}</span>
+          <span className="tile-value">{day && day.n ? `${Math.round((day.c / day.n) * 100)}%` : '—'}</span>
         </div>
         <div className="tile">
-          <span className="tile-label">连续天数</span>
+          <span className="tile-label">{t('home.streak')}</span>
           <span className="tile-value">{days}</span>
         </div>
       </section>
 
       {GROUPS.map((g) => (
         <section key={g}>
-          <h2 className="group-title">{g}</h2>
+          <h2 className="group-title">{t(`group.${g}`)}</h2>
           <div className="cards">
             {ALL.filter((e) => e.group === g).map((ex) => {
               const p = getProgress(snapshot, ex);
@@ -121,9 +125,15 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
                     <span className="card-title">{ex.title}</span>
                     <span className="card-sub">{ex.subtitle}</span>
                     <span className="card-meta">
-                      {p.custom ? '自选考点' : `第 ${p.level + 1}/${levelsOf(ex, p.options).length} 级 · ${currentLevel(ex, p).name}`}
+                      {p.custom
+                        ? t('home.custom')
+                        : t('home.levelMeta', {
+                            level: p.level + 1,
+                            total: levelsOf(ex, p.options).length,
+                            name: currentLevel(ex, p).name,
+                          })}
                     </span>
-                    <span className="meter" title={`当前级别掌握度 ${Math.round(m * 100)}%`}>
+                    <span className="meter" title={t('home.masteryTitle', { pct: Math.round(m * 100) })}>
                       <span className="meter-fill" style={{ width: `${m * 100}%` }} />
                     </span>
                   </span>
@@ -135,9 +145,9 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
       ))}
 
       <footer className="foot muted">
-        建议从「调内音级」开始：它训练的是在调性中听音的能力，对扒歌、即兴、视唱帮助最大。
+        {t('home.foot')}
         <br />
-        快捷键：数字键作答 · 空格重听 · 回车下一题
+        {t('home.keys')}
       </footer>
     </main>
   );

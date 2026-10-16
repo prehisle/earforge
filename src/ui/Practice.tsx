@@ -16,6 +16,8 @@ import {
 } from '../engine/progress';
 import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
+import { joinList } from '../i18n';
+import { useT } from '../i18n/react';
 import { ModuleTip } from './ModuleTip';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
@@ -73,6 +75,7 @@ interface QuizProps {
 }
 
 export function Quiz({ store, update, source, intro, autoStart, showModule, onResult, onComplete }: QuizProps) {
+  const t = useT();
   const [cur, setCur] = useState<{ ex: ExerciseDef; q: Question } | null>(null);
   const [step, setStep] = useState(0);
   const [wrong, setWrong] = useState<Set<string>>(new Set()); // 当前步骤点错的选项
@@ -228,7 +231,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
   const choiceName = (id: string) => {
     const i = q?.choices.findIndex((c) => c.id === id) ?? -1;
     const c = q?.choices[i];
-    return c?.rhythm ? `第 ${i + 1} 个节奏` : (c?.label ?? id);
+    return c?.rhythm ? t('quiz.rhythmN', { n: i + 1 }) : (c?.label ?? id);
   };
 
   const onChoice = (id: string) => {
@@ -297,20 +300,20 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       {!q.tap && (
         <div className="play-row">
           <button className="primary" onClick={() => play(q, 'all')}>
-            ▶ 重听 <kbd>空格</kbd>
+            {t('quiz.replay')} <kbd>{t('common.space')}</kbd>
           </button>
           {q.prelude && (
             <>
-              <button onClick={() => play(q, 'target')}>{q.sing?.showDisplay ? '提示' : '只听题目'}</button>
-              <button onClick={() => play(q, 'prelude')}>终止式</button>
+              <button onClick={() => play(q, 'target')}>{q.sing?.showDisplay ? t('quiz.hint') : t('quiz.targetOnly')}</button>
+              <button onClick={() => play(q, 'prelude')}>{t('quiz.cadence')}</button>
             </>
           )}
           {store.settings.midi && midiStatus.devices.length > 0 && !q.sing && (
             <span
               className={q.midiAnswer ? 'midi-badge' : 'midi-badge off'}
-              title={`${midiStatus.devices.join('、')}${q.midiAnswer ? ' · 可以直接弹琴键作答' : ' · 本题型不支持琴键作答'}`}
+              title={`${joinList(midiStatus.devices)}${q.midiAnswer ? t('quiz.midiCan') : t('quiz.midiCannot')}`}
             >
-              🎹 已连接
+              {t('quiz.midiConnected')}
             </span>
           )}
         </div>
@@ -328,7 +331,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
                 key={i}
                 className={`slot ${state}${pickable ? ' pick' : ''}${pickable && i === cmpAt ? ' sel' : ''}`}
                 onClick={pickable ? () => setCmpStep(i) : undefined}
-                title={pickable ? '选中这一步，再点选项试听对比' : undefined}
+                title={pickable ? t('quiz.slotPick') : undefined}
               >
                 {i < step || done ? label : '?'}
               </span>
@@ -363,7 +366,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
                 key={c.id}
                 className={cls}
                 onClick={() => onChoice(c.id)}
-                title={listen ? `点击试听（Shift+${i + 1}）` : undefined}
+                title={listen ? t('quiz.listenTitle', { n: i + 1 }) : undefined}
               >
                 {c.rhythm ? (
                   <RhythmNotation rhythm={c.rhythm} label={c.label} />
@@ -372,7 +375,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
                 )}
                 {c.sub && <span className="choice-sub">{c.sub}</span>}
                 {i < 9 && <kbd className="choice-key">{i + 1}</kbd>}
-                {listen && <span className="choice-listen">🔊 试听</span>}
+                {listen && <span className="choice-listen">{t('quiz.listen')}</span>}
               </button>
             );
           })}
@@ -381,22 +384,22 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
 
       {done && q.choiceEvents && misses[cmpAt]?.length ? (
         <div className="compare-row">
-          {q.answer.length > 1 && <span className="muted">第 {cmpAt + 1} 步</span>}
+          {q.answer.length > 1 && <span className="muted">{t('quiz.step', { n: cmpAt + 1 })}</span>}
           <button onClick={() => preview(misses[cmpAt][0])}>
-            ▶ 你的答案 · {choiceName(misses[cmpAt][0])}
+            {t('quiz.yours', { name: choiceName(misses[cmpAt][0]) })}
           </button>
           <button onClick={() => preview(q.answer[cmpAt])}>
-            ▶ 正确答案 · {choiceName(q.answer[cmpAt])}
+            {t('quiz.correctAnswer', { name: choiceName(q.answer[cmpAt]) })}
           </button>
         </div>
       ) : null}
 
       {done && (
         <div className={stepResults.every(Boolean) ? 'feedback good' : 'feedback bad'}>
-          <strong>{stepResults.every(Boolean) ? '✓ 正确' : '✗ 再接再厉'}</strong>
+          <strong>{stepResults.every(Boolean) ? t('quiz.correct') : t('quiz.wrong')}</strong>
           {q.explain && <span>{q.explain}</span>}
           <button className="primary" onClick={next}>
-            {last ? '查看小结' : '下一题'} <kbd>回车</kbd>
+            {last ? t('quiz.summary') : t('quiz.next')} <kbd>{t('common.enter')}</kbd>
           </button>
           {q.score && !q.sing && store.settings.notation !== 'jianpu' && (
             <div className="feedback-staff">
@@ -409,18 +412,20 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
 
       {levelUp && (
         <div className="levelup">
-          🎉 当前级别已掌握，已解锁：<strong>{levelUp}</strong>
+          {t('quiz.levelUp')}
+          <strong>{levelUp}</strong>
         </div>
       )}
 
       {goalHit && (
         <div className="levelup">
-          🎯 今日目标 {store.settings.dailyGoal} 题已达成，继续保持！
+          {t('quiz.goalHit', { n: store.settings.dailyGoal })}
         </div>
       )}
 
       <p className="session muted">
-        本次：{session.n} 题{accuracy !== null && ` · 正确率 ${accuracy}%`}
+        {t('quiz.session', { n: session.n })}
+        {accuracy !== null && t('quiz.sessionAcc', { pct: accuracy })}
       </p>
     </section>
   );
@@ -438,6 +443,7 @@ interface Props {
 }
 
 export function Practice({ ex, store, update, onBack, focus }: Props) {
+  const t = useT();
   // 在副本上规范化（补全选项、级别不越界），不写回
   const progress = useMemo(() => getProgress(structuredClone(store), ex), [store, ex]);
   const [temp, setTemp] = useState<string[] | null>(focus && focus.length > 0 ? focus : null);
@@ -511,8 +517,8 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
   return (
     <main className="page practice">
       <header className="topbar">
-        <button className="ghost" onClick={onBack} aria-label="返回">
-          ← 返回
+        <button className="ghost" onClick={onBack} aria-label={t('common.backAria')}>
+          {t('common.back')}
         </button>
         <div className="practice-title">
           <h1>
@@ -520,21 +526,21 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
           </h1>
           <p className="muted">
             {temp
-              ? `专练薄弱点${scopedLabel && ` · ${scopedLabel}`}`
+              ? `${t('practice.focusWeak')}${scopedLabel && ` · ${scopedLabel}`}`
               : progress.custom
-                ? '自选考点'
-                : `第 ${progress.level + 1} 级 · ${currentLevel(ex, progress).name}`}
+                ? t('practice.custom')
+                : t('practice.levelMeta', { level: progress.level + 1, name: currentLevel(ex, progress).name })}
           </p>
         </div>
         <button className={showPanel ? 'ghost active' : 'ghost'} onClick={() => setShowPanel(!showPanel)}>
-          选项
+          {t('practice.options')}
         </button>
       </header>
 
       {showPanel && (
         <section className="panel">
           <div className="field">
-            <label>级别</label>
+            <label>{t('practice.level')}</label>
             <div className="seg wrap">
               {levels.map((l, i) => (
                 <button
@@ -564,7 +570,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
             </div>
           ))}
           <div className="field">
-            <label>{temp ? '本次专练考点（至少 2 个，不影响自选设置）' : '自选考点（至少 2 个）'}</label>
+            <label>{temp ? t('practice.focusLabel') : t('practice.customLabel')}</label>
             <div className="chips">
               {allItems.map((it) => {
                 const st = itemStat(progress, it);
@@ -573,7 +579,7 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
                     key={it}
                     className={items.includes(it) ? 'chip on' : 'chip'}
                     onClick={() => toggleCustom(it)}
-                    title={st.n ? `掌握度 ${Math.round(st.acc * 100)}% · 练习 ${st.n} 次` : '尚未练习'}
+                    title={st.n ? t('practice.chipTitle', { pct: Math.round(st.acc * 100), n: st.n }) : t('practice.chipNew')}
                   >
                     {ex.itemLabel(it, store.settings)}
                   </button>
@@ -595,10 +601,13 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
           <section className="start">
             <p>{ex.subtitle}</p>
             <p className="muted">
-              {temp ? '专练薄弱点' : '当前考点'}：{items.map((it) => ex.itemLabel(it, store.settings)).join('、')}
+              {t('practice.introItems', {
+                label: temp ? t('practice.focusWeak') : t('practice.current'),
+                items: joinList(items.map((it) => ex.itemLabel(it, store.settings))),
+              })}
             </p>
             <button className="primary big" onClick={start}>
-              开始练习
+              {t('practice.start')}
             </button>
           </section>
         )}

@@ -2,7 +2,7 @@ import type { ExerciseDef, Level } from '../engine/types';
 import {
   MODES,
   diatonicTriads,
-  keyName,
+  keyLabel,
   makeTriad,
   mod,
   pick,
@@ -11,7 +11,8 @@ import {
   type Triad,
 } from '../music/theory';
 import { keyScore } from '../music/notation';
-import { MODE_OPTION, chooseTonic, cadenceEvents, modeItem, modeOf } from './common';
+import { t } from '../i18n';
+import { MODE_OPTION, chooseTonic, cadenceEvents, level, modeItem, modeOf, option } from './common';
 
 /** 调式中可考的和弦。自然小调的属和弦按惯例用大三和弦 Ⅴ（和声小调的导音），自然的 ⅴ 放在最后一级。 */
 export function modeChords(mode: ModeDef): Triad[] {
@@ -34,10 +35,12 @@ const BY_ITEM: Record<string, Triad> = {};
 for (const m of MODES) for (const t of modeChords(m)) BY_ITEM[modeItem(m, t.id)] = t;
 
 function progressionLevels(mode: ModeDef): Level[] {
-  return LEVEL_IDS[mode.id].map((ids, i) => ({
-    name: `${i ? '+ ' : ''}${ids.map((id) => BY_ITEM[modeItem(mode, id)].roman).join(' · ')}`,
-    items: ids.map((id) => modeItem(mode, id)),
-  }));
+  return LEVEL_IDS[mode.id].map((ids, i) =>
+    level(
+      () => `${i ? '+ ' : ''}${ids.map((id) => BY_ITEM[modeItem(mode, id)].roman).join(' · ')}`,
+      ids.map((id) => modeItem(mode, id)),
+    ),
+  );
 }
 
 function voicing(tonic: number, f: Triad): number[] {
@@ -47,30 +50,34 @@ function voicing(tonic: number, f: Triad): number[] {
 
 export const progressions: ExerciseDef = {
   id: 'progressions',
-  title: '级数和弦',
-  subtitle: '在调性中辨认 Ⅰ Ⅳ Ⅴ ⅵ…，扒歌、即兴的核心能力',
+  get title() {
+    return t('ex.progressions.title');
+  },
+  get subtitle() {
+    return t('ex.progressions.subtitle');
+  },
   icon: 'Ⅳ',
-  group: '调性听觉',
+  group: 'tonal',
   levels: progressionLevels(modeOf({})),
   levelsFor: (options) => progressionLevels(modeOf(options)),
   options: [
     MODE_OPTION,
-    {
-      id: 'len',
-      label: '题型',
-      values: [
-        { id: '1', label: '单个和弦' },
-        { id: '4', label: '四和弦进行' },
+    option(
+      'len',
+      'ex.progressions.len',
+      [
+        ['1', 'ex.progressions.len.1'],
+        ['4', 'ex.progressions.len.4'],
       ],
-      default: '1',
-    },
+      '1',
+    ),
   ],
   itemLabel: (it) => (BY_ITEM[it] ? `${BY_ITEM[it].roman} ${BY_ITEM[it].name}` : it),
   generate(item, ctx) {
     const mode = modeOf(ctx.options);
     const tonic = chooseTonic(ctx.settings);
     const keyPc = mod(tonic, 12);
-    const key = `${keyName(keyPc, mode)} ${mode.label}`;
+    const key = keyLabel(keyPc, mode);
     const four = ctx.options.len === '4';
     const tonicItem = modeItem(mode, modeChords(mode)[0].id);
     const ids = [...new Set(four ? [tonicItem, ...ctx.items] : ctx.items)].filter((id) => BY_ITEM[id]);
@@ -97,7 +104,7 @@ export const progressions: ExerciseDef = {
           keyPc,
           mode,
         ),
-        prompt: `${key} · 依次选出 4 个和弦（第一个是 ${BY_ITEM[tonicItem].roman}）`,
+        prompt: t('ex.progressions.promptFour', { key, first: BY_ITEM[tonicItem].roman }),
         explain: seq.map((id) => BY_ITEM[id].roman).join(' → '),
       };
     }
@@ -110,7 +117,7 @@ export const progressions: ExerciseDef = {
       choices,
       answer: [item],
       score: keyScore([voicing(tonic, BY_ITEM[item])], keyPc, mode),
-      prompt: `${key} · 这是哪个级数和弦？`,
+      prompt: t('ex.progressions.prompt', { key }),
       explain: `${BY_ITEM[item].roman} ${BY_ITEM[item].name}`,
     };
   },

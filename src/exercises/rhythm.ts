@@ -1,6 +1,8 @@
 import type { NoteEvent } from '../audio/engine';
 import type { Choice, ExerciseDef } from '../engine/types';
+import { t, type MessageKey } from '../i18n';
 import { pick, randInt } from '../music/theory';
+import { levelT, option } from './common';
 
 // 节奏听写：预备拍 + 1~2 小节 4/4 节奏型（木鱼声），从相似的候选节奏中选出听到的那个。
 // 时值单位：1/12 个四分音符（便于同时表示十六分与三连音），负数为休止。
@@ -8,22 +10,34 @@ import { pick, randInt } from '../music/theory';
 export const TPQ = 12;
 export const BAR = 4 * TPQ;
 
-/** 节奏单元（考点）：名称与时值序列。长度为 1、2 或 4 拍。 */
-export const UNITS: Record<string, { name: string; durs: number[] }> = {
-  q: { name: '四分音符', durs: [12] },
-  h: { name: '二分音符', durs: [24] },
-  w: { name: '全音符', durs: [48] },
-  qr: { name: '四分休止', durs: [-12] },
-  ee: { name: '两个八分', durs: [6, 6] },
-  dqe: { name: '附点四分 + 八分', durs: [18, 6] },
-  ere: { name: '八分休止 + 八分', durs: [-6, 6] },
-  eer: { name: '八分 + 八分休止', durs: [6, -6] },
-  ssss: { name: '四个十六分', durs: [3, 3, 3, 3] },
-  ess: { name: '八分 + 两个十六分', durs: [6, 3, 3] },
-  sse: { name: '两个十六分 + 八分', durs: [3, 3, 6] },
-  syn: { name: '切分（八-四-八）', durs: [6, 12, 6] },
-  trip: { name: '八分三连音', durs: [4, 4, 4] },
+const UNIT_DURS: Record<string, number[]> = {
+  q: [12],
+  h: [24],
+  w: [48],
+  qr: [-12],
+  ee: [6, 6],
+  dqe: [18, 6],
+  ere: [-6, 6],
+  eer: [6, -6],
+  ssss: [3, 3, 3, 3],
+  ess: [6, 3, 3],
+  sse: [3, 3, 6],
+  syn: [6, 12, 6],
+  trip: [4, 4, 4],
 };
+
+/** 节奏单元（考点）：名称（当前语言）与时值序列。长度为 1、2 或 4 拍。 */
+export const UNITS: Record<string, { readonly name: string; durs: number[] }> = Object.fromEntries(
+  Object.entries(UNIT_DURS).map(([id, durs]) => [
+    id,
+    {
+      durs,
+      get name() {
+        return t(`rhythm.${id}` as MessageKey);
+      },
+    },
+  ]),
+);
 
 const beats = (u: string) => UNITS[u].durs.reduce((s, d) => s + Math.abs(d), 0) / TPQ;
 const hasRest = (u: string) => UNITS[u].durs.some((d) => d < 0);
@@ -125,7 +139,8 @@ function mutate(bars: Bar[], pool: string[]): Bar[] {
   return out;
 }
 
-export const describe = (bars: Bar[]) => bars.map((b) => b.flat().map((u) => UNITS[u].name).join(' · ')).join(' ｜ ');
+export const describe = (bars: Bar[]) =>
+  bars.map((b) => b.flat().map((u) => UNITS[u].name).join(t('ex.rhythm.sep'))).join(t('ex.rhythm.barSep'));
 
 /** 节奏型的音频：一小节预备拍，然后节奏型（木鱼）+ 轻声节拍器。durs 为时值序列（见 UNITS）。 */
 export function rhythmEvents(durs: number[], bpm: number): NoteEvent[] {
@@ -150,37 +165,41 @@ export const SPEED: Record<string, number> = { slow: 60, mid: 80, fast: 100 };
 
 export const rhythm: ExerciseDef = {
   id: 'rhythm',
-  title: '节奏听写',
-  subtitle: '听一段节奏，从相似的节奏谱中选出听到的那个',
+  get title() {
+    return t('ex.rhythm.title');
+  },
+  get subtitle() {
+    return t('ex.rhythm.subtitle');
+  },
   icon: '🥁',
-  group: '基础',
+  group: 'basics',
   levels: [
-    { name: '四分 · 二分 · 全音符 · 四分休止', items: ['q', 'h', 'w', 'qr'] },
-    { name: '+ 八分音符', items: ['ee'] },
-    { name: '+ 附点四分 · 八分休止', items: ['dqe', 'ere', 'eer'] },
-    { name: '+ 十六分音符', items: ['ssss', 'ess', 'sse'] },
-    { name: '+ 切分 · 三连音', items: ['syn', 'trip'] },
+    levelT('ex.rhythm.level.0', ['q', 'h', 'w', 'qr']),
+    levelT('ex.rhythm.level.1', ['ee']),
+    levelT('ex.rhythm.level.2', ['dqe', 'ere', 'eer']),
+    levelT('ex.rhythm.level.3', ['ssss', 'ess', 'sse']),
+    levelT('ex.rhythm.level.4', ['syn', 'trip']),
   ],
   options: [
-    {
-      id: 'speed',
-      label: '速度',
-      values: [
-        { id: 'slow', label: '慢 ♩=60' },
-        { id: 'mid', label: '中 ♩=80' },
-        { id: 'fast', label: '快 ♩=100' },
+    option(
+      'speed',
+      'ex.rhythm.speed',
+      [
+        ['slow', 'ex.rhythm.speed.slow'],
+        ['mid', 'ex.rhythm.speed.mid'],
+        ['fast', 'ex.rhythm.speed.fast'],
       ],
-      default: 'mid',
-    },
-    {
-      id: 'bars',
-      label: '小节数',
-      values: [
-        { id: '1', label: '1 小节' },
-        { id: '2', label: '2 小节' },
+      'mid',
+    ),
+    option(
+      'bars',
+      'ex.rhythm.bars',
+      [
+        ['1', 'ex.rhythm.bars.1'],
+        ['2', 'ex.rhythm.bars.2'],
       ],
-      default: '1',
-    },
+      '1',
+    ),
   ],
   itemLabel: (it) => UNITS[it].name,
   generate(item, ctx) {
@@ -215,8 +234,8 @@ export const rhythm: ExerciseDef = {
       choices,
       answer: [answer],
       choiceEvents: (id) => rhythmEvents(choices.find((c) => c.id === id)?.rhythm ?? [], bpm),
-      prompt: `听到的是哪个节奏？（♩ = ${bpm}，先听一小节预备拍）`,
-      explain: `${describe(bars)}${hasRest(item) ? '。休止处是静音，注意和长音区分' : ''}`,
+      prompt: t('ex.rhythm.prompt', { bpm }),
+      explain: `${describe(bars)}${hasRest(item) ? t('ex.rhythm.restNote') : ''}`,
     };
   },
 };

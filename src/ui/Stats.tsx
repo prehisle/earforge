@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { EXERCISES } from '../exercises';
 import { itemGroups, itemStat, streak, type Store } from '../engine/progress';
 import { peekProgress, weakItems } from '../engine/planner';
+import { joinList } from '../i18n';
+import { useT } from '../i18n/react';
 
 interface Props {
   store: Store;
@@ -22,6 +24,7 @@ function lastDays(n: number): string[] {
 }
 
 export function StatsPage({ store, onBack, onFocus }: Props) {
+  const t = useT();
   const days = lastDays(30);
   const rows = days.map((d) => ({ d, ...(store.daily[d] ?? { n: 0, c: 0 }) }));
   const max = Math.max(10, ...rows.map((r) => r.n));
@@ -32,30 +35,30 @@ export function StatsPage({ store, onBack, onFocus }: Props) {
     <main className="page">
       <header className="topbar">
         <button className="ghost" onClick={onBack}>
-          ← 返回
+          {t('common.back')}
         </button>
-        <h1>统计</h1>
+        <h1>{t('stats.title')}</h1>
         <span />
       </header>
 
       <section className="tiles">
         <div className="tile">
-          <span className="tile-label">累计作答</span>
+          <span className="tile-label">{t('stats.total')}</span>
           <span className="tile-value">{total.n.toLocaleString()}</span>
         </div>
         <div className="tile">
-          <span className="tile-label">总正确率</span>
+          <span className="tile-label">{t('stats.acc')}</span>
           <span className="tile-value">{total.n ? `${Math.round((total.c / total.n) * 100)}%` : '—'}</span>
         </div>
         <div className="tile">
-          <span className="tile-label">连续天数</span>
+          <span className="tile-label">{t('home.streak')}</span>
           <span className="tile-value">{streak(store)}</span>
         </div>
       </section>
 
       <section className="panel">
-        <h2 className="chart-title">近 30 天每日作答数</h2>
-        <div className="bars" role="img" aria-label="近 30 天每日作答数柱状图，数据见下方表格" onMouseLeave={() => setHover(null)}>
+        <h2 className="chart-title">{t('stats.chart')}</h2>
+        <div className="bars" role="img" aria-label={t('stats.chartAria')} onMouseLeave={() => setHover(null)}>
           {rows.map((r, i) => (
             <div key={r.d} className="bar-hit" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} tabIndex={0}>
               <div className={`bar ${hover === i ? 'hot' : ''}`} style={{ height: `${(r.n / max) * 100}%` }} />
@@ -64,21 +67,23 @@ export function StatsPage({ store, onBack, onFocus }: Props) {
           {hover !== null && (
             <div className="tooltip" style={{ left: `${((hover + 0.5) / rows.length) * 100}%` }}>
               <strong>{rows[hover].d.slice(5)}</strong>
-              <span>{rows[hover].n} 题</span>
-              {rows[hover].n > 0 && <span>正确率 {Math.round((rows[hover].c / rows[hover].n) * 100)}%</span>}
+              <span>{t('stats.nQ', { n: rows[hover].n })}</span>
+              {rows[hover].n > 0 && (
+                <span>{t('stats.dayAcc', { pct: Math.round((rows[hover].c / rows[hover].n) * 100) })}</span>
+              )}
             </div>
           )}
         </div>
         <div className="bars-axis muted">
           <span>{days[0].slice(5)}</span>
-          <span>今天</span>
+          <span>{t('stats.today')}</span>
         </div>
         <table className="sr-only">
           <thead>
             <tr>
-              <th>日期</th>
-              <th>作答</th>
-              <th>答对</th>
+              <th>{t('stats.date')}</th>
+              <th>{t('stats.answered')}</th>
+              <th>{t('stats.right')}</th>
             </tr>
           </thead>
           <tbody>
@@ -105,19 +110,19 @@ export function StatsPage({ store, onBack, onFocus }: Props) {
           items.sort((a, b) => itemStat(p, a).acc - itemStat(p, b).acc);
           const weak = weakItems(ex, p, g.items);
           return (
-            <section className="panel" key={`${ex.id}:${g.label}`}>
+            <section className="panel" key={`${ex.id}:${g.id}`}>
               <div className="panel-head">
                 <h2 className="chart-title">
                   {ex.icon} {ex.title}
-                  {g.label && ` · ${g.label}`} · 掌握度（由弱到强）
+                  {g.label && ` · ${g.label}`} · {t('stats.mastery')}
                 </h2>
                 {weak.length >= 2 && (
                   <button
                     className="weak-btn"
                     onClick={() => onFocus(ex.id, weak)}
-                    title={`专练：${weak.map((it) => ex.itemLabel(it, store.settings)).join('、')}`}
+                    title={t('stats.drillTitle', { items: joinList(weak.map((it) => ex.itemLabel(it, store.settings))) })}
                   >
-                    专练薄弱点
+                    {t('stats.drill')}
                   </button>
                 )}
               </div>
@@ -125,7 +130,7 @@ export function StatsPage({ store, onBack, onFocus }: Props) {
                 {items.map((it) => {
                   const st = itemStat(p, it);
                   return (
-                    <li key={it} title={`答对 ${st.c}/${st.n}`}>
+                    <li key={it} title={t('stats.itemTitle', { c: st.c, n: st.n })}>
                       <span className="mastery-label">{ex.itemLabel(it, store.settings)}</span>
                       <span className="meter">
                         <span className="meter-fill" style={{ width: `${st.acc * 100}%` }} />

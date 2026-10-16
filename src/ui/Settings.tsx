@@ -3,9 +3,11 @@ import { audio, type Timbre } from '../audio/engine';
 import { SAMPLE_SIZE_MB } from '../audio/sampler';
 import type { Store } from '../engine/progress';
 import { DEFAULT_SETTINGS, type Notation, type Settings } from '../engine/types';
-import { NAMING_LABELS, type NamingSystem } from '../music/theory';
+import { useT } from '../i18n/react';
+import { NAMING_SYSTEMS, namingLabel, type NamingSystem } from '../music/theory';
 import { SamplerStatus } from './SamplerStatus';
 import { MidiSection } from './MidiSection';
+import { LangSwitch, Seg } from './Seg';
 
 interface Props {
   store: Store;
@@ -15,27 +17,8 @@ interface Props {
   onOnboard(): void;
 }
 
-function Seg<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T;
-  options: [T, string][];
-  onChange(v: T): void;
-}) {
-  return (
-    <div className="seg wrap">
-      {options.map(([v, label]) => (
-        <button key={v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
+  const t = useT();
   const s = store.settings;
   const file = useRef<HTMLInputElement>(null);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => update((st) => void (st.settings[k] = v));
@@ -58,9 +41,9 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
         st.daily = data.daily ?? {};
         st.settings = { ...DEFAULT_SETTINGS, ...data.settings };
       });
-      alert('导入成功');
+      alert(t('settings.importOk'));
     } catch {
-      alert('文件格式不正确');
+      alert(t('settings.importBad'));
     }
   };
 
@@ -68,53 +51,60 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
     <main className="page">
       <header className="topbar">
         <button className="ghost" onClick={onBack}>
-          ← 返回
+          {t('common.back')}
         </button>
-        <h1>设置</h1>
+        <h1>{t('settings.title')}</h1>
         <span />
       </header>
 
       <section className="panel">
         <div className="field">
-          <label>唱名 / 音名显示</label>
+          <label>{t('lang.label')}</label>
+          <LangSwitch value={s.lang} onChange={(v) => set('lang', v)} />
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="field">
+          <label>{t('settings.naming')}</label>
           <Seg<NamingSystem>
             value={s.naming}
-            options={Object.entries(NAMING_LABELS) as [NamingSystem, string][]}
+            options={NAMING_SYSTEMS.map((n) => [n, namingLabel(n)])}
             onChange={(v) => set('naming', v)}
           />
         </div>
         <div className="field">
-          <label>五线谱</label>
+          <label>{t('settings.staff')}</label>
           <Seg<Notation>
             value={s.notation}
             options={[
-              ['both', '唱名 + 五线谱（答完后显示谱）'],
-              ['staff', '五线谱为主（视唱只看谱）'],
-              ['jianpu', '只用唱名 / 简谱'],
+              ['both', t('settings.notation.both')],
+              ['staff', t('settings.notation.staff')],
+              ['jianpu', t('settings.notation.jianpu')],
             ]}
             onChange={(v) => set('notation', v)}
           />
         </div>
         <div className="field">
-          <label>调性</label>
+          <label>{t('settings.key')}</label>
           <Seg
             value={s.keyMode}
             options={[
-              ['random', '随机调（推荐，训练相对音感）'],
-              ['C', '固定 C 调'],
+              ['random', t('settings.key.random')],
+              ['C', t('settings.key.C')],
             ]}
             onChange={(v) => set('keyMode', v)}
           />
         </div>
         <div className="field">
-          <label>音色</label>
+          <label>{t('settings.timbre')}</label>
           <Seg<Timbre>
             value={s.timbre}
             options={[
-              ['piano', '钢琴'],
-              ['epiano', '电钢琴'],
-              ['sine', '纯音'],
-              ['sampled', `采样钢琴（需下载约 ${SAMPLE_SIZE_MB} MB）`],
+              ['piano', t('settings.timbre.piano')],
+              ['epiano', t('settings.timbre.epiano')],
+              ['sine', t('settings.timbre.sine')],
+              ['sampled', t('settings.timbre.sampled', { mb: SAMPLE_SIZE_MB })],
             ]}
             onChange={(v) => {
               set('timbre', v);
@@ -133,7 +123,7 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
           <SamplerStatus />
         </div>
         <div className="field">
-          <label>音量 {Math.round(s.volume * 100)}%</label>
+          <label>{t('settings.volume', { pct: Math.round(s.volume * 100) })}</label>
           <input
             type="range"
             min={0}
@@ -144,23 +134,23 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
           />
         </div>
         <div className="field">
-          <label>演唱音区（视唱练习）</label>
+          <label>{t('settings.voice')}</label>
           <Seg
             value={s.voice}
             options={[
-              ['low', '低音区（男声）'],
-              ['high', '高音区（女声/童声）'],
+              ['low', t('settings.voice.low')],
+              ['high', t('settings.voice.high')],
             ]}
             onChange={(v) => set('voice', v)}
           />
         </div>
         <div className="field">
-          <label>答对后自动下一题</label>
+          <label>{t('settings.autoNext')}</label>
           <Seg
             value={s.autoNext ? 'on' : 'off'}
             options={[
-              ['on', '开'],
-              ['off', '关'],
+              ['on', t('common.on')],
+              ['off', t('common.off')],
             ]}
             onChange={(v) => set('autoNext', v === 'on')}
           />
@@ -169,7 +159,7 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
 
       <section className="panel">
         <div className="field">
-          <label>每日目标（题）</label>
+          <label>{t('settings.dailyGoal')}</label>
           <Seg
             value={String(s.dailyGoal)}
             options={['10', '20', '30', '50', '100'].map((v) => [v, v] as [string, string])}
@@ -177,7 +167,7 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
           />
         </div>
         <div className="field">
-          <label>今日训练每组题数</label>
+          <label>{t('settings.mixSize')}</label>
           <Seg
             value={String(s.mixSize)}
             options={['10', '20', '30', '40'].map((v) => [v, v] as [string, string])}
@@ -188,21 +178,21 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
 
       <section className="panel">
         <div className="field">
-          <label>数据（仅保存在本机浏览器）</label>
+          <label>{t('settings.data')}</label>
           <div className="seg wrap">
-            <button onClick={exportData}>导出备份</button>
-            <button onClick={() => file.current?.click()}>导入备份</button>
+            <button onClick={exportData}>{t('settings.export')}</button>
+            <button onClick={() => file.current?.click()}>{t('settings.import')}</button>
             <button
               className="danger"
               onClick={() => {
-                if (confirm('确定清空全部练习记录？此操作不可撤销。'))
+                if (confirm(t('settings.clearConfirm')))
                   update((st) => {
                     st.exercises = {};
                     st.daily = {};
                   });
               }}
             >
-              清空记录
+              {t('settings.clear')}
             </button>
           </div>
           <input
@@ -217,11 +207,11 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
 
       <section className="panel">
         <div className="field">
-          <label>新手引导</label>
+          <label>{t('settings.onboard')}</label>
           <div className="seg wrap">
-            <button onClick={onOnboard}>重新查看新手引导</button>
+            <button onClick={onOnboard}>{t('settings.onboardAgain')}</button>
           </div>
-          <p className="muted onboard-note">不会清空练习记录；选择的基础只会提升起始级别，不会调低。</p>
+          <p className="muted onboard-note">{t('settings.onboardNote')}</p>
         </div>
       </section>
 

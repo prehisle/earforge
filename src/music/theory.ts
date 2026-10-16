@@ -1,4 +1,7 @@
 // 乐理基础：音高、音程、和弦、调式、唱名。所有音高均用 MIDI 编号（C4 = 60）。
+// 显示用的名称（音程、和弦、调式、功能名）是按当前界面语言取值的 getter，id 与语言无关。
+
+import { getLocale, t, type Locale } from '../i18n';
 
 export type Midi = number;
 
@@ -44,64 +47,93 @@ export function mod(n: number, m: number): number {
 export interface IntervalDef {
   id: string;
   semitones: number;
-  name: string; // 中文名
+  /** 当前界面语言的名称 */
+  readonly name: string;
   short: string; // 简写
 }
 
-export const INTERVALS: IntervalDef[] = [
-  { id: 'P1', semitones: 0, name: '纯一度', short: 'P1' },
-  { id: 'm2', semitones: 1, name: '小二度', short: 'm2' },
-  { id: 'M2', semitones: 2, name: '大二度', short: 'M2' },
-  { id: 'm3', semitones: 3, name: '小三度', short: 'm3' },
-  { id: 'M3', semitones: 4, name: '大三度', short: 'M3' },
-  { id: 'P4', semitones: 5, name: '纯四度', short: 'P4' },
-  { id: 'TT', semitones: 6, name: '三全音', short: 'TT' },
-  { id: 'P5', semitones: 7, name: '纯五度', short: 'P5' },
-  { id: 'm6', semitones: 8, name: '小六度', short: 'm6' },
-  { id: 'M6', semitones: 9, name: '大六度', short: 'M6' },
-  { id: 'm7', semitones: 10, name: '小七度', short: 'm7' },
-  { id: 'M7', semitones: 11, name: '大七度', short: 'M7' },
-  { id: 'P8', semitones: 12, name: '纯八度', short: 'P8' },
-];
+const INTERVAL_IDS = ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'] as const;
 
-// 经典参考歌曲，帮助记忆音程（上行）
-export const INTERVAL_SONGS: Record<string, string> = {
-  m2: '《大白鲨》主题',
-  M2: '《生日快乐》前两音',
-  m3: '《绿袖子》开头',
-  M3: '《When the Saints Go Marching In》开头',
-  P4: '《婚礼进行曲》开头',
-  TT: '《辛普森一家》开头',
-  P5: '《小星星》do-sol',
-  m6: '《The Entertainer》 mi-do',
-  M6: '《My Bonnie》开头',
-  m7: '《Somewhere》（西区故事）',
-  M7: '《Take On Me》副歌',
-  P8: '《Somewhere Over the Rainbow》开头',
+export const INTERVALS: IntervalDef[] = INTERVAL_IDS.map((id, semitones) => ({
+  id,
+  semitones,
+  short: id,
+  get name() {
+    return t(`interval.${id}`);
+  },
+}));
+
+// 经典参考歌曲，帮助记忆音程（上行）。中文与英文各用本地熟悉的歌，没有把握的音程不列。
+export const INTERVAL_SONGS: Record<Locale, Record<string, string>> = {
+  zh: {
+    m2: '《大白鲨》主题',
+    M2: '《生日快乐》前两音',
+    m3: '《绿袖子》开头',
+    M3: '《When the Saints Go Marching In》开头',
+    P4: '《婚礼进行曲》开头',
+    TT: '《辛普森一家》开头',
+    P5: '《小星星》do-sol',
+    m6: '《The Entertainer》 mi-do',
+    M6: '《My Bonnie》开头',
+    m7: '《Somewhere》（西区故事）',
+    M7: '《Take On Me》副歌',
+    P8: '《Somewhere Over the Rainbow》开头',
+  },
+  en: {
+    m2: '“Jaws” theme',
+    M2: '“Happy Birthday” (“Hap-py Birth-”)',
+    m3: '“Greensleeves” (opening)',
+    M3: '“When the Saints Go Marching In” (opening)',
+    P4: '“Here Comes the Bride” (opening)',
+    TT: '“The Simpsons” theme / “Maria” (West Side Story)',
+    P5: '“Twinkle Twinkle Little Star” (do–sol)',
+    m6: '“The Entertainer” (mi–do, 3rd–4th notes)',
+    M6: '“My Bonnie Lies over the Ocean” (opening)',
+    m7: '“Somewhere” (West Side Story) / “Star Trek” original theme',
+    M7: '“Take On Me” (chorus)',
+    P8: '“Somewhere Over the Rainbow” (opening)',
+  },
 };
+
+/** 当前语言的音程记忆歌曲 */
+export function intervalSong(id: string): string | undefined {
+  return INTERVAL_SONGS[getLocale()][id];
+}
 
 // ───────────── 和弦 ─────────────
 
 export interface ChordDef {
   id: string;
-  name: string;
+  /** 当前界面语言的名称 */
+  readonly name: string;
   symbol: string;
   intervals: number[]; // 相对根音的半音数
 }
 
+type ChordId = 'maj' | 'min' | 'dim' | 'aug' | 'sus2' | 'sus4' | 'maj7' | 'dom7' | 'min7' | 'm7b5' | 'dim7' | 'minMaj7';
+
+const chord = (id: ChordId, symbol: string, intervals: number[]): ChordDef => ({
+  id,
+  symbol,
+  intervals,
+  get name() {
+    return t(`chord.${id}`);
+  },
+});
+
 export const CHORDS: ChordDef[] = [
-  { id: 'maj', name: '大三和弦', symbol: '', intervals: [0, 4, 7] },
-  { id: 'min', name: '小三和弦', symbol: 'm', intervals: [0, 3, 7] },
-  { id: 'dim', name: '减三和弦', symbol: 'dim', intervals: [0, 3, 6] },
-  { id: 'aug', name: '增三和弦', symbol: 'aug', intervals: [0, 4, 8] },
-  { id: 'sus2', name: '挂二和弦', symbol: 'sus2', intervals: [0, 2, 7] },
-  { id: 'sus4', name: '挂四和弦', symbol: 'sus4', intervals: [0, 5, 7] },
-  { id: 'maj7', name: '大七和弦', symbol: 'maj7', intervals: [0, 4, 7, 11] },
-  { id: 'dom7', name: '属七和弦', symbol: '7', intervals: [0, 4, 7, 10] },
-  { id: 'min7', name: '小七和弦', symbol: 'm7', intervals: [0, 3, 7, 10] },
-  { id: 'm7b5', name: '半减七和弦', symbol: 'm7♭5', intervals: [0, 3, 6, 10] },
-  { id: 'dim7', name: '减七和弦', symbol: 'dim7', intervals: [0, 3, 6, 9] },
-  { id: 'minMaj7', name: '小大七和弦', symbol: 'm(maj7)', intervals: [0, 3, 7, 11] },
+  chord('maj', '', [0, 4, 7]),
+  chord('min', 'm', [0, 3, 7]),
+  chord('dim', 'dim', [0, 3, 6]),
+  chord('aug', 'aug', [0, 4, 8]),
+  chord('sus2', 'sus2', [0, 2, 7]),
+  chord('sus4', 'sus4', [0, 5, 7]),
+  chord('maj7', 'maj7', [0, 4, 7, 11]),
+  chord('dom7', '7', [0, 4, 7, 10]),
+  chord('min7', 'm7', [0, 3, 7, 10]),
+  chord('m7b5', 'm7♭5', [0, 3, 6, 10]),
+  chord('dim7', 'dim7', [0, 3, 6, 9]),
+  chord('minMaj7', 'm(maj7)', [0, 3, 7, 11]),
 ];
 
 export function chordNotes(root: Midi, chord: ChordDef, inversion = 0): Midi[] {
@@ -125,8 +157,8 @@ export type ModeId = 'major' | 'minor' | 'harmonic' | 'dorian' | 'mixolydian';
 
 export interface ModeDef {
   id: ModeId;
-  name: string; // 选项中的名称
-  label: string; // 题目中的称呼，如「A 小调」
+  readonly name: string; // 选项中的名称（当前语言）
+  readonly label: string; // 题目中的称呼，如「A 小调」里的「小调」（当前语言）
   scale: number[]; // 自然音级（相对主音的半音数，7 个）
   relMajor: number; // 主音到关系大调主音的半音数，决定升降号写法
   cadence: number[][]; // 建立调性的终止式，相对主音的半音数（第一个音为低音）
@@ -136,8 +168,12 @@ export interface ModeDef {
 export const MODES: ModeDef[] = [
   {
     id: 'major',
-    name: '大调',
-    label: '大调',
+    get name() {
+      return t('mode.major.name');
+    },
+    get label() {
+      return t('mode.major.label');
+    },
     scale: MAJOR_SCALE,
     relMajor: 0,
     // Ⅰ–Ⅳ–Ⅴ–Ⅰ
@@ -150,8 +186,12 @@ export const MODES: ModeDef[] = [
   },
   {
     id: 'minor',
-    name: '自然小调',
-    label: '小调',
+    get name() {
+      return t('mode.minor.name');
+    },
+    get label() {
+      return t('mode.minor.label');
+    },
     scale: NATURAL_MINOR_SCALE,
     relMajor: 3,
     // ⅰ–ⅳ–Ⅴ–ⅰ，Ⅴ 用和声小调的导音 ti
@@ -159,16 +199,24 @@ export const MODES: ModeDef[] = [
   },
   {
     id: 'harmonic',
-    name: '和声小调',
-    label: '和声小调',
+    get name() {
+      return t('mode.harmonic.name');
+    },
+    get label() {
+      return t('mode.harmonic.label');
+    },
     scale: HARMONIC_MINOR_SCALE,
     relMajor: 3,
     cadence: minorCadence(),
   },
   {
     id: 'dorian',
-    name: '多利亚',
-    label: '多利亚',
+    get name() {
+      return t('mode.dorian.name');
+    },
+    get label() {
+      return t('mode.dorian.label');
+    },
     scale: DORIAN_SCALE,
     relMajor: 10,
     // ⅰ–Ⅳ–ⅰ：Ⅳ 里的 la 是多利亚的特征音
@@ -180,8 +228,12 @@ export const MODES: ModeDef[] = [
   },
   {
     id: 'mixolydian',
-    name: '混合利底亚',
-    label: '混合利底亚',
+    get name() {
+      return t('mode.mixolydian.name');
+    },
+    get label() {
+      return t('mode.mixolydian.label');
+    },
     scale: MIXOLYDIAN_SCALE,
     relMajor: 5,
     // Ⅰ–♭Ⅶ–Ⅰ：♭Ⅶ 里的 te 是混合利底亚的特征音
@@ -213,7 +265,7 @@ export function modeById(id: string | undefined): ModeDef {
 export interface Triad {
   id: string; // ASCII 级数，如 'bVII'、'ii'
   roman: string; // 显示用，如 '♭Ⅶ'、'ⅱ°'
-  name: string; // 中文功能名
+  readonly name: string; // 功能名（当前语言）
   root: number; // 相对主音
   third: number; // 相对根音
   fifth: number;
@@ -222,7 +274,6 @@ export interface Triad {
 const ROMAN_UP = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ'];
 const ROMAN_LOW = ['ⅰ', 'ⅱ', 'ⅲ', 'ⅳ', 'ⅴ', 'ⅵ', 'ⅶ'];
 const ASCII_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-const FUNC_NAMES = ['主和弦', '上主和弦', '中音和弦', '下属和弦', '属和弦', '下中音和弦', '导和弦'];
 
 /** 给定级数（0 起）与三和弦结构，生成罗马数字：大小写表示大小三和弦，° 减、+ 增，升降号相对大调音阶。 */
 export function makeTriad(degree: number, root: number, third: number, fifth: number): Triad {
@@ -234,7 +285,9 @@ export function makeTriad(degree: number, root: number, third: number, fifth: nu
     id: `${acc === '♭' ? 'b' : acc === '♯' ? '#' : ''}${minor ? ascii.toLowerCase() : ascii}`,
     roman: `${acc}${(minor ? ROMAN_LOW : ROMAN_UP)[degree]}${quality}`,
     // 第七级：导音（ti）上的叫导和弦，下主音（te）上的叫下主和弦
-    name: degree === 6 && root === 10 ? '下主和弦' : FUNC_NAMES[degree],
+    get name() {
+      return degree === 6 && root === 10 ? t('func.subtonic') : t(`func.${degree as 0 | 1 | 2 | 3 | 4 | 5 | 6}`);
+    },
     root,
     third,
     fifth,
@@ -278,12 +331,17 @@ const FIXED_DO = ['do', 'di', 're', 'ri', 'mi', 'fa', 'fi', 'sol', 'si', 'la', '
 
 export type NamingSystem = 'movable' | 'jianpu' | 'fixed' | 'letter';
 
-export const NAMING_LABELS: Record<NamingSystem, string> = {
-  movable: '首调唱名 (do re mi)',
-  jianpu: '简谱 (1 2 3)',
-  fixed: '固定调唱名 (C=do)',
-  letter: '音名 (C D E)',
-};
+export const NAMING_SYSTEMS: NamingSystem[] = ['movable', 'jianpu', 'fixed', 'letter'];
+
+/** 命名体系的显示名称（当前语言） */
+export function namingLabel(system: NamingSystem): string {
+  return t(`naming.${system}`);
+}
+
+/** 调名，如「E♭ 大调」/「E♭ major」 */
+export function keyLabel(tonicPc: number, mode: ModeDef = MAJOR): string {
+  return t('key.name', { tonic: keyName(tonicPc, mode), mode: mode.label });
+}
 
 /** 把某个音按指定体系命名。tonicPc 为当前调主音的音级，mode 决定音名的升降号写法。 */
 export function nameInSystem(midi: Midi, tonicPc: number, system: NamingSystem, mode: ModeDef = MAJOR): string {

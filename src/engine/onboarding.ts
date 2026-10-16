@@ -1,15 +1,23 @@
 // 新手引导：按用户背景设定各模块的起始级别与每日目标。纯函数（applyBackground 只修改传入的 store）。
 
 import type { ExerciseDef } from './types';
+import { t } from '../i18n';
 import { getProgress, levelsOf, type Store } from './progress';
 
 export type Background = 'beginner' | 'player' | 'exam';
 
-export const BACKGROUNDS: { id: Background; label: string; desc: string }[] = [
-  { id: 'beginner', label: '零基础', desc: '没系统学过乐理或乐器，从最基础的开始' },
-  { id: 'player', label: '学过乐器', desc: '会弹/唱一些曲子，认识基本音程与和弦' },
-  { id: 'exam', label: '备考（考级·艺考）', desc: '需要应对视唱练耳考试，覆盖面要广' },
-];
+/** 背景选项；label / desc 按当前语言取值 */
+export const BACKGROUNDS: { id: Background; readonly label: string; readonly desc: string }[] = (
+  ['beginner', 'player', 'exam'] as const
+).map((id) => ({
+  id,
+  get label() {
+    return t(`bg.${id}`);
+  },
+  get desc() {
+    return t(`bg.${id}.desc`);
+  },
+}));
 
 /**
  * 各背景的起始级别（0 起，即「已解锁到第几级」，前面各级的考点一并启用）。未列出的模块从第 1 级开始。

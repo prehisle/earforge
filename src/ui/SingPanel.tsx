@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PitchListener } from '../audio/pitch';
 import type { Notation, Question } from '../engine/types';
 import { mod, noteName, type NamingSystem } from '../music/theory';
+import { useT } from '../i18n/react';
 import { Staff } from './Staff';
 
 interface Props {
@@ -23,6 +24,7 @@ function centsOff(sung: number, target: number): number {
 }
 
 export function SingPanel({ question, notation, listenAfter, onStep, done }: Props) {
+  const t = useT();
   const sing = question.sing!;
   const [idx, setIdx] = useState(0);
   const [live, setLive] = useState<{ midi: number; cents: number } | null>(null);
@@ -81,7 +83,7 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
       listener.current = l;
       setRunning(true);
     } catch {
-      setMicError('无法使用麦克风：请允许浏览器访问麦克风（需要 HTTPS 或 localhost）。');
+      setMicError(t('sing.micError'));
     }
   };
 
@@ -147,16 +149,16 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
       </div>
 
       {micError && <p className="error">{micError}</p>}
-      {!running && !micError && <p className="muted">正在请求麦克风…</p>}
+      {!running && !micError && <p className="muted">{t('sing.requesting')}</p>}
       {!running && micError && (
         <button className="primary" onClick={() => start()}>
-          开启麦克风
+          {t('sing.enableMic')}
         </button>
       )}
 
       {running && !done && (
         <>
-          <div className="tuner" title="中线 = 音准；左偏低，右偏高">
+          <div className="tuner" title={t('sing.tunerTitle')}>
             <div className="tuner-zone" />
             <div
               className={`tuner-needle ${live && Math.abs(live.cents) <= TOLERANCE ? 'in' : ''}`}
@@ -168,18 +170,21 @@ export function SingPanel({ question, notation, listenAfter, onStep, done }: Pro
               <>
                 <span>{noteName(Math.round(live.midi))}</span>
                 <span className="muted">
-                  {live.cents > 0 ? '偏高' : live.cents < 0 ? '偏低' : ''} {Math.abs(Math.round(live.cents))} 音分
+                  {live.cents > 0 ? t('sing.sharp') : live.cents < 0 ? t('sing.flat') : ''}{' '}
+                  {t('sing.cents', { n: Math.abs(Math.round(live.cents)) })}
                 </span>
               </>
             ) : (
-              <span className="muted">请唱「{showNames ? sing.display[idx] : `第 ${idx + 1} 个音`}」并保持住</span>
+              <span className="muted">
+                {t('sing.prompt', { name: showNames ? sing.display[idx] : t('sing.noteN', { n: idx + 1 }) })}
+              </span>
             )}
           </div>
           <div className="meter hold">
             <span className="meter-fill" style={{ width: `${hold * 100}%` }} />
           </div>
           <button className="ghost" onClick={skip}>
-            跳过这个音
+            {t('sing.skip')}
           </button>
         </>
       )}

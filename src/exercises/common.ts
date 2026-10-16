@@ -1,6 +1,46 @@
 import type { NoteEvent } from '../audio/engine';
 import type { Level, OptionDef, Settings } from '../engine/types';
+import { t, type MessageKey } from '../i18n';
 import { DEGREES, MAJOR, MODES, cadence, mod, modeById, randInt, type ModeDef } from '../music/theory';
+
+// ───────────── 本地化的级别与选项 ─────────────
+
+/** 级别：名称在读取时按当前语言生成。 */
+export function level(name: () => string, items: string[]): Level {
+  return {
+    get name() {
+      return name();
+    },
+    items,
+  };
+}
+
+/** 级别名称是词典里的固定文字 */
+export const levelT = (key: MessageKey, items: string[]): Level => level(() => t(key), items);
+
+/** 选项：标题与各取值的文字在读取时按当前语言取值。values 为 [取值 id, 词典键]。 */
+export function option(
+  id: string,
+  labelKey: MessageKey,
+  values: [string, MessageKey][],
+  def: string,
+  scoped?: boolean,
+): OptionDef {
+  return {
+    id,
+    get label() {
+      return t(labelKey);
+    },
+    values: values.map(([vid, key]) => ({
+      id: vid,
+      get label() {
+        return t(key);
+      },
+    })),
+    default: def,
+    ...(scoped ? { scoped } : {}),
+  };
+}
 
 /** 选主音（MIDI）。固定 C 调时为 C4，否则在 G3..F♯4 之间随机。 */
 export function chooseTonic(settings: Settings): number {
@@ -22,8 +62,15 @@ export function cadenceEvents(tonic: number, mode: ModeDef = MAJOR, beat = 0.55)
 /** 调性类练习共用的「调式」选项。scoped：各调式分别记录级别与自选考点。 */
 export const MODE_OPTION: OptionDef = {
   id: 'mode',
-  label: '调式',
-  values: MODES.map((m) => ({ id: m.id, label: m.name })),
+  get label() {
+    return t('opt.mode');
+  },
+  values: MODES.map((m) => ({
+    id: m.id,
+    get label() {
+      return m.name;
+    },
+  })),
   default: 'major',
   scoped: true,
 };
@@ -52,8 +99,10 @@ export function bareItem(item: string): string {
 export function degreeLevels(mode: ModeDef, layers: number[][], chromaticFrom: number, sep = ' · '): Level[] {
   return layers.map((layer, i) => {
     const names = layer.map((d) => (i >= chromaticFrom ? DEGREES[d].jianpu : DEGREES[d].movableDo));
-    const name = i >= chromaticFrom ? `+ 变化音 ${names.join(' ')}` : `${i ? '+ ' : ''}${names.join(sep)}`;
-    return { name, items: layer.map((d) => modeItem(mode, `d${d}`)) };
+    const items = layer.map((d) => modeItem(mode, `d${d}`));
+    return i >= chromaticFrom
+      ? level(() => t('level.chromatic', { names: names.join(' ') }), items)
+      : { name: `${i ? '+ ' : ''}${names.join(sep)}`, items };
   });
 }
 

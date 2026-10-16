@@ -1,5 +1,7 @@
 import type { ExerciseDef } from '../engine/types';
+import { t } from '../i18n';
 import { randInt } from '../music/theory';
+import { option } from './common';
 import { SPEED, TPQ, UNITS, describe, flatten, makeBar, rhythm, rhythmEvents, type Bar } from './rhythm';
 
 // 节奏模仿：看谱或听一遍后，自己把节奏打出来（空格 / 字母键 / 点击敲击区 / 拍手）。
@@ -138,26 +140,28 @@ export function judgeTaps(targets: number[], taps: number[], bpm: number): TapJu
   return { tol, offset, notes, extras, meanAbs, pass };
 }
 
-const MODE_LABEL: Record<string, string> = { read: '看谱打', listen: '听后打' };
-
 export const rhythmTap: ExerciseDef = {
   id: 'rhythmTap',
-  title: '节奏模仿',
-  subtitle: '看节奏谱或听一遍，跟着节拍器把节奏打出来（空格 / 字母键 / 点击）',
+  get title() {
+    return t('ex.rhythmTap.title');
+  },
+  get subtitle() {
+    return t('ex.rhythmTap.subtitle');
+  },
   icon: '👏',
-  group: '基础',
+  group: 'basics',
   manual: true,
   levels: rhythm.levels,
   options: [
-    {
-      id: 'mode',
-      label: '模式',
-      values: [
-        { id: 'read', label: '看谱打' },
-        { id: 'listen', label: '听后打' },
+    option(
+      'mode',
+      'ex.rhythmTap.mode',
+      [
+        ['read', 'ex.rhythmTap.mode.read'],
+        ['listen', 'ex.rhythmTap.mode.listen'],
       ],
-      default: 'read',
-    },
+      'read',
+    ),
     ...(rhythm.options ?? []),
   ],
   itemLabel: (it) => UNITS[it].name,
@@ -175,9 +179,7 @@ export const rhythmTap: ExerciseDef = {
       events: rhythmEvents(durs, bpm),
       choices: [],
       answer: ['tap'],
-      prompt: listen
-        ? `听一遍，然后跟着节拍器把节奏打出来（♩ = ${bpm}，${MODE_LABEL.listen}）`
-        : `看谱，预备拍后把节奏打出来（♩ = ${bpm}，${MODE_LABEL.read}）`,
+      prompt: t(listen ? 'ex.rhythmTap.promptListen' : 'ex.rhythmTap.promptRead', { bpm }),
       explain: describe(bars),
       tap: { durs, bpm, showNotation: !listen, countIn: 4 },
     };

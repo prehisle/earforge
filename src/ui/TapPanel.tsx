@@ -3,6 +3,7 @@ import { audio, type NoteEvent } from '../audio/engine';
 import type { Question } from '../engine/types';
 import { TPQ } from '../exercises/rhythm';
 import { judgeTaps, onsetsOf, type TapJudge } from '../exercises/rhythmTap';
+import { useT } from '../i18n/react';
 import { RhythmNotation } from './RhythmNotation';
 
 interface Props {
@@ -89,6 +90,7 @@ class ClapListener {
 // ───── 输入面板 ─────
 
 export function TapPanel({ question, onStep, done }: Props) {
+  const t = useT();
   const tap = question.tap!;
   const beat = 60 / tap.bpm;
   const total = (tap.durs.reduce((s, d) => s + Math.abs(d), 0) / TPQ) * beat; // 节奏型总时长（秒）
@@ -231,7 +233,7 @@ export function TapPanel({ question, onStep, done }: Props) {
     } catch {
       l.stop();
       setClap('off');
-      setClapError('无法使用麦克风：请允许浏览器访问麦克风（需要 HTTPS 或 localhost）。');
+      setClapError(t('tap.micError'));
     }
   };
 
@@ -239,14 +241,14 @@ export function TapPanel({ question, onStep, done }: Props) {
   const showScore = tap.showNotation || phase === 'result' || done;
   const status =
     phase === 'listen'
-      ? '仔细听…'
+      ? t('tap.listen')
       : phase === 'count'
-        ? `预备 ${Math.min(tap.countIn, Math.max(1, tap.countIn + Math.floor(now / beat) + 1))}`
+        ? t('tap.count', { n: Math.min(tap.countIn, Math.max(1, tap.countIn + Math.floor(now / beat) + 1)) })
         : phase === 'tap'
-          ? '打！'
+          ? t('tap.go')
           : phase === 'result'
             ? ''
-            : '准备…';
+            : t('tap.ready');
 
   return (
     <div className="tap">
@@ -268,10 +270,8 @@ export function TapPanel({ question, onStep, done }: Props) {
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <span className="tap-status">{status || (judge?.pass ? '✓ 打准了' : '✗ 没打准')}</span>
-        <span className="tap-hint muted">
-          {active ? '空格 / 字母键 / 点这里' : '点这里或按空格再试一次'}
-        </span>
+        <span className="tap-status">{status || (judge?.pass ? t('tap.pass') : t('tap.fail'))}</span>
+        <span className="tap-hint muted">{active ? t('tap.hintActive') : t('tap.hintIdle')}</span>
       </button>
 
       <Timeline
@@ -288,13 +288,13 @@ export function TapPanel({ question, onStep, done }: Props) {
         {phase === 'result' && (
           <>
             <button className="primary" onClick={() => void start()}>
-              再试一次 <kbd>空格</kbd>
+              {t('tap.retry')} <kbd>{t('common.space')}</kbd>
             </button>
-            <button onClick={() => void audio.play(question.events)}>听示范</button>
+            <button onClick={() => void audio.play(question.events)}>{t('tap.demo')}</button>
           </>
         )}
         <button className={clap === 'on' ? 'ghost active' : 'ghost'} onClick={() => void toggleClap()} disabled={clap === 'starting'}>
-          {clap === 'on' ? '关闭拍手输入' : '🎤 拍手输入（建议戴耳机）'}
+          {clap === 'on' ? t('tap.clapOff') : t('tap.clapOn')}
         </button>
       </div>
       {clapError && <p className="error">{clapError}</p>}
@@ -303,20 +303,24 @@ export function TapPanel({ question, onStep, done }: Props) {
 }
 
 function Summary({ judge, first }: { judge: TapJudge; first: boolean }) {
+  const t = useT();
   const ms = (s: number) => Math.round(Math.abs(s) * 1000);
   const missed = judge.notes.filter((n) => n.kind === 'miss').length;
   const off = judge.offset;
   const offOk = Math.abs(off) <= judge.tol;
   return (
     <p className="tap-summary">
-      {judge.meanAbs !== null && <span>平均偏差 {ms(judge.meanAbs)} ms</span>}
+      {judge.meanAbs !== null && <span>{t('tap.meanAbs', { ms: ms(judge.meanAbs) })}</span>}
       <span className={offOk ? '' : 'tap-bad'}>
-        整体{ms(off) < 5 ? '很稳' : off < 0 ? `偏早 ${ms(off)} ms` : `偏晚 ${ms(off)} ms`}
-        {!offOk && '（超出容差）'}
+        {ms(off) < 5 ? t('tap.steady') : off < 0 ? t('tap.early', { ms: ms(off) }) : t('tap.late', { ms: ms(off) })}
+        {!offOk && t('tap.outOfTol')}
       </span>
-      {missed > 0 && <span className="tap-bad">漏打 {missed}</span>}
-      {judge.extras.length > 0 && <span className="tap-bad">多打 {judge.extras.length}</span>}
-      <span className="muted">容差 ±{ms(judge.tol)} ms{first ? '' : ' · 练习，不计成绩'}</span>
+      {missed > 0 && <span className="tap-bad">{t('tap.missed', { n: missed })}</span>}
+      {judge.extras.length > 0 && <span className="tap-bad">{t('tap.extra', { n: judge.extras.length })}</span>}
+      <span className="muted">
+        {t('tap.tol', { ms: ms(judge.tol) })}
+        {first ? '' : t('tap.practice')}
+      </span>
     </p>
   );
 }
@@ -342,6 +346,7 @@ function Timeline({
   taps: number[];
   judge: TapJudge | null;
 }) {
+  const t = useT();
   const from = -beat / 2;
   const to = total + beat * 0.5;
   const x = (t: number) => PAD + ((Math.max(from, Math.min(to, t)) - from) / (to - from)) * (W - 2 * PAD);
@@ -366,7 +371,7 @@ function Timeline({
 
   return (
     <div className="tap-timeline">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="时间轴：上排为目标起音，下排为你的敲击">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={t('tap.timelineAria')}>
         {grid}
         <line x1={PAD} x2={W - PAD} y1={Y_U} y2={Y_U} stroke="var(--border)" />
         {judge && (
@@ -411,19 +416,19 @@ function Timeline({
           <line x1={x(now)} x2={x(now)} y1={4} y2={H - 4} stroke="var(--accent)" strokeWidth={2} />
         )}
         <text x={4} y={Y_T + 4} fontSize={10} fill="var(--muted)">
-          目标
+          {t('tap.target')}
         </text>
         <text x={4} y={Y_U - 12} fontSize={10} fill="var(--muted)">
-          你
+          {t('tap.you')}
         </text>
       </svg>
       {judge && (
         <div className="tap-legend muted">
-          <span><i style={{ background: 'var(--good)' }} />打准</span>
-          <span><b style={{ color: 'var(--accent)' }}>◀</b>偏早</span>
-          <span><b style={{ color: 'var(--accent)' }}>▶</b>偏晚</span>
-          <span><b style={{ color: 'var(--bad)' }}>⊗</b>漏打</span>
-          <span><b style={{ color: 'var(--bad)' }}>✕</b>多打</span>
+          <span><i style={{ background: 'var(--good)' }} />{t('tap.legend.ok')}</span>
+          <span><b style={{ color: 'var(--accent)' }}>◀</b>{t('tap.legend.early')}</span>
+          <span><b style={{ color: 'var(--accent)' }}>▶</b>{t('tap.legend.late')}</span>
+          <span><b style={{ color: 'var(--bad)' }}>⊗</b>{t('tap.legend.miss')}</span>
+          <span><b style={{ color: 'var(--bad)' }}>✕</b>{t('tap.legend.extra')}</span>
         </div>
       )}
     </div>

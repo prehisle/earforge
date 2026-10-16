@@ -1,5 +1,6 @@
 import type { NoteEvent, Timbre } from '../audio/engine';
 import type { Score } from '../music/notation';
+import type { Locale } from '../i18n';
 import type { NamingSystem } from '../music/theory';
 
 export interface Choice {
@@ -48,7 +49,8 @@ export interface Question {
 }
 
 export interface Level {
-  name: string;
+  /** 显示名称（当前语言） */
+  readonly name: string;
   items: string[];
 }
 
@@ -62,6 +64,8 @@ export interface OptionDef {
 }
 
 export interface Settings {
+  /** 界面语言。缺省为 zh：旧版数据没有该字段，视为中文用户；全新的存储由 loadStore 按浏览器语言设定 */
+  lang: Locale;
   naming: NamingSystem;
   timbre: Timbre;
   volume: number;
@@ -85,6 +89,7 @@ export interface Settings {
 export type Notation = 'jianpu' | 'staff' | 'both';
 
 export const DEFAULT_SETTINGS: Settings = {
+  lang: 'zh',
   naming: 'movable',
   timbre: 'piano',
   volume: 0.8,
@@ -110,7 +115,8 @@ export interface ExerciseDef {
   title: string;
   subtitle: string;
   icon: string;
-  group: '基础' | '调性听觉' | '视唱练耳';
+  /** 首页分组（id，显示名见词典 group.*） */
+  group: 'basics' | 'tonal' | 'sing';
   /** 默认选项下的级别 */
   levels: Level[];
   /** 级别随选项变化时提供（如按调式生成）；缺省即 levels。请通过 progress.levelsOf() 读取 */
