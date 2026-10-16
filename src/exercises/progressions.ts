@@ -10,6 +10,7 @@ import {
   type ModeId,
   type Triad,
 } from '../music/theory';
+import { keyScore } from '../music/notation';
 import { MODE_OPTION, chooseTonic, cadenceEvents, modeItem, modeOf } from './common';
 
 /** 调式中可考的和弦。自然小调的属和弦按惯例用大三和弦 Ⅴ（和声小调的导音），自然的 ⅴ 放在最后一级。 */
@@ -91,6 +92,11 @@ export const progressions: ExerciseDef = {
         choices,
         answer: seq,
         stepItems: seq,
+        score: keyScore(
+          seq.map((id) => voicing(tonic, BY_ITEM[id])),
+          keyPc,
+          mode,
+        ),
         prompt: `${key} · 依次选出 4 个和弦（第一个是 ${BY_ITEM[tonicItem].roman}）`,
         explain: seq.map((id) => BY_ITEM[id].roman).join(' → '),
       };
@@ -103,6 +109,7 @@ export const progressions: ExerciseDef = {
       choiceEvents: single,
       choices,
       answer: [item],
+      score: keyScore([voicing(tonic, BY_ITEM[item])], keyPc, mode),
       prompt: `${key} · 这是哪个级数和弦？`,
       explain: `${BY_ITEM[item].roman} ${BY_ITEM[item].name}`,
     };

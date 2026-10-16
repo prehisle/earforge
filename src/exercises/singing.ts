@@ -1,4 +1,5 @@
 import type { ExerciseDef, Level } from '../engine/types';
+import { keyScore } from '../music/notation';
 import { keyName, mod, nameInSystem, randInt, type ModeDef } from '../music/theory';
 import { MODE_OPTION, cadenceEvents, degreeLevels, melodyEvents, modeItem, modeOf } from './common';
 import { degreeLabel, semi } from './degrees';
@@ -62,6 +63,12 @@ export const singing: ExerciseDef = {
       choices: [],
       answer,
       stepItems: answer,
+      score: keyScore(
+        targets.map((m) => [m]),
+        tonicPc,
+        mode,
+        true,
+      ),
       prompt: sight ? `${key} · 听完终止式后，唱出下面的音` : `${key} · 听旋律，然后唱出来`,
       sing: {
         targets,

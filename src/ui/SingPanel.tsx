@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { PitchListener } from '../audio/pitch';
-import type { Question } from '../engine/types';
+import type { Notation, Question } from '../engine/types';
 import { mod, noteName, type NamingSystem } from '../music/theory';
+import { Staff } from './Staff';
 
 interface Props {
   question: Question;
   naming: NamingSystem;
+  notation: Notation;
   listenAfter: number; // performance.now() 时间戳，之前的输入忽略（避免录到扬声器）
   onStep(index: number, firstTry: boolean): void;
   done: boolean;
@@ -20,7 +22,7 @@ function centsOff(sung: number, target: number): number {
   return (mod(sung - target + 6, 12) - 6) * 100;
 }
 
-export function SingPanel({ question, listenAfter, onStep, done }: Props) {
+export function SingPanel({ question, notation, listenAfter, onStep, done }: Props) {
   const sing = question.sing!;
   const [idx, setIdx] = useState(0);
   const [live, setLive] = useState<{ midi: number; cents: number } | null>(null);
@@ -120,11 +122,19 @@ export function SingPanel({ question, listenAfter, onStep, done }: Props) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showNames = sing.showDisplay || done;
+  // 视唱看谱：五线谱为主时不显示唱名（唱过的音再揭晓）；模唱答完后才显示谱
+  const staff = question.score && notation !== 'jianpu' && (sing.showDisplay || done);
+  const showNames = (sing.showDisplay && notation !== 'staff') || done;
   const needle = live ? Math.max(-100, Math.min(100, live.cents)) : 0;
 
   return (
     <div className="sing">
+      {staff && (
+        <Staff
+          score={question.score!}
+          marks={sing.targets.map((_, i) => (i < idx ? (failed[i] ? 'bad' : 'ok') : i === idx && !done ? 'cur' : null))}
+        />
+      )}
       <div className="sing-targets">
         {sing.targets.map((_, i) => (
           <span
@@ -162,7 +172,7 @@ export function SingPanel({ question, listenAfter, onStep, done }: Props) {
                 </span>
               </>
             ) : (
-              <span className="muted">请唱「{sing.showDisplay ? sing.display[idx] : `第 ${idx + 1} 个音`}」并保持住</span>
+              <span className="muted">请唱「{showNames ? sing.display[idx] : `第 ${idx + 1} 个音`}」并保持住</span>
             )}
           </div>
           <div className="meter hold">

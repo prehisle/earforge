@@ -18,6 +18,7 @@ import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
+import { Staff } from './Staff';
 import { useMidiStatus } from './useMidi';
 import { TapPanel } from './TapPanel';
 
@@ -340,6 +341,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
           key={qid}
           question={q}
           naming={store.settings.naming}
+          notation={store.settings.notation}
           listenAfter={listenAfter}
           onStep={(i, ok) => finishStep(q, i, ok)}
           done={done}
@@ -395,6 +397,12 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
           <button className="primary" onClick={next}>
             {last ? '查看小结' : '下一题'} <kbd>回车</kbd>
           </button>
+          {q.score && !q.sing && store.settings.notation !== 'jianpu' && (
+            <div className="feedback-staff">
+              {/* 多步题标出答错的步骤 */}
+              <Staff score={q.score} marks={q.answer.length > 1 ? stepResults.map((ok) => (ok ? null : 'bad')) : undefined} />
+            </div>
+          )}
         </div>
       )}
 
