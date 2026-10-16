@@ -2479,7 +2479,10 @@ input[type='range'] {
   overflow-wrap: break-word;
 }
 @media (min-width: 521px) {
-  /* 宽屏多列时给右上角的数字键留出位置 */
+  /* 宽屏多列时给右上角的数字键留出位置；列宽至少容得下 4~5 个汉字的选项名（如「自然小调」「五六和弦」），避免词中折行 */
+  .choices {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
   .choices > .choice .choice-label {
     padding-inline: 14px;
   }
