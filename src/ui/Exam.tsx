@@ -490,7 +490,9 @@ function ExamRun({
                 key={i}
                 className={`slot exam-slot${i === run.cursor ? ' cur' : ''}${a !== null ? ' filled' : ''}`}
                 onClick={() => dispatch({ type: 'cursor', step: i })}
-                aria-label={t('quiz.step', { n: i + 1 })}
+                // 读屏也要读出这一步填了什么（aria-label 会覆盖按钮里的文字）
+                aria-label={`${t('quiz.step', { n: i + 1 })}: ${a === null ? t('exam.blank') : label(a)}`}
+                aria-current={i === run.cursor ? 'step' : undefined}
               >
                 {label(a)}
               </button>
