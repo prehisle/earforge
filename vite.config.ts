@@ -57,6 +57,39 @@ function swPrecache(): Plugin {
   }
 }
 
+/**
+ * 英文词典是按需加载的分块（见 src/i18n/index.ts）。界面为英文时 main.tsx 要等它加载完才首次渲染；
+ * 在 index.html 里加一小段内联脚本：存储里的语言（没有存储时按浏览器语言，规则同 progress.ts 的 storedLocale）为英文时，
+ * 立即 modulepreload 词典分块，与入口脚本并行下载，省去入口执行完才开始请求的一个往返。中文用户不受影响。
+ */
+function preloadEnglish(): Plugin {
+  let base = '/'
+  return {
+    name: 'earforge-preload-en',
+    apply: 'build',
+    configResolved(c) {
+      base = c.base
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const chunk = Object.values(ctx.bundle ?? {}).find(
+          (c) => c.type === 'chunk' && c.isDynamicEntry && c.facadeModuleId?.replace(/\\/g, '/').endsWith('/src/i18n/en.ts'),
+        )
+        if (!chunk) throw new Error('preloadEnglish: 找不到英文词典分块')
+        const href = JSON.stringify(base + chunk.fileName)
+        // en：有存储（对象）时看设置里的语言；没有、损坏或无法读取时按浏览器语言（zh 开头或没有为中文）
+        const code =
+          `(function(){var en;try{var r=localStorage.getItem('earforge:v1'),s=r?JSON.parse(r):null;` +
+          `if(s&&typeof s=='object'&&!Array.isArray(s))en=!!s.settings&&s.settings.lang==='en'}catch(e){}` +
+          `if(en===undefined){var n=navigator.language;en=!!n&&!/^zh\\b/i.test(n)}` +
+          `if(!en)return;var k=document.createElement('link');k.rel='modulepreload';k.crossOrigin='';k.href=${href};document.head.appendChild(k)})()`
+        return [{ tag: 'script', children: code, injectTo: 'head' }]
+      },
+    },
+  }
+}
+
 // https://vite.dev/config/
 /** 应用版本（关于页显示），取自 package.json */
 const APP_VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }).version
@@ -64,7 +97,10 @@ const APP_VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.me
 export default defineConfig({
   base: basePath(),
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
-  plugins: [react(), swPrecache()],
-  // 子 agent 的 worktree 位于 .claude/ 下，不应计入本仓库的测试
-  test: { exclude: [...configDefaults.exclude, '.claude/**'] },
+  plugins: [react(), preloadEnglish(), swPrecache()],
+  test: {
+    // 子 agent 的 worktree 位于 .claude/ 下，不应计入本仓库的测试
+    exclude: [...configDefaults.exclude, '.claude/**'],
+    setupFiles: ['src/__tests__/setup.ts'],
+  },
 })

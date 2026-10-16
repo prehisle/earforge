@@ -96,6 +96,16 @@ class AudioEngine {
     return this.ctx;
   }
 
+  /**
+   * 预热：提前创建音频上下文与总线（新建 AudioContext 在手机上要上百毫秒）。
+   * 打开练习类页面后在空闲时调用，点「开始」出第一题时就不必同步等它；不支持 Web Audio 的环境什么也不做。
+   */
+  warmUp(): void {
+    if (this.ctx && this.ctx.state !== 'closed') return;
+    if (typeof AudioContext === 'undefined') return;
+    void this.context;
+  }
+
   async resume(): Promise<void> {
     const ctx = this.context;
     if (ctx.state === 'running') return;

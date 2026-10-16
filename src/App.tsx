@@ -1,25 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { exerciseById } from './exercises';
-import { ExamPage } from './ui/Exam';
 import { translate } from './i18n';
 import { LocaleContext } from './i18n/react';
 import { Home } from './ui/Home';
-import { MixedPractice } from './ui/Mixed';
-import { Practice } from './ui/Practice';
 import type { PracticeSet } from './engine/practiceSet';
 import { saveSet, findSet } from './engine/sets';
 import { hasSharedSet, readSharedSet, type SharedSet } from './engine/shareLink';
 import { decodeResult, hasResult, readResult, resultCode, type ResultData } from './engine/resultLink';
-import { SharedSetPage } from './ui/SharedSet';
 import {
   AboutPage,
+  ExamPage,
   GradebookPage,
+  MixedPractice,
   Onboarding,
+  Practice,
   ResultView,
   SetBuilder,
   SetRun,
   SetsPage,
   SettingsPage,
+  SharedSetPage,
   SongLibrary,
   SongPractice,
   StatsPage,
