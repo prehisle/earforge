@@ -217,6 +217,7 @@ export function SettingsPage({ store, update, onBack, onOnboard, onAbout }: Prop
               onClick={() => {
                 if (confirm(t('settings.clearConfirm')))
                   // 「全部练习记录」：曲库跟唱成绩与考试历史也一并清空（原来会留在首页与曲库里）
+                  // 练习组合是用户自己编排的内容，不算练习记录，保留
                   update((st) => {
                     st.exercises = {};
                     st.daily = {};

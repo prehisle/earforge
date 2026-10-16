@@ -3,12 +3,10 @@
 import { useState } from 'react';
 import type { PracticeSet } from '../engine/practiceSet';
 import type { Store } from '../engine/progress';
-import { mulberry32, newSeed, seededSource } from '../engine/seeded';
 import { toPracticeSet, type SharedSet } from '../engine/shareLink';
 import { exerciseById } from '../exercises';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
-import { Quiz, type Draw, type QuizSource } from './Practice';
 
 interface Props {
   /** 解析出的组合；null 表示链接无效 */
@@ -91,62 +89,6 @@ export function SharedSetPage({ set, store, onStart, onSave, onHome }: Props) {
           </button>
         </div>
       </section>
-    </main>
-  );
-}
-
-/**
- * 临时的组合练习页：合并前用来跑通「开始练习」与 e2e。合并后改用 setRunner（setSource + seededSource），删除本组件。
- * 出题规则：按权重选练习、在其考点里均匀选一个；固定题目时选题与出题都由 seed 决定。
- */
-export function TempSetRun({
-  set,
-  store,
-  update,
-  onBack,
-}: {
-  set: PracticeSet;
-  store: Store;
-  update(fn: (s: Store) => void): void;
-  onBack(): void;
-}) {
-  const t = useT();
-  const [done, setDone] = useState(false);
-  const [source] = useState<QuizSource>(() => {
-    const rng = mulberry32(set.seed ?? newSeed());
-    let k = 0;
-    const base: QuizSource = {
-      next(): Draw | null {
-        if (k >= set.count) return null;
-        k++;
-        const total = set.parts.reduce((s, p) => s + (p.weight ?? 1), 0);
-        let r = rng() * total;
-        const part = set.parts.find((p) => (r -= p.weight ?? 1) < 0) ?? set.parts[set.parts.length - 1];
-        const ex = exerciseById[part.ex];
-        const options = { ...Object.fromEntries((ex.options ?? []).map((o) => [o.id, o.default])), ...part.options };
-        return { ex, item: part.items[Math.floor(rng() * part.items.length)], items: part.items, options };
-      },
-      hasNext: () => k < set.count,
-    };
-    return set.seed === undefined ? base : seededSource(base, set.seed);
-  });
-  return (
-    <main className="page practice">
-      <header className="topbar">
-        <button className="ghost" onClick={onBack} aria-label={t('common.backAria')}>
-          {t('common.back')}
-        </button>
-        <h1>{set.name}</h1>
-      </header>
-      {done ? (
-        <section className="start">
-          <button className="primary big" onClick={onBack}>
-            {t('share.home')}
-          </button>
-        </section>
-      ) : (
-        <Quiz store={store} update={update} source={source} autoStart showModule onComplete={() => setDone(true)} />
-      )}
     </main>
   );
 }

@@ -80,16 +80,20 @@ export function MixedPractice({ store, update, onBack, onAgain }: Props) {
   );
 }
 
-function Summary({
+/** 一组混合练习的小结（今日训练与练习组合共用） */
+export function Summary({
   store,
   results,
   onAgain,
   onBack,
+  backLabel,
 }: {
   store: Store;
   results: QuizResult[];
   onAgain(): void;
   onBack(): void;
+  /** 返回按钮的文字，缺省为「返回首页」 */
+  backLabel?: string;
 }) {
   const t = useT();
   const n = results.length;
@@ -179,7 +183,7 @@ function Summary({
       )}
 
       <div className="summary-actions">
-        <button onClick={onBack}>{t('mix.home')}</button>
+        <button onClick={onBack}>{backLabel ?? t('mix.home')}</button>
         <button className="primary" onClick={onAgain}>
           {t('mix.again')}
         </button>

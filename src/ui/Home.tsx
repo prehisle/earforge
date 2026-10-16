@@ -27,11 +27,12 @@ interface Props {
   onAbout(): void;
   onSongs(): void;
   onExam(): void;
+  onSets(): void;
 }
 
 const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
-export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onAbout }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onSets, onAbout }: Props) {
   const t = useT();
   const day = store.daily[today()];
   const days = streak(store);
@@ -155,9 +156,10 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
       ))}
 
       <section>
-        <h2 className="group-title">{t('group.exam')}</h2>
+        <h2 className="group-title">{t('group.plans')}</h2>
         <div className="cards">
           <ExamCard store={store} onOpen={onExam} />
+          <SetsCard store={store} onOpen={onSets} />
         </div>
       </section>
 
@@ -167,6 +169,22 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
         {t('home.keys')}
       </footer>
     </main>
+  );
+}
+
+/** 练习组合入口卡片（与模拟考试放在一起：都是自己安排的成组练习） */
+function SetsCard({ store, onOpen }: { store: Store; onOpen(): void }) {
+  const t = useT();
+  const n = store.sets?.length ?? 0;
+  return (
+    <button className="card" onClick={onOpen}>
+      <span className="card-icon">🧩</span>
+      <span className="card-body">
+        <span className="card-title">{t('group.sets')}</span>
+        <span className="card-sub">{t('sets.cardSub')}</span>
+        <span className="card-meta">{n > 0 ? t('sets.cardMeta', { n }) : t('sets.cardNone')}</span>
+      </span>
+    </button>
   );
 }
 

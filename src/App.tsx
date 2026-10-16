@@ -6,9 +6,10 @@ import { Home } from './ui/Home';
 import { MixedPractice } from './ui/Mixed';
 import { Practice } from './ui/Practice';
 import type { PracticeSet } from './engine/practiceSet';
+import { saveSet, findSet } from './engine/sets';
 import { hasSharedSet, readSharedSet, type SharedSet } from './engine/shareLink';
-import { SharedSetPage, TempSetRun } from './ui/SharedSet';
-import { AboutPage, Onboarding, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
+import { SharedSetPage } from './ui/SharedSet';
+import { AboutPage, Onboarding, SetBuilder, SetRun, SetsPage, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
 import { useMidiInput } from './ui/useMidi';
 import { useStore } from './ui/useStore';
 
@@ -22,9 +23,12 @@ type Route =
   | { page: 'song'; id: string }
   | { page: 'exam' }
   | { page: 'about'; from: 'home' | 'settings' }
-  // 分享链接（set 为 null 表示链接无效）；tempRun 是合并前的临时练习页
-  | { page: 'shared'; set: SharedSet | null }
-  | { page: 'tempRun'; set: PracticeSet };
+  // 练习组合：列表、新建/编辑（可带模板）、练习（已保存的按 id，或直接给出未保存的组合，如分享链接里的）
+  | { page: 'sets' }
+  | { page: 'setEdit'; id?: string; template?: string }
+  | { page: 'setRun'; id?: string; set?: PracticeSet; round?: number }
+  // 分享链接（set 为 null 表示链接无效）
+  | { page: 'shared'; set: SharedSet | null };
 
 /** 网址带 #s= 时进入分享落地页 */
 function sharedRoute(): Route | null {
@@ -80,6 +84,7 @@ export default function App() {
             onSettings={() => setRoute({ page: 'settings' })}
             onSongs={() => setRoute({ page: 'songs' })}
             onExam={() => setRoute({ page: 'exam' })}
+            onSets={() => setRoute({ page: 'sets' })}
             onAbout={() => setRoute({ page: 'about', from: 'home' })}
           />
         )}
@@ -148,17 +153,50 @@ export default function App() {
           />
         )}
         {route.page === 'about' && <AboutPage onBack={() => setRoute({ page: route.from })} />}
+        {/* ───── 练习组合 ───── */}
+        {route.page === 'sets' && (
+          <SetsPage
+            store={store}
+            update={update}
+            onBack={home}
+            onNew={(template) => setRoute({ page: 'setEdit', template })}
+            onEdit={(id) => setRoute({ page: 'setEdit', id })}
+            onRun={(id) => setRoute({ page: 'setRun', id })}
+          />
+        )}
+        {route.page === 'setEdit' && (
+          <SetBuilder
+            key={`${route.id ?? ''}:${route.template ?? ''}`}
+            store={store}
+            update={update}
+            id={route.id}
+            template={route.template}
+            onBack={() => setRoute({ page: 'sets' })}
+            onSaved={(id, start) => {
+              setRoute(start ? { page: 'setRun', id } : { page: 'sets' });
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
+        {route.page === 'setRun' && (
+          <SetRun
+            key={`${route.id ?? ''}:${route.round ?? 0}`}
+            store={store}
+            update={update}
+            set={route.set ?? (route.id ? (findSet(store, route.id) ?? null) : null)}
+            onBack={() => setRoute({ page: 'sets' })}
+            onAgain={() => setRoute({ ...route, round: (route.round ?? 0) + 1 })}
+          />
+        )}
         {route.page === 'shared' && (
           <SharedSetPage
             set={route.set}
             store={store}
             onHome={home}
-            // 合并后接到 setRunner：onStart 进入 setRun 路由（setSource + seededSource），onSave 调用 saveSet
-            onStart={(set) => setRoute({ page: 'tempRun', set })}
-            onSave={() => {}}
+            onStart={(set) => setRoute({ page: 'setRun', set })}
+            onSave={(set) => void saveSet(update, set)}
           />
         )}
-        {route.page === 'tempRun' && <TempSetRun set={route.set} store={store} update={update} onBack={home} />}
       </div>
     </LocaleContext.Provider>
   );
