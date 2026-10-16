@@ -1,4 +1,4 @@
-// 英文界面：新手引导、各练习（出题 / 反馈 / 选项，含和弦转位、音阶与调式、复音程）、节奏模仿、视唱、今日训练、统计、设置，
+// 英文界面：新手引导、各练习（出题 / 反馈 / 选项，含和弦转位、音阶与调式、复音程）、节奏模仿、视唱、今日训练、统计、设置、关于与帮助，
 // 在 375 / 1024 × 浅色 / 深色下扫描漏翻的中文与溢出；最后切回中文再切回英文。原 i18n.mjs
 // 可选：E2E_FILTER=375-light 只跑一个配置。
 import { CJK, run, sleep } from '../lib/harness.mjs';
@@ -218,6 +218,12 @@ await run(async (t) => {
     await clickText('Back');
     await clickText('Settings');
     await scan('settings');
+    // 关于与帮助（从设置页进入，返回到设置页）
+    await clickText('Guide & shortcuts');
+    await sleep(200);
+    const about = await scan('about');
+    t.check(!about.hits.length, `${tag}: About & help page has no CJK`);
+    await clickText('Back');
 
     // 切回中文
     await clickText('中文');

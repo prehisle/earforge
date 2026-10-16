@@ -2500,3 +2500,55 @@ input[type='range'] {
     scroll-behavior: auto !important;
   }
 }
+
+/* ───── 关于与帮助 ───── */
+.help-btn {
+  min-width: 2.4em;
+  font-weight: 700;
+}
+.about .panel {
+  gap: 10px;
+}
+.about h2 {
+  font-size: 1.1rem;
+}
+.about h3 {
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+.about ol,
+.about ul {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.about p {
+  margin: 0;
+  line-height: 1.6;
+}
+.about li {
+  line-height: 1.5;
+}
+.about a {
+  color: var(--accent);
+}
+.about-keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  margin: 0;
+}
+.about-keys div {
+  display: contents;
+}
+.about-keys dt kbd {
+  margin-left: 0;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.about-keys dd {
+  margin: 0;
+  color: var(--text-2);
+}

@@ -64,6 +64,14 @@ describe('节奏听写', () => {
       }
   });
 
+  it('两个带休止的单元（ere + eer）两小节也总能出至少 3 个选项', () => {
+    // 回归：原题小节可能有两个休止（不满足 goodBar），曾导致干扰项全被拒、偶尔只剩 2 个选项
+    for (let k = 0; k < 500; k++) {
+      const q = rhythm.generate('ere', { settings: DEFAULT_SETTINGS, items: ['ere', 'eer'], options: { speed: 'mid', bars: '2' } });
+      expect(q.choices.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it('干扰项与答案不同、彼此不重复（按听感即起音与发声长度比较）', () => {
     for (const { q } of questions()) {
       const keys = q.choices.map((c) => soundKey(c.rhythm!));

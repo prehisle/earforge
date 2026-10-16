@@ -219,7 +219,9 @@ export const rhythm: ExerciseDef = {
       let cand = mutate(bars, p);
       if (k >= 150) cand = mutate(cand, p);
       const key = soundKey(flatten(cand));
-      if (seen.has(key) || !cand.every(goodBar)) continue;
+      // 只检查被改动的小节：原题小节本身可能不满足 goodBar（如 ere/eer 两个带休止的单元凑满一小节），不能因此拒掉所有干扰项
+      const changed = (b: Bar, i: number) => JSON.stringify(b) !== JSON.stringify(bars[i]);
+      if (seen.has(key) || !cand.every((b, i) => !changed(b, i) || goodBar(b))) continue;
       seen.add(key);
       wrongs.push(cand);
     }
