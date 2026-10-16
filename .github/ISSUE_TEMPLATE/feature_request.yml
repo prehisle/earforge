@@ -1,0 +1,28 @@
+name: 功能建议 / Feature request
+description: 新练习、新曲目或改进建议 / A new exercise, song or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决什么问题 / What problem does it solve
+      description: 你在练耳时遇到了什么不方便？/ What gets in the way when you practise?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议的做法 / Proposed solution
+  - type: textarea
+    id: songs
+    attributes:
+      label: 曲目建议（如有）/ Song suggestions (if any)
+      description: |
+        只收录公有领域旋律（传统民歌，或作者去世超过 70 年的作品），请写明作曲者与来源，见 CONTRIBUTING.md。
+        Only public-domain melodies (traditional tunes, or composers who died more than 70 years ago). Please name the composer and source; see CONTRIBUTING.md.
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: 参与 / Contributing
+      options:
+        - label: 我愿意提交 PR / I'd like to send a PR for this

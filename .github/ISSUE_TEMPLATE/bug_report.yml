@@ -1,0 +1,61 @@
+name: 问题报告 / Bug report
+description: 某个功能不正常 / Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么 / What happened
+      description: 以及你期望的结果 / and what you expected instead
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: |
+        1. 打开「调内音级」/ Open "Scale Degrees"
+        2. 选项里选择 … / In Options choose …
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: 模块 / Module
+      multiple: true
+      options:
+        - 调内音级 / Scale degrees
+        - 音程识别 / Intervals
+        - 和弦性质 / Chord quality
+        - 级数和弦 / Chords in a key
+        - 旋律听写 / Melodic dictation
+        - 节奏旋律听写 / Melody + rhythm dictation
+        - 节奏听写 / Rhythmic dictation
+        - 节奏模仿 / Rhythm tapping
+        - 视唱 / Sight-singing
+        - 视唱曲库 / Song library
+        - 今日训练 / Daily training
+        - 模拟考试 / Mock exams
+        - 统计 / Stats
+        - 设置 / Settings
+        - 离线 / 安装 · Offline / PWA
+        - 其他 / Other
+  - type: input
+    id: env
+    attributes:
+      label: 浏览器与系统 / Browser and OS
+      placeholder: Chrome 140 / macOS 15, Safari iOS 18 …
+    validations:
+      required: true
+  - type: dropdown
+    id: lang
+    attributes:
+      label: 界面语言 / UI language
+      options:
+        - 中文
+        - English
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图、控制台报错等 / Screenshots, console errors, etc.

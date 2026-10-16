@@ -41,8 +41,12 @@
 npm install
 npm run dev      # 开发服务器
 npm test         # 单元测试
-npm run build    # 生产构建（输出 dist/，可部署到任意静态托管）
+npm run build    # 生产构建（输出 dist/，可部署到任意静态托管；子路径部署用 BASE_PATH=/earforge/）
+npm run check    # lint + 单元测试 + 构建
+npm run e2e      # 浏览器端到端测试（puppeteer-core + 本机 Chrome）
 ```
+
+参与开发请先读 [CONTRIBUTING.md](CONTRIBUTING.md)：架构、如何新增练习与曲目（公有领域政策）、测试与提交规范。
 
 技术栈：Vite + React + TypeScript，无运行时依赖之外的库。
 
@@ -77,7 +81,7 @@ src/
 - [ ] 模拟考试模式
 - [x] 英文界面
 
-欢迎 Issue 与 PR。
+欢迎 Issue 与 PR，详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可
 
