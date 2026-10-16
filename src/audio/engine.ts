@@ -139,13 +139,17 @@ class AudioEngine {
     this.setStatus({ state: 'loading', progress: 0 });
     // 尚无 AudioContext 时（如启动时预加载、还没有用户手势）用离线上下文解码，AudioBuffer 可跨上下文使用
     const decoder = this.ctx ?? new OfflineAudioContext(1, 1, 48000);
-    this.loading = loadSamples(decoder, (progress) => this.setStatus({ state: 'loading', progress }))
+    // 任一采样失败后整体即告失败，但其余下载仍在进行：之后的进度回调不能把「失败」改回「加载中」
+    let settled = false;
+    this.loading = loadSamples(decoder, (progress) => !settled && this.setStatus({ state: 'loading', progress }))
       .then((m) => {
+        settled = true;
         this.samples = m;
         this.setStatus({ state: 'ready', progress: 1 });
         return true;
       })
       .catch((e: unknown) => {
+        settled = true;
         console.warn('采样钢琴加载失败，回退到合成钢琴', e);
         this.setStatus({ state: 'error', progress: 0 });
         return false;

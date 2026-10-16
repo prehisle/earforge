@@ -121,6 +121,29 @@ describe('音频引擎', () => {
     expect(sources.length).toBeGreaterThan(n);
   });
 
+  it('采样钢琴：一个文件下载失败后，其余文件的进度不会把「失败」改回「加载中」', async () => {
+    let release: () => void = () => {};
+    const later = new Promise<void>((r) => (release = r));
+    vi.stubGlobal(
+      'OfflineAudioContext',
+      class {
+        decodeAudioData = async () => ({});
+      },
+    );
+    vi.stubGlobal('fetch', async (url: string) => {
+      if (url.endsWith('C2.mp3')) return { ok: false, status: 404, url };
+      await later;
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+    });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const audio = await freshEngine();
+    expect(await audio.loadSampler()).toBe(false);
+    expect(audio.sampler.state).toBe('error');
+    release();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(audio.sampler.state).toBe('error');
+  });
+
   it('声源结束后断开连接（长时间练习不累积节点）', async () => {
     const audio = await freshEngine();
     const p = audio.play(NOTE);
