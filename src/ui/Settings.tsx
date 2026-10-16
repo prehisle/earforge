@@ -11,6 +11,8 @@ interface Props {
   store: Store;
   update(fn: (s: Store) => void): void;
   onBack(): void;
+  /** 重新查看新手引导 */
+  onOnboard(): void;
 }
 
 function Seg<T extends string>({
@@ -33,7 +35,7 @@ function Seg<T extends string>({
   );
 }
 
-export function SettingsPage({ store, update, onBack }: Props) {
+export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
   const s = store.settings;
   const file = useRef<HTMLInputElement>(null);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => update((st) => void (st.settings[k] = v));
@@ -198,6 +200,16 @@ export function SettingsPage({ store, update, onBack }: Props) {
             hidden
             onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])}
           />
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="field">
+          <label>新手引导</label>
+          <div className="seg wrap">
+            <button onClick={onOnboard}>重新查看新手引导</button>
+          </div>
+          <p className="muted onboard-note">不会清空练习记录；选择的基础只会提升起始级别，不会调低。</p>
         </div>
       </section>
 

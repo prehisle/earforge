@@ -16,6 +16,7 @@ import {
 } from '../engine/progress';
 import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
+import { ModuleTip } from './ModuleTip';
 import { RhythmNotation } from './RhythmNotation';
 import { SingPanel } from './SingPanel';
 import { useMidiStatus } from './useMidi';
@@ -574,6 +575,8 @@ export function Practice({ ex, store, update, onBack, focus }: Props) {
           </div>
         </section>
       )}
+
+      <ModuleTip ex={ex} store={store} update={update} />
 
       <Quiz
         key={round}

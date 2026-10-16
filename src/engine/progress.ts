@@ -39,12 +39,20 @@ export function loadStore(): Store {
       s.settings = { ...DEFAULT_SETTINGS, ...s.settings };
       s.exercises ??= {};
       s.daily ??= {};
+      // 已有练习记录的一定是老用户，不再显示新手引导
+      if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
       return s;
     }
   } catch {
     /* 数据损坏则重置 */
   }
-  return { version: 1, settings: { ...DEFAULT_SETTINGS }, exercises: {}, daily: {} };
+  // 全新用户：显示新手引导
+  return { version: 1, settings: { ...DEFAULT_SETTINGS, onboarded: false }, exercises: {}, daily: {} };
+}
+
+/** 是否已有练习记录（任一考点作答过，或有每日记录） */
+export function hasProgress(s: Store): boolean {
+  return Object.keys(s.daily).length > 0 || Object.values(s.exercises).some((p) => Object.keys(p.items ?? {}).length > 0);
 }
 
 export function saveStore(s: Store): void {

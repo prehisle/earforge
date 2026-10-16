@@ -71,6 +71,10 @@ export interface Settings {
   mixSize: number;
   /** MIDI 键盘作答 */
   midi: boolean;
+  /** 已完成（或跳过）新手引导。缺省为 true：旧版数据没有该字段，视为老用户；全新的存储由 loadStore 设为 false */
+  onboarded: boolean;
+  /** 已关闭首次使用提示的练习 id */
+  tipsSeen: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,6 +87,8 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyGoal: 30,
   mixSize: 20,
   midi: false,
+  onboarded: true,
+  tipsSeen: [],
 };
 
 export interface GenContext {
