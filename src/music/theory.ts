@@ -95,6 +95,27 @@ export const INTERVAL_SONGS: Record<Locale, Record<string, string>> = {
   },
 };
 
+// 复音程（超过八度，至两个八度）：九度 = 二度 + 八度 … 十五度 = 两个八度；三全音加八度记作增十一度
+const COMPOUND_IDS = ['m9', 'M9', 'm10', 'M10', 'P11', 'A11', 'P12', 'm13', 'M13', 'm14', 'M14', 'P15'] as const;
+
+export const COMPOUND_INTERVALS: IntervalDef[] = COMPOUND_IDS.map((id, k) => ({
+  id,
+  semitones: 13 + k,
+  short: id,
+  get name() {
+    return t(`interval.${id}`);
+  },
+}));
+
+/** 单音程与复音程 */
+export const ALL_INTERVALS: IntervalDef[] = [...INTERVALS, ...COMPOUND_INTERVALS];
+
+/** 复音程对应的单音程（m9 → m2、P15 → P8）；单音程返回 undefined。 */
+export function simpleOf(id: string): IntervalDef | undefined {
+  const k = COMPOUND_IDS.indexOf(id as (typeof COMPOUND_IDS)[number]);
+  return k < 0 ? undefined : INTERVALS[k + 1];
+}
+
 /** 当前语言的音程记忆歌曲 */
 export function intervalSong(id: string): string | undefined {
   return INTERVAL_SONGS[getLocale()][id];
@@ -144,6 +165,114 @@ export function chordNotes(root: Midi, chord: ChordDef, inversion = 0): Midi[] {
   }
   return notes;
 }
+
+// ───────────── 音阶 ─────────────
+
+export type ScaleId =
+  | 'major'
+  | 'minor'
+  | 'harmonic'
+  | 'melodic'
+  | 'dorian'
+  | 'mixolydian'
+  | 'lydian'
+  | 'phrygian'
+  | 'locrian'
+  | 'pentatonic'
+  | 'blues'
+  | 'wholetone';
+
+export interface ScaleDef {
+  id: ScaleId;
+  /** 当前界面语言的名称 */
+  readonly name: string;
+  /** 相对主音的半音数（升序，不含高八度的主音） */
+  steps: number[];
+  /** 各音相对主音的字母级数（拼写用，如 C 五声 C D E G A → 0 1 2 4 5） */
+  letters: number[];
+  /** 另一种字母写法（全音阶 C D E F♯ G♯ B♭ 或 C D E G♭ A♭ B♭），拼写时取变音较少的 */
+  altLetters?: number[];
+  /** 与大调相比的特征（简谱写法，如 ♭3 ♭7），当前语言无关 */
+  feature: string;
+}
+
+const scale = (id: ScaleId, steps: number[], letters: number[], feature: string, altLetters?: number[]): ScaleDef => ({
+  id,
+  steps,
+  letters,
+  feature,
+  ...(altLetters ? { altLetters } : {}),
+  get name() {
+    return t(`scale.${id}`);
+  },
+});
+
+const SEVEN = [0, 1, 2, 3, 4, 5, 6];
+
+export const SCALES: ScaleDef[] = [
+  scale('major', [0, 2, 4, 5, 7, 9, 11], SEVEN, '1 2 3 4 5 6 7'),
+  scale('minor', [0, 2, 3, 5, 7, 8, 10], SEVEN, '♭3 ♭6 ♭7'),
+  scale('harmonic', [0, 2, 3, 5, 7, 8, 11], SEVEN, '♭3 ♭6 7'),
+  // 旋律小调取上行形式（升高 6、7 级）；上下行都用这一形式，传统写法的下行同自然小调
+  scale('melodic', [0, 2, 3, 5, 7, 9, 11], SEVEN, '♭3 6 7'),
+  scale('dorian', [0, 2, 3, 5, 7, 9, 10], SEVEN, '♭3 6 ♭7'),
+  scale('mixolydian', [0, 2, 4, 5, 7, 9, 10], SEVEN, '♭7'),
+  scale('lydian', [0, 2, 4, 6, 7, 9, 11], SEVEN, '♯4'),
+  scale('phrygian', [0, 1, 3, 5, 7, 8, 10], SEVEN, '♭2 ♭3 ♭6 ♭7'),
+  scale('locrian', [0, 1, 3, 5, 6, 8, 10], SEVEN, '♭2 ♭3 ♭5 ♭6 ♭7'),
+  // 宫调式五声音阶：宫 商 角 徵 羽
+  scale('pentatonic', [0, 2, 4, 7, 9], [0, 1, 2, 4, 5], '1 2 3 5 6'),
+  // 布鲁斯音阶：小调五声 + ♯4（♭5），♯4 与 4 同字母
+  scale('blues', [0, 3, 5, 6, 7, 10], [0, 2, 3, 3, 4, 6], '1 ♭3 4 ♯4 5 ♭7'),
+  scale('wholetone', [0, 2, 4, 6, 8, 10], [0, 1, 2, 3, 4, 6], '1 2 3 ♯4 ♯5 ♭7', [0, 1, 2, 4, 5, 6]),
+];
+
+export const SCALE_BY_ID = Object.fromEntries(SCALES.map((s) => [s.id, s])) as Record<ScaleId, ScaleDef>;
+
+/** 音阶的音（含高八度主音）。dir：up 上行、down 下行、both 上行接下行（顶音不重复）。 */
+export function scaleNotes(tonic: Midi, def: ScaleDef, dir: 'up' | 'down' | 'both' = 'up'): Midi[] {
+  const up = [...def.steps.map((s) => tonic + s), tonic + 12];
+  if (dir === 'up') return up;
+  const down = [...up].reverse();
+  return dir === 'down' ? down : [...up, ...down.slice(1)];
+}
+
+// ───────────── 和弦转位 ─────────────
+
+/** 低音是和弦的第几个音：0 根音、1 三音、2 五音、3 七音。转位考点 id 形如 't1'（三和弦第一转位）、's3'（七和弦第三转位）。 */
+export interface InversionDef {
+  id: string;
+  /** 七和弦 */
+  seventh: boolean;
+  /** 第几转位（低音为第几个和弦音） */
+  inv: number;
+  /** 数字低音标记（原位三和弦为空） */
+  figure: string;
+  readonly name: string;
+}
+
+const inversion = (seventh: boolean, inv: number, figure: string): InversionDef => {
+  const id = `${seventh ? 's' : 't'}${inv}` as 't0' | 't1' | 't2' | 's0' | 's1' | 's2' | 's3';
+  return {
+    id,
+    seventh,
+    inv,
+    figure,
+    get name() {
+      return t(`inv.${id}`);
+    },
+  };
+};
+
+export const INVERSIONS: InversionDef[] = [
+  inversion(false, 0, '5/3'),
+  inversion(false, 1, '6'),
+  inversion(false, 2, '6/4'),
+  inversion(true, 0, '7'),
+  inversion(true, 1, '6/5'),
+  inversion(true, 2, '4/3'),
+  inversion(true, 3, '4/2'),
+];
 
 // ───────────── 调式与级数 ─────────────
 
