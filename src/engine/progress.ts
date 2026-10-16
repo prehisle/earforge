@@ -20,11 +20,21 @@ export interface ExerciseProgress {
   scoped?: Record<string, { level: number; custom: string[] | null }>;
 }
 
+/**
+ * 每日汇总。ex 为按练习拆分的 [作答, 答对]（元组比对象省约 30% 体积）；
+ * 旧版本记录的日子没有 ex，趋势图把这些天的分练习数据视为「未知」而不是 0。
+ */
+export interface DayStat {
+  n: number;
+  c: number;
+  ex?: Record<string, [number, number]>;
+}
+
 export interface Store {
   version: 1;
   settings: Settings;
   exercises: Record<string, ExerciseProgress>;
-  daily: Record<string, { n: number; c: number }>; // YYYY-MM-DD
+  daily: Record<string, DayStat>; // 键为本地日期 YYYY-MM-DD
 }
 
 const KEY = 'earforge:v1';
@@ -39,7 +49,7 @@ export function loadStore(): Store {
       const s = JSON.parse(raw) as Store;
       s.settings = { ...DEFAULT_SETTINGS, ...s.settings };
       s.exercises ??= {};
-      s.daily ??= {};
+      s.daily = sanitizeDaily(s.daily);
       // 已有练习记录的一定是老用户，不再显示新手引导
       if (!s.settings.onboarded && hasProgress(s)) s.settings.onboarded = true;
       return s;
@@ -54,6 +64,32 @@ export function loadStore(): Store {
     exercises: {},
     daily: {},
   };
+}
+
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+
+/** 规范化每日记录（读取本地数据与导入备份时用）：丢弃格式不对的日期与字段，答对数不超过作答数。 */
+export function sanitizeDaily(raw: unknown): Record<string, DayStat> {
+  const out: Record<string, DayStat> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!DAY_KEY.test(k) || !v || typeof v !== 'object') continue;
+    const d = v as { n?: unknown; c?: unknown; ex?: unknown };
+    const n = count(d.n);
+    const day: DayStat = { n, c: Math.min(n, count(d.c)) };
+    if (d.ex && typeof d.ex === 'object') {
+      const ex: Record<string, [number, number]> = {};
+      for (const [id, e] of Object.entries(d.ex as Record<string, unknown>)) {
+        if (!Array.isArray(e)) continue;
+        const en = count(e[0]);
+        if (en > 0) ex[id] = [en, Math.min(en, count(e[1]))];
+      }
+      if (Object.keys(ex).length > 0) day.ex = ex;
+    }
+    out[k] = day;
+  }
+  return out;
 }
 
 /** 是否已有练习记录（任一考点作答过，或有每日记录） */
@@ -172,6 +208,13 @@ export function record(s: Store, p: ExerciseProgress, item: string, correct: boo
   const d = (s.daily[today()] ??= { n: 0, c: 0 });
   d.n++;
   if (correct) d.c++;
+  // 按练习记一笔：p 一定是 s.exercises 中的某个对象（由 getProgress 取得），反查得到练习 id
+  const exId = Object.keys(s.exercises).find((k) => s.exercises[k] === p);
+  if (exId) {
+    const e = ((d.ex ??= {})[exId] ??= [0, 0]);
+    e[0]++;
+    if (correct) e[1]++;
+  }
 }
 
 /** 当前级别所有考点都已掌握 → 可以升级。 */

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { audio, type Timbre } from '../audio/engine';
 import { SAMPLE_SIZE_MB } from '../audio/sampler';
-import type { Store } from '../engine/progress';
+import { sanitizeDaily, type Store } from '../engine/progress';
 import { DEFAULT_SETTINGS, type Notation, type Settings } from '../engine/types';
 import { useT } from '../i18n/react';
 import { NAMING_SYSTEMS, namingLabel, type NamingSystem } from '../music/theory';
@@ -38,7 +38,7 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
       if (data.version !== 1 || !data.exercises) throw new Error();
       update((st) => {
         st.exercises = data.exercises;
-        st.daily = data.daily ?? {};
+        st.daily = sanitizeDaily(data.daily);
         st.settings = { ...DEFAULT_SETTINGS, ...data.settings };
       });
       alert(t('settings.importOk'));
