@@ -2,7 +2,7 @@
 // 中英 × 375/1024 × 明暗，另有两个限时用例。原 exam.mjs
 // 通过测试钩子读答案：__EARFORGE_TEST__ = true 时 Exam 页把本卷公开在 globalThis.__earforgeExam；
 // __EARFORGE_EXAM_SECONDS__ 缩短时限。
-// 可选：E2E_FILTER=zh-375 只跑匹配的组合，E2E_FILTER=timer 只跑限时用例。
+// 可选：E2E_FILTER=zh-375 只跑匹配的组合，E2E_FILTER=timer 只跑限时用例，E2E_FILTER=random 只跑随机音色回顾。
 import { CJK, overflowPx, run, sleep } from '../lib/harness.mjs';
 
 const only = process.env.E2E_FILTER;
@@ -192,11 +192,66 @@ await run(async (t) => {
     await ctx.close();
   }
 
+  // 随机音色：交卷后回顾里重放某题，用的是考试中这道题的乐器（而不是最后一题抽到的）
+  async function randomTimbreCase() {
+    const tag = 'zh-1024-light-random';
+    const { ctx, page } = await newPage({ lang: 'zh', width: 1024, dark: false, tag });
+    await openExams(page, 'zh');
+    await sleep(150);
+    await page.evaluate(() => {
+      const a = globalThis.__earforgeAudio;
+      a.timbre = 'random';
+      globalThis.__plays = [];
+      const play = a.play.bind(a);
+      a.play = (ev, tb) => {
+        globalThis.__plays.push({ key: JSON.stringify(ev), timbre: tb ?? a.current });
+        return play(ev, tb);
+      };
+    });
+    await (await page.$$('.exam-preset'))[0].click();
+    await page.click('.exam-start button');
+    await sleep(300);
+    const exam = await page.evaluate(() => globalThis.__earforgeExam);
+    for (let qi = 0; qi < exam.length; qi++) {
+      await sleep(250); // 等本题自动播放（抽乐器）
+      const { answer, choices } = exam[qi];
+      for (const a of answer) await (await page.$$('.exam-choices .choice'))[choices.indexOf(a)].click();
+      await page.click('.exam-next button');
+    }
+    await sleep(300);
+    const asked = await page.evaluate(() => globalThis.__plays.splice(0));
+    const used = new Set(asked.map((p) => p.timbre));
+    // 每题只自动播放一次：第 i 次播放即第 i 题
+    t.check(asked.length === exam.length && used.size >= 3, `${tag}: 考试中各题换乐器（${asked.length} 次，${used.size} 种）`);
+    const items = await page.$$('.exam-rv summary');
+    let checked = 0;
+    let bad = 0;
+    for (let i = 0; i < items.length; i++) {
+      await items[i].click();
+      const btn = await page.$(`.exam-rv:nth-child(${i + 1}) .compare-row button`);
+      if (!btn) continue;
+      await btn.click();
+      const [p] = await page.evaluate(() => globalThis.__plays.splice(0));
+      const orig = asked[i];
+      checked++;
+      if (!p || orig?.key !== p.key || orig.timbre !== p.timbre) bad++;
+    }
+    t.check(checked === items.length && bad === 0, `${tag}: 回顾重放用该题考试时的乐器（核对 ${checked} 题，不一致 ${bad}）`);
+    await ctx.close();
+  }
+
+  if (!only || only === 'random')
+    try {
+      await randomTimbreCase();
+    } catch (e) {
+      t.fail(`random timbre: ${e.stack ?? e}`);
+    }
+
   for (const lang of ['zh', 'en'])
     for (const width of [375, 1024])
       for (const dark of [false, true]) {
         const id = `${lang}-${width}-${dark ? 'dark' : 'light'}`;
-        if (only && (only === 'timer' || !id.includes(only))) continue;
+        if (only && (only === 'timer' || only === 'random' || !id.includes(only))) continue;
         try {
           await runCase({ lang, width, dark });
         } catch (e) {

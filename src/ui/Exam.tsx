@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { audio, type NoteEvent } from '../audio/engine';
+import { audio, type NoteEvent, type Timbre } from '../audio/engine';
 import {
   EXAM_PRESETS,
   buildExam,
@@ -388,7 +388,7 @@ function ExamRun({
   const play = () => {
     if (!canPlay(run)) return;
     dispatch({ type: 'play' });
-    void audio.play(questionEvents(q));
+    void audio.play(questionEvents(q), run.timbres[run.idx] ?? undefined);
   };
 
   // 每题出现时自动播放一次（计入播放次数）；真正播放时才记下题号：
@@ -397,9 +397,9 @@ function ExamRun({
     if (autoPlayed.current === run.idx) return;
     const id = window.setTimeout(() => {
       autoPlayed.current = run.idx;
-      // 随机音色：每题换一种乐器（本题的重听与选项试听沿用）
-      audio.newQuestion();
-      dispatch({ type: 'play' });
+      // 随机音色：每题换一种乐器，记进作答状态（本题的重听与交卷后的回顾都用它）
+      const timbre = audio.newQuestion();
+      dispatch({ type: 'play', timbre });
       void audio.play(questionEvents(questions[run.idx].q));
     }, 150);
     return () => window.clearTimeout(id);
@@ -671,7 +671,15 @@ function ExamResult({
           <p className="muted exam-review-hint">{t('exam.reviewHint')}</p>
           <ol className="exam-review">
             {questions.map((x, i) => (
-              <ReviewItem key={i} n={i + 1} store={store} x={x} given={run.answers[i]} graded={score.graded[i]} />
+              <ReviewItem
+                key={i}
+                n={i + 1}
+                store={store}
+                x={x}
+                given={run.answers[i]}
+                graded={score.graded[i]}
+                timbre={run.timbres[i] ?? undefined}
+              />
             ))}
           </ol>
         </div>
@@ -695,12 +703,15 @@ function ReviewItem({
   x,
   given,
   graded,
+  timbre,
 }: {
   n: number;
   store: Store;
   x: ExamQuestion;
   given: (string | null)[];
   graded: { steps: boolean[]; score: number };
+  /** 考试中这道题用的乐器；undefined 为跟随当前设置 */
+  timbre?: Timbre;
 }) {
   const t = useT();
   const { q } = x;
@@ -719,7 +730,8 @@ function ReviewItem({
   const state = graded.score === 1 ? 'ok' : graded.score > 0 ? 'part' : 'bad';
   const mine = given[step];
   const right = q.answer[step];
-  const playChoice = (id: string) => q.choiceEvents && void audio.play(q.choiceEvents(id, step));
+  // 回顾时重放用考试中这道题的乐器（随机音色模式下各题不同）
+  const playChoice = (id: string) => q.choiceEvents && void audio.play(q.choiceEvents(id, step), timbre);
 
   return (
     <li className={`exam-rv ${state}`}>
@@ -779,7 +791,7 @@ function ReviewItem({
           )}
           {q.explain && <p className="exam-rv-explain">{q.explain}</p>}
           <div className="compare-row">
-            <button onClick={() => void audio.play(questionEvents(q))}>{t('exam.playQuestion')}</button>
+            <button onClick={() => void audio.play(questionEvents(q), timbre)}>{t('exam.playQuestion')}</button>
             {q.choiceEvents && mine !== null && mine !== right && (
               <button onClick={() => playChoice(mine)}>{t('quiz.yours', { name: name(mine) })}</button>
             )}

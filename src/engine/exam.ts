@@ -1,6 +1,7 @@
 // 模拟考试：试卷（固定的部分、题数、难度、时限与重听次数）、出题、计分，以及答题流程的纯 reducer。
 // 题目全部由现有练习的生成器产生（不照搬任何真题）；难度按每部分固定的级别与选项，与用户自己的进度无关。
 
+import type { Timbre } from '../audio/timbres';
 import { exerciseById } from '../exercises';
 import type { MessageKey } from '../i18n';
 import { levelsOf } from './progress';
@@ -275,6 +276,8 @@ export interface RunState {
   plays: number[];
   /** 每题最多播放次数 = 1 + 重听次数 */
   maxPlays: number;
+  /** 每题播放时用的乐器（随机音色模式下每题不同；null 为跟随设置）：重听与交卷后回顾都用它 */
+  timbres: (Timbre | null)[];
   startedAt: number;
   /** 截止时间戳；null 为不限时 */
   deadline: number | null;
@@ -283,7 +286,7 @@ export interface RunState {
 }
 
 export type RunAction =
-  | { type: 'play' }
+  | { type: 'play'; timbre?: Timbre | null }
   | { type: 'answer'; id: string; now: number }
   | { type: 'cursor'; step: number }
   | { type: 'next'; now: number }
@@ -298,6 +301,7 @@ export function initRun(lens: number[], replays: number, limitSecs: number | nul
     answers: lens.map((n) => Array<string | null>(n).fill(null)),
     cursor: 0,
     plays: lens.map(() => 0),
+    timbres: lens.map(() => null),
     maxPlays: 1 + Math.max(0, replays),
     startedAt: now,
     deadline: limitSecs === null ? null : now + limitSecs * 1000,
@@ -330,7 +334,11 @@ export function runReducer(s: RunState, a: RunAction): RunState {
       if (!canPlay(s)) return s;
       const plays = [...s.plays];
       plays[s.idx]++;
-      return { ...s, plays };
+      if (!a.timbre || s.timbres[s.idx]) return { ...s, plays };
+      // 记下本题第一次播放（自动播放）时的乐器
+      const timbres = [...s.timbres];
+      timbres[s.idx] = a.timbre;
+      return { ...s, plays, timbres };
     }
     case 'answer': {
       // 已到截止时间（计时器还没来得及收卷）：不再接受作答，直接按超时收卷

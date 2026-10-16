@@ -190,7 +190,7 @@ export function strumOf(timbre: SynthTimbre): number {
 export function voiceTail(timbre: SynthTimbre, midi: number, dur: number): number {
   const def = SYNTH_DEFS[timbre];
   if (def.model === 'mallet') return malletDecay(midi) * 7;
-  if (def.model === 'sustain') return dur + def.release * 2;
+  if (def.model === 'sustain') return sustainEnvelope(def.attack, dur).hold + def.release * 2;
   return dur + def.release + 0.1;
 }
 
@@ -300,22 +300,31 @@ function noiseBuffer(ctx: BaseAudioContext): AudioBuffer {
   return buf;
 }
 
-/** 拨弦波形缓存：按采样率与延迟线长度（同一长度的音高只差播放速率） */
+/**
+ * 拨弦波形缓存：按采样率与延迟线长度（同一长度的音高只差播放速率）。
+ * 低音一份可达约 670 KB，只保留最近用过的这么多份（LRU）；淘汰的下次按同一种子重新生成，声音不变。
+ */
+export const PLUCK_CACHE_MAX = 24;
 const pluckCache = new Map<string, { buf: AudioBuffer; period: number }>();
-function pluckBuffer(ctx: BaseAudioContext, midi: number, f: number): { buf: AudioBuffer; rate: number } {
+/** 当前缓存的拨弦波形份数（测试用） */
+export const pluckCacheSize = () => pluckCache.size;
+export function pluckBuffer(ctx: BaseAudioContext, midi: number, f: number): { buf: AudioBuffer; rate: number } {
   const sr = ctx.sampleRate;
   // 同一延迟线长度的音高共用一份波形（只差播放速率）；直接用 f 生成，延迟线长度与这里算的一致
   const n = pluckDelay(f, sr);
   const key = `${sr}:${n}`;
   let hit = pluckCache.get(key);
-  if (!hit) {
+  // Map 按插入顺序迭代：命中的移到末尾，最久未用的在最前
+  if (hit) pluckCache.delete(key);
+  else {
     const t60 = pluckT60(midi);
     const { data } = karplusStrong(f, sr, { t60, seconds: Math.min(3.5, t60), brightness: 0.4, seed: n });
     const buf = ctx.createBuffer(1, data.length, sr);
     buf.getChannelData(0).set(data);
     hit = { buf, period: n + 0.5 };
-    pluckCache.set(key, hit);
+    if (pluckCache.size >= PLUCK_CACHE_MAX) pluckCache.delete(pluckCache.keys().next().value!);
   }
+  pluckCache.set(key, hit);
   return { buf: hit.buf, rate: (f * hit.period) / sr };
 }
 
@@ -414,18 +423,28 @@ function struck(bus: VoiceBus, def: SynthDef, midi: number, f: number, t: number
   }
 }
 
+/**
+ * 持续音的包络时刻（相对音头，秒）：attack 为起音时长，hold 为开始淡出的时刻。
+ * 起音一般不超过时值的一半（至少 10 ms）；比 10 ms 还短的音起音就等于时值（至少 2 ms），
+ * 保证先升到峰值再淡出——起音若比时值长，淡出会被随后的起音斜坡盖掉，一直保持满音量到被硬切断而爆音。
+ */
+export function sustainEnvelope(attack: number, dur: number): { attack: number; hold: number } {
+  const a = Math.max(0.002, Math.min(attack, Math.max(0.01, dur * 0.5), dur));
+  return { attack: a, hold: Math.max(dur, a) };
+}
+
 /** 持续音：起音 → 按时值保持 → 淡出。很短的音把起音压缩到时值的一半以内。 */
 function sustained(bus: VoiceBus, def: SynthDef, midi: number, f: number, t: number, dur: number, vel: number): void {
   const { ctx } = bus;
   const out = ctx.createGain();
   out.connect(bus.out);
   const peak = vel * def.peak * keyScale(midi);
-  const attack = Math.min(def.attack, Math.max(0.01, dur * 0.5));
-  const stopAt = t + dur + def.release * 2;
+  const { attack, hold } = sustainEnvelope(def.attack, dur);
+  const stopAt = t + hold + def.release * 2;
   out.gain.setValueAtTime(0, t);
   out.gain.linearRampToValueAtTime(peak, t + attack);
-  out.gain.setValueAtTime(peak, t + dur);
-  out.gain.setTargetAtTime(0, t + dur, def.release / 3);
+  out.gain.setValueAtTime(peak, t + hold);
+  out.gain.setTargetAtTime(0, t + hold, def.release / 3);
 
   let dest: AudioNode = out;
   if (def.lowpass) {
