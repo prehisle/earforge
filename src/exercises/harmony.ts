@@ -401,7 +401,8 @@ export function harmonyScore(chords: HarmonyChord[], voicings: number[][], tonic
     const root = tl + SHAPE[ch.key][0];
     return v.map((m) => spellWithLetter(m, (root + 2 * ch.tones.indexOf(mod(m - tonicPc, 12))) % 7));
   });
-  return { notes, fifths: keyFifths(tonicPc, mode), stems: false };
+  // 四部和声一律用大谱表：音域偏低时自动选谱号会把四个声部都挤在低音谱表上
+  return { notes, fifths: keyFifths(tonicPc, mode), stems: false, clef: 'grand' };
 }
 
 const BEAT = 1.2;

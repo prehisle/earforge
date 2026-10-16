@@ -45,7 +45,7 @@ function PlainStaff({ score, marks, scale = 1.3 }: Props) {
   const { notes, fifths, stems = false } = score;
   const mk = marks ?? score.marks ?? [];
   const accs = displayAccidentals(notes, fifths);
-  const clef = chooseClef(notes.flat().map(pitchStep));
+  const clef = score.clef === 'grand' ? 'grand' : chooseClef(notes.flat().map(pitchStep));
   const staves: StaffClef[] = clef === 'grand' ? ['treble', 'bass'] : [clef];
   // 大谱表：C4 及以上写在高音谱表
   const partOf = (p: Pitch): StaffClef => (clef === 'grand' ? (pitchStep(p) >= 28 ? 'treble' : 'bass') : clef);

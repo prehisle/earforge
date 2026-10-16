@@ -136,7 +136,8 @@ function content(q: Question) {
     stepItems: q.stepItems,
     tap: q.tap,
     sing: q.sing && { targets: q.sing.targets, showDisplay: q.sing.showDisplay },
-    score: q.score,
+    // 谱号只影响画法（如四部和声固定用大谱表），不算题目内容：指纹不因此改变
+    score: q.score && { ...q.score, clef: undefined },
     notate: q.notate,
   };
 }

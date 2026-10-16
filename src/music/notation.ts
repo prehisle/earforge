@@ -32,8 +32,9 @@ export interface Score {
   /**
    * 'treble8vb'：八度高音谱号（谱号下方标 8，实际音高比记谱低八度），男声常用。
    * 音按实际音高给出，渲染时整体上移八度画在高音谱表上。缺省按音域自动选谱号。仅带时值的谱（MeasuredStaff）支持。
+   * 'grand'：固定用大谱表（四部和声：音域偏低时也不挤在低音谱表的上加线上）。仅不带时值的谱（Staff）支持。
    */
-  clef?: 'treble8vb';
+  clef?: 'treble8vb' | 'grand';
 }
 
 export type Mark = 'ok' | 'bad' | 'cur' | null | undefined;

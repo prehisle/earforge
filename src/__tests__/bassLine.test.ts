@@ -236,3 +236,12 @@ describe('低音线听写：注册与固定题目', () => {
     expect(differ / total).toBeGreaterThan(0.8);
   });
 });
+
+describe('谱面', () => {
+  it('四部和声的解析谱固定用大谱表（音域偏低时也不挤在低音谱表上）', () => {
+    for (let k = 0; k < 50; k++) {
+      const q = bassLine.generate('I', { settings: DEFAULT_SETTINGS, items: ['I', 'IV', 'V'], options: {} });
+      expect(q.score?.clef).toBe('grand');
+    }
+  });
+});

@@ -157,7 +157,7 @@ function engrave(score: Score, mk: Mark[], cssW: number, k: number, current: num
     pickup,
   );
   const accs = measureAccidentals(measures, notes, fifths);
-  const clef = tr8 ? 'treble' : chooseClef(notes.flat().map(pitchStep));
+  const clef = tr8 ? 'treble' : score.clef === 'grand' ? 'grand' : chooseClef(notes.flat().map(pitchStep));
   const staves: StaffClef[] = clef === 'grand' ? ['treble', 'bass'] : [clef];
   const partOf = (p: Pitch): StaffClef => (clef === 'grand' ? (pitchStep(p) >= 28 ? 'treble' : 'bass') : clef);
   const mid = (st: StaffClef) => TOP_LINE[st] - 4;

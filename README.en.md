@@ -147,7 +147,7 @@ npm run check    # pre-commit check: lint (warnings fail) + unit tests + build +
 npm run e2e      # browser end-to-end tests (puppeteer-core + local Chrome)
 ```
 
-There are currently 567 unit tests (vitest, 30 files) and 21 browser end-to-end scenarios (`e2e/scenarios/`).
+There are currently 590 unit tests (vitest, 33 files) and 22 browser end-to-end scenarios (`e2e/scenarios/`).
 
 Stack: Vite + React + TypeScript, with no runtime dependencies besides React and no backend.
 
@@ -191,6 +191,7 @@ Done (see [CHANGELOG.md](CHANGELOG.md)):
 - [x] Harmonic dictation (four-part, also in mock exams), more instruments and a random instrument per question, 20 answer keys (0.8)
 - [x] Custom practice sets, share links and fixed questions (0.9)
 - [x] Result links and a gradebook for teachers, a phone-friendly set editor, faster first load with a size budget (0.10)
+- [x] Bass-line dictation, review fixes for results/gradebook/lazy loading, beginner UX polish (0.11)
 
 Ideas for next steps (discussion welcome in Issues):
 
