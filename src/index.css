@@ -1193,3 +1193,271 @@ input[type='range'] {
     align-self: flex-end;
   }
 }
+
+/* ───── 视唱曲库 ───── */
+.songs-intro {
+  font-size: 0.9rem;
+  margin-top: -6px;
+}
+.songs-filter {
+  gap: 12px;
+}
+.songs-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.songs-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 0.85rem;
+}
+.songs-count .ghost {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+.songs-empty {
+  text-align: center;
+  padding: 24px 0;
+}
+.song-card {
+  align-items: flex-start;
+}
+.song-card.sung .card-icon {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.song-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.song-tag {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+.song-tag.meter {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.song-badge {
+  flex: none;
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.song-badge.on {
+  color: var(--good);
+  background: var(--good-soft);
+  font-weight: 600;
+}
+
+.song-page .practice-title h1 {
+  font-size: 1.15rem;
+}
+.song-controls {
+  gap: 12px;
+}
+.song-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.song-key {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.song-key select {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.song-key .ghost {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+.song-warn {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--warn-soft);
+  font-size: 0.85rem;
+}
+.song-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.9rem;
+}
+.song-toggles label,
+.song-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.song-toggles input,
+.song-inline input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.song-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.song-staff {
+  padding: 8px 4px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+.jianpu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+  line-height: 1.9;
+}
+.jp-bar {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 10px;
+  border-right: 1.5px solid var(--text-2);
+}
+.jp-bar:last-child {
+  border-right-width: 3px;
+}
+.jp-note {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  border-radius: 6px;
+  padding: 0 2px;
+}
+.jp-name.u1 {
+  border-bottom: 1.5px solid currentColor;
+}
+.jp-name.u2 {
+  border-bottom: 4px double currentColor;
+}
+.jp-dot {
+  margin-left: 1px;
+  font-weight: 700;
+}
+.jp-dash {
+  color: var(--text-2);
+}
+.jp-cur {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.jp-ok {
+  color: var(--good);
+}
+.jp-bad {
+  color: var(--bad);
+}
+.song-sing {
+  align-items: stretch;
+}
+.song-sing > .seg {
+  justify-content: center;
+}
+.song-sing > p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.song-sing .big,
+.song-sing > button {
+  align-self: center;
+}
+.song-phase {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.song-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.song-result .summary-hero {
+  padding-top: 4px;
+}
+.song-result-label {
+  font-size: 0.9rem;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.song-practice-done {
+  margin: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.song-cents p {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+}
+.song-cents ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.song-cents li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.song-cents li.ok {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.song-cents li.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+.song-cents-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.song-cents-val {
+  font-variant-numeric: tabular-nums;
+}

@@ -14,6 +14,8 @@ import { EXERCISES as ALL, exerciseById } from '../exercises';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
 import type { ExerciseDef } from '../engine/types';
+import { SONGS } from '../songs/library';
+import { hasSung } from '../songs/results';
 
 interface Props {
   store: Store;
@@ -21,11 +23,12 @@ interface Props {
   onMix(): void;
   onStats(): void;
   onSettings(): void;
+  onSongs(): void;
 }
 
 const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
-export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs }: Props) {
   const t = useT();
   const day = store.daily[today()];
   const days = streak(store);
@@ -140,6 +143,7 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
                 </button>
               );
             })}
+            {g === 'sing' && <SongsCard store={store} onOpen={onSongs} />}
           </div>
         </section>
       ))}
@@ -150,5 +154,24 @@ export function Home({ store, onOpen, onMix, onStats, onSettings }: Props) {
         {t('home.keys')}
       </footer>
     </main>
+  );
+}
+
+/** 视唱曲库入口卡片（放在「视唱练耳」分组里）。 */
+function SongsCard({ store, onOpen }: { store: Store; onOpen(): void }) {
+  const t = useT();
+  const done = SONGS.filter((s) => hasSung(store.songs?.[s.id])).length;
+  return (
+    <button className="card" onClick={onOpen}>
+      <span className="card-icon">🎼</span>
+      <span className="card-body">
+        <span className="card-title">{t('songs.title')}</span>
+        <span className="card-sub">{t('songs.cardSub', { n: SONGS.length })}</span>
+        <span className="card-meta">{t('songs.cardMeta', { done, n: SONGS.length })}</span>
+        <span className="meter">
+          <span className="meter-fill" style={{ width: `${(done / SONGS.length) * 100}%` }} />
+        </span>
+      </span>
+    </button>
   );
 }
