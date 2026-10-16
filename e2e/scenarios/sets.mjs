@@ -12,13 +12,22 @@ await run(async (t) => {
     for (const b of await items[i].$$('button')) if ((await b.evaluate((e) => e.textContent)).includes(text)) return b;
     throw new Error(`第 ${i} 个组合没有按钮「${text}」`);
   };
-  /** 在某个练习的设置面板里按文字点按钮 */
+  /** 在某个练习的设置面板里按文字点按钮（卡片折叠着就先展开） */
   const partBtn = async (title, text, exact = true) => {
     for (const p of await page.$$('.set-part')) {
-      if (!(await p.$eval('h3', (e) => e.textContent)).includes(title)) continue;
-      for (const b of await p.$$('button')) {
+      if (!(await p.$eval('.set-part-name', (e) => e.textContent)).includes(title)) continue;
+      const toggle = await p.$('.set-part-toggle');
+      if ((await toggle.evaluate((e) => e.getAttribute('aria-expanded'))) !== 'true') {
+        await toggle.evaluate((e) => e.scrollIntoView({ block: 'center' }));
+        await toggle.click();
+        await sleep(100);
+      }
+      for (const b of await p.$$('.set-part-body button')) {
         const s = (await b.evaluate((e) => e.textContent)).trim();
-        if (exact ? s === text : s.includes(text)) return b.click();
+        if (!(exact ? s === text : s.includes(text))) continue;
+        // 先滚到屏幕中间：底部固定的操作栏会挡住贴近视口底边的按钮
+        await b.evaluate((e) => e.scrollIntoView({ block: 'center' }));
+        return b.click();
       }
     }
     throw new Error(`练习「${title}」里没有按钮「${text}」`);
@@ -71,6 +80,8 @@ await run(async (t) => {
   for (const title of ['音程识别', '和弦性质', '节奏听写']) await clickText(page, title, '.set-add button');
   await sleep(100);
   t.check((await page.$$('.set-part')).length === 3, '添加了 3 个练习');
+  const expanded = await page.$$eval('.set-part-toggle[aria-expanded=true]', (x) => x.map((e) => e.textContent));
+  t.check(expanded.length === 1 && expanded[0].includes('节奏听写'), `新加的练习展开、其余折叠（${expanded}）`);
   t.check((await page.$$eval('.set-add button', (x) => x.map((e) => e.textContent))).every((s) => !s.includes('视唱 / 模唱') && !s.includes('节奏模仿')), '视唱与节奏模仿不能添加');
   // 音程：清空 → 提示至少 2 个；再选第 1 级 + 大三度，方向选混合
   await partBtn('音程识别', '清空');
@@ -201,6 +212,13 @@ await run(async (t) => {
   await page.waitForSelector('.set-builder');
   await sleep(200);
   t.check((await overflowPx(page)) <= 0, '手机编辑页无横向溢出');
+  const mob = await page.evaluate(() => ({
+    h: document.documentElement.scrollHeight,
+    bar: Math.round(document.querySelector('.set-bar').getBoundingClientRect().bottom - innerHeight),
+    open: document.querySelectorAll('.set-part-toggle[aria-expanded=true]').length,
+  }));
+  t.check(mob.open === 0 && mob.h < 1600, `手机编辑页：多个练习时都折叠，页面不长（${mob.h}px）`);
+  t.check(Math.abs(mob.bar) <= 1, `手机编辑页：保存按钮固定在底部（${mob.bar}）`);
   await t.shot(page, '06-mobile-builder');
   await clickText(page, '取消');
   await (await itemBtn(0, '开始')).click();
