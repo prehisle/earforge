@@ -88,9 +88,11 @@ class AudioEngine {
   get context(): AudioContext {
     // 'closed'：个别移动浏览器长时间切到后台后会关闭上下文，重建一个（已解码的采样可跨上下文使用）
     if (!this.ctx || this.ctx.state === 'closed') {
-      if (!this.ctx) watchVisibility(() => this.wake());
+      const first = !this.ctx;
       this.active.clear();
+      // 先新建（可能抛错）再注册前台回调：失败后重试时不会重复注册
       this.ctx = new AudioContext({ latencyHint: 'interactive' });
+      if (first) watchVisibility(() => this.wake());
       this.master = masterChain(this.ctx, this.volume);
     }
     return this.ctx;
@@ -103,7 +105,11 @@ class AudioEngine {
   warmUp(): void {
     if (this.ctx && this.ctx.state !== 'closed') return;
     if (typeof AudioContext === 'undefined') return;
-    void this.context;
+    try {
+      void this.context;
+    } catch {
+      // 新建失败（硬件上下文用尽、浏览器限制等）：预热只是优化，真正播放时会再建一次
+    }
   }
 
   async resume(): Promise<void> {

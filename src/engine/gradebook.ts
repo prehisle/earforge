@@ -53,6 +53,52 @@ export function csvField(v: string | number): string {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/**
+ * CSV 里一题的取值：整题答对 1、答错 0；多步题部分答对时为答对步数的比例（两位小数）。
+ * 不写成「2/3」：Excel 会把它当成日期（2 月 3 日）。
+ */
+export function markCell(m: { ok: boolean; c: number; n: number }): number {
+  if (m.ok) return 1;
+  if (m.n <= 1) return 0;
+  return Math.round((m.c / m.n) * 100) / 100;
+}
+
+// ───── 同一学生的多次提交 ─────
+
+/** 学生的归并键：忽略大小写、全角半角与空格（「张 三」与「张三」、「ＬＩ si」与「Li Si」视为同一人）；未署名为空串 */
+export function studentKey(name: string): string {
+  return name.normalize('NFKC').toLowerCase().replace(/\s+/g, '');
+}
+
+/** 一名学生在一份作业里的全部提交：best 为显示与导出的那一次，attempts 按完成时间先后 */
+export interface StudentResults<T> {
+  best: T;
+  attempts: T[];
+}
+
+/**
+ * 按学生归并（同一份作业内）：同名的多次提交合成一行，取得分最高的一次（同分取最晚完成的），并保留全部提交。
+ * 未署名的每条单独一行（无法判断是不是同一人）。顺序同各学生第一次出现的顺序。
+ */
+export function groupByStudent<T extends { name: string; score: number; at: number }>(rows: T[]): StudentResults<T>[] {
+  const out: StudentResults<T>[] = [];
+  const byKey = new Map<string, StudentResults<T>>();
+  for (const r of rows) {
+    const key = studentKey(r.name);
+    const g = key ? byKey.get(key) : undefined;
+    if (!g) {
+      const fresh: StudentResults<T> = { best: r, attempts: [r] };
+      out.push(fresh);
+      if (key) byKey.set(key, fresh);
+      continue;
+    }
+    g.attempts.push(r);
+    if (r.score > g.best.score || (r.score === g.best.score && r.at >= g.best.at)) g.best = r;
+  }
+  for (const g of out) g.attempts.sort((a, b) => a.at - b.at);
+  return out;
+}
+
 /** 二维表 → CSV 文本（CRLF 换行，开头带 BOM，Excel 打开中文不乱码） */
 export function toCsv(rows: (string | number)[][]): string {
   return `\ufeff${rows.map((r) => r.map(csvField).join(',')).join('\r\n')}\r\n`;

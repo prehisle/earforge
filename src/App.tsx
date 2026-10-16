@@ -291,6 +291,11 @@ export default function App() {
 
 /** 处理成绩链接（同 useShareLinks）：启动时与打开期间进入成绩页，并清掉 hash */
 function useResultLinks(open: (r: Route) => void) {
+  // 用最新的回调（离开确认的文字要随界面语言变化；首次渲染时的回调里语言是旧的）
+  const handler = useRef(open);
+  useEffect(() => {
+    handler.current = open;
+  });
   useEffect(() => {
     const clear = () => history.replaceState(history.state, '', location.pathname + location.search);
     if (hasResult(location.href)) clear();
@@ -298,11 +303,11 @@ function useResultLinks(open: (r: Route) => void) {
       const r = resultRoute();
       if (!r) return;
       clear();
-      open(r);
+      handler.current(r);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 }
 
 /**

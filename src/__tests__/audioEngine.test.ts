@@ -92,6 +92,23 @@ describe('音频引擎', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it('预热时新建 AudioContext 失败（硬件上下文用尽、隐私限制等）：不抛错，之后播放时再建', async () => {
+    const audio = await freshEngine();
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        constructor() {
+          throw new DOMException('no audio', 'NotSupportedError');
+        }
+      },
+    );
+    expect(() => audio.warmUp()).not.toThrow();
+    vi.stubGlobal('AudioContext', FakeContext);
+    const p = audio.play(NOTE);
+    resumeGate?.();
+    expect(await p).toBe(0.5);
+  });
+
   it('等待恢复上下文期间调用 stopAll（如离开页面）：这次播放不再发声', async () => {
     const audio = await freshEngine();
     const p = audio.play(NOTE);

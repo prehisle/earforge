@@ -10,6 +10,7 @@ import {
   resultUrl,
   setFingerprint,
   type ResultInput,
+  versionDiffers,
 } from '../engine/resultLink';
 import { mulberry32, SEEDED_GEN_SETTINGS, seededSource, withSeed } from '../engine/seeded';
 import { setSource } from '../engine/setRunner';
@@ -210,5 +211,24 @@ describe('每题的练习与考点（老师端重现）', () => {
 
   it('不固定题目时为空', () => {
     expect(resultDraws({ ...tpl('ivChord', 5), seed: undefined })).toEqual([]);
+  });
+});
+
+describe('v0.10.0 复查', () => {
+  it('超过 99 步的题（未全对）：链接仍能打开，且不被记成整题答对', () => {
+    const set = tpl('grade', 5);
+    const inp = input(set);
+    inp.results[2] = { steps: Array.from({ length: 120 }, (_, j) => ({ ok: j !== 0 })) };
+    const r = decodeResult(encodeResult(inp));
+    expect(r).not.toBeNull();
+    expect(r!.marks[2].ok).toBe(false);
+    expect(r!.marks[2].c).toBeLessThan(r!.marks[2].n);
+  });
+
+  it('学生用的版本与当前不同：提示每题明细可能不一致', () => {
+    expect(versionDiffers('0.9.0', '0.10.0')).toBe(true);
+    expect(versionDiffers('0.10.0', '0.10.0')).toBe(false);
+    // 没有版本信息（旧链接或非法版本被丢弃）：无从判断，不提示
+    expect(versionDiffers('', '0.10.0')).toBe(false);
   });
 });

@@ -1,15 +1,12 @@
 // 练完固定题目的组合后「分享成绩」：填名字（可不填，记在本机），生成成绩链接（#r=，见 engine/resultLink.ts）并复制。
 import { useId, useState } from 'react';
 import type { PracticeSet } from '../engine/practiceSet';
-import { MAX_STUDENT, resultUrl } from '../engine/resultLink';
+import { APP_VERSION, MAX_STUDENT, resultUrl } from '../engine/resultLink';
 import { useT } from '../i18n/react';
 import type { QuizResult } from './Practice';
 
 /** 上次填的名字（只在本机，下次分享时自动填上） */
 const NAME_KEY = 'earforge:resultName';
-
-declare const __APP_VERSION__: string;
-const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
 
 function loadName(): string {
   try {
@@ -31,12 +28,13 @@ function saveName(name: string): void {
 interface Props {
   set: PracticeSet;
   results: QuizResult[];
-  /** 开始与完成时间戳 */
-  started: number;
+  /** 完成时间戳 */
   finished: number;
+  /** 用时（毫秒，不计页面在后台的时间） */
+  activeMs: number;
 }
 
-export function ResultShare({ set, results, started, finished }: Props) {
+export function ResultShare({ set, results, finished, activeMs }: Props) {
   const t = useT();
   const id = useId();
   const [name, setName] = useState(loadName);
@@ -51,7 +49,7 @@ export function ResultShare({ set, results, started, finished }: Props) {
         set: { name: set.name, parts: set.parts, count: set.count, seed: set.seed },
         results,
         at: finished,
-        minutes: (finished - started) / 60000,
+        minutes: activeMs / 60000,
         version: APP_VERSION,
         name: clean,
       });

@@ -20,7 +20,7 @@ export const zh = {
   'app.crashBody': '界面遇到了意外错误。你的练习记录保存在本机，不会丢失；可以先导出一份备份，再重新加载。',
   'app.crashReload': '重新加载',
   'app.crashExport': '导出备份',
-  'app.crashOffline': '这个页面还没有缓存到本机，可能是离线了。联网后重新加载即可。',
+  'app.crashOffline': '这个页面还没有缓存到本机（可能离线了），或者应用刚更新了版本。重新加载即可；离线时请联网后再试。',
   'lang.label': '语言 / Language',
 
   // ───── 分享链接 ─────
@@ -966,6 +966,15 @@ export const zh = {
   'grade.csv': '导出 CSV',
   'grade.qCol': '第{i}题',
   'grade.notFound': '这份作业的成绩已全部删除。',
+
+  // ───── v0.10.0 复查：成绩链接的可信度、多次提交、版本差异 ─────
+  'result.selfReported': '成绩由学生自己的浏览器生成。链接里的校验只能发现复制时被截断或误改，不能防止有意伪造，请把它当作学生自己提交的记录。',
+  'result.versionNote': '学生用的是耳锻 {v}，与你的版本（{cur}）不同：每题的考点按你的版本重新推出，可能与学生实际做的题不完全一致；对错与得分不受影响。',
+  'grade.colAttempts': '提交次数',
+  'grade.colVersion': '版本',
+  'grade.attempts': '{n} 次',
+  'grade.attemptsAria': '共提交 {n} 次，显示得分最高的一次',
+  'grade.removeConfirmAll': '删除 {name} 的全部 {n} 条成绩？',
 };
 
 export type MessageKey = keyof typeof zh;

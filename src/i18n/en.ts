@@ -22,7 +22,7 @@ export const en: Record<MessageKey, string> = {
   'app.crashBody': 'The app hit an unexpected error. Your progress is stored on this device and is safe; you can export a backup first, then reload.',
   'app.crashReload': 'Reload',
   'app.crashExport': 'Export backup',
-  'app.crashOffline': "This page isn't cached on this device yet; you may be offline. Reload once you're back online.",
+  'app.crashOffline': "This page isn't cached on this device yet (you may be offline), or the app was just updated. Reload to continue; if you're offline, reconnect first.",
   'lang.label': 'Language',
 
   // ───── Share links ─────
@@ -978,4 +978,13 @@ export const en: Record<MessageKey, string> = {
   'grade.csv': 'Export CSV',
   'grade.qCol': 'Q{i}',
   'grade.notFound': 'All results of this assignment have been deleted.',
+
+  // ───── v0.10.0 review: result trust, repeat submissions, version differences ─────
+  'result.selfReported': 'Results are generated in the student’s own browser. The checksum only catches links that were cut off or changed by accident — it can’t stop deliberate forgery, so treat this as a self-reported result.',
+  'result.versionNote': 'The student used EarForge {v}, which differs from yours ({cur}). Each question’s content is rebuilt with your version and may not exactly match what the student saw; right/wrong and the score are unaffected.',
+  'grade.colAttempts': 'Attempts',
+  'grade.colVersion': 'Version',
+  'grade.attempts': '×{n}',
+  'grade.attemptsAria': '{n} attempts submitted; showing the best one',
+  'grade.removeConfirmAll': 'Delete all {n} results of {name}?',
 };
