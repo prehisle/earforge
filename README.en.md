@@ -50,6 +50,7 @@ Compared with popular paid ear-training apps such as EarMaster or Tenuto: those 
 
 ### Exam prep
 - **Mock exams**: three papers (quick check, graded exam, conservatory entrance). There is no feedback while you answer, with optional time and replay limits. Afterwards you get a report with section scores, weak items and a question-by-question review where you can replay and compare. Past results are kept.
+- **Custom practice sets and share links**: combine items, options and weights from several exercises into one mixed set (5 templates to start from), saved locally. Share it as a link that others can start or save; with *fixed questions* on, everyone who opens the link gets exactly the same questions, handy for teachers assigning homework. The set lives after the `#` in the URL and never reaches a server.
 - **Melody + rhythm dictation**: a conservatory-style task. Write pitches and durations in a staff editor with the keyboard, on-screen buttons or a MIDI keyboard. Pitch and rhythm are graded separately.
 - **Harmonic dictation**: hear a four-part progression (4 or 6 chords) and name each chord with its inversion, from I IV V up through first inversions, V7 and its inversions, the cadential 6/4, ii7, vii°6 and the secondary dominant V/V, in major and minor. Progressions follow functional-harmony rules with smooth voice leading and no parallel fifths or octaves. Options are grouped by function (tonic / predominant / dominant / secondary dominants), and a grand staff appears after you answer. The graded and conservatory mock exams include a harmonic dictation section.
 - **Staff notation**: correct key signatures and accidentals, with full rhythmic notation (time signatures, beams, dots, ties, triplets, automatic line breaks).
@@ -171,12 +172,12 @@ Done (see [CHANGELOG.md](CHANGELOG.md)):
 - [x] Melody + rhythm dictation, mock exams, lazy loading and accessibility (0.6)
 - [x] Scales and modes, chord inversions, compound intervals, in-repo e2e and CI, GitHub Pages deployment, in-app help (0.7)
 - [x] Harmonic dictation (four-part, also in mock exams), more instruments and a random instrument per question, 20 answer keys (0.8)
+- [x] Custom practice sets, share links and fixed questions (0.9)
 
 Ideas for next steps (discussion welcome in Issues):
 
 - [ ] More harmonic dictation: two voices, bass lines, more chromatic chords
 - [ ] More public-domain sight-singing pieces
-- [ ] Custom exercise sets and shareable practice links
 
 ## Contributing
 
