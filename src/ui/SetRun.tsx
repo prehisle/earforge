@@ -18,10 +18,12 @@ interface Props {
   /** 返回按钮的文字（缺省「返回组合列表」） */
   backLabel?: string;
   onAgain(): void;
+  /** 小结里「专练这些」：用指定考点临时专练 */
+  onFocus?(id: string, items: string[]): void;
 }
 
 /** 练一组自定义组合：有限题数，题目上方显示所属练习，结束后显示小结。作答照常记入各练习的统计。 */
-export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props) {
+export function SetRun({ store, update, set, onBack, backLabel, onAgain, onFocus }: Props) {
   const t = useT();
   // 固定题目：选题顺序与每题的出题都由组合的 seed 决定（打开同一链接的人题目相同）
   // （不能用 { ...base } 包装：会把 shown 这个 getter 固定成 0）
@@ -104,6 +106,7 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
           results={results}
           onAgain={onAgain}
           onBack={onBack}
+          onFocus={onFocus}
           backLabel={back}
           againLabel={fixed ? t('sets.againSame') : undefined}
         >

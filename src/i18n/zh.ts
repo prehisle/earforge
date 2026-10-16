@@ -985,6 +985,13 @@ export const zh = {
   'grade.attempts': '{n} 次',
   'grade.attemptsAria': '共提交 {n} 次，显示得分最高的一次',
   'grade.removeConfirmAll': '删除 {name} 的全部 {n} 条成绩？',
+
+  // ───── 新手走查后续（级别名、小结专练、趋势图提示） ─────
+  'level.adds': '新增 {names}',
+  'level.sep': '、',
+  'mix.drill': '专练这些',
+  'mix.drillEx': '专练{title}',
+  'stats.accOneDay': '目前只有 1 天的数据。再练几天，就能看到正确率的变化趋势。',
 };
 
 export type MessageKey = keyof typeof zh;

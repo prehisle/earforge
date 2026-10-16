@@ -965,6 +965,46 @@ input[type='range'] {
   justify-content: center;
   gap: 10px;
 }
+/* 练习组合页的模板：名称 + 包含的练习与题数 */
+.set-templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+.set-template {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  text-align: left;
+  background: var(--surface-2);
+  border-color: transparent;
+}
+.set-template-name {
+  font-weight: 600;
+}
+.set-template-sub {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+/* 小结「最需要加强的考点」下的专练按钮 */
+.weak-drills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+/* 小结的各模块表现：模块名列按最长的名字定宽（最多占一半多一点），英文名不在中间折行 */
+.summary .mastery {
+  display: grid;
+  grid-template-columns: fit-content(55%) minmax(48px, 1fr) auto;
+  gap: 8px 10px;
+}
+.summary .mastery li {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
 .panel-head {
   display: flex;
   align-items: center;
@@ -1000,6 +1040,10 @@ input[type='range'] {
   }
   .today .big {
     width: 100%;
+  }
+  /* 练习开始页的「开始练习」与首页的主按钮一样占满宽度 */
+  .start .big {
+    align-self: stretch;
   }
 }
 
@@ -3204,10 +3248,11 @@ html:has(.set-bar) {
 
 /* ───── 触屏（手机 / 平板） ───── */
 @media (pointer: coarse) {
-  /* 快捷键提示对触屏没用，只占地方：按钮里的键名、选项角标、说明卡片与首页的快捷键说明都隐藏 */
+  /* 快捷键提示对触屏没用，只占地方：按钮里的键名、选项角标、说明卡片、首页与使用指南里的快捷键说明都隐藏 */
   button kbd,
   .module-tip-keys,
-  .keys-hint {
+  .keys-hint,
+  .about-keys-panel {
     display: none;
   }
   /* 常用按钮的点按区域不小于 44px（曲库筛选区是有意做紧凑的，不在此列） */
