@@ -92,9 +92,14 @@ describe('和声听写：题目结构', () => {
     expect(m.prompt).toContain('C');
   });
 
-  it('选项按级数排列，与级别顺序无关', () => {
+  it('选项按功能分组（主 / 下属 / 属 / 副属），组内按级数排列，与级别顺序无关', () => {
     const q = ALL.find((c) => c.options.mode === 'major' && c.lv === 5)!.q;
-    expect(q.choices.map((c) => c.id)).toEqual(['I', 'I6', 'I64', 'ii', 'ii6', 'ii7', 'ii65', 'IV', 'IV6', 'V', 'V6', 'V7', 'V65', 'V43', 'V42', 'vi', 'viio6', 'V/V', 'V7/V']);
+    expect(q.choices.map((c) => c.id)).toEqual(['I', 'I6', 'vi', 'ii', 'ii6', 'ii7', 'ii65', 'IV', 'IV6', 'I64', 'V', 'V6', 'V7', 'V65', 'V43', 'V42', 'viio6', 'V/V', 'V7/V']);
+    const groups = q.choices.map((c) => c.group);
+    expect([...new Set(groups)]).toEqual(['主功能 T', '下属功能 S', '属功能 D', '副属和弦']);
+    // 同组相邻：分组数等于组名切换次数 + 1
+    expect(groups.filter((g, i) => i === 0 || g !== groups[i - 1]).length).toBe(4);
+    for (const { q: x } of ALL) expect(x.choices.every((c) => !!c.group)).toBe(true);
   });
 
   it('自选考点很少时也能出题（补上 Ⅰ Ⅳ Ⅴ 与解决所需的 Ⅰ⁶）', () => {

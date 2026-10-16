@@ -21,7 +21,7 @@ const KEY_GROUPS: [MessageKey, Keys][] = [
   [
     'about.keys.choice',
     [
-      ['1–9', 'tip.key.answer'],
+      ['1–9 · 0 · Q–P', 'tip.key.answer'],
       ['common.space', 'tip.key.replay'],
       ['tip.key.shift', 'tip.key.preview'],
       ['tip.key.enterRight', 'tip.key.next'],
@@ -54,7 +54,7 @@ const KEY_GROUPS: [MessageKey, Keys][] = [
   [
     'about.keys.exam',
     [
-      ['1–9', 'tip.key.answer'],
+      ['1–9 · 0 · Q–P', 'tip.key.answer'],
       ['common.space', 'about.keys.examReplay'],
       ['common.enter', 'about.keys.examNext'],
     ],

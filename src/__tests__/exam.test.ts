@@ -91,11 +91,28 @@ describe('试卷', () => {
               if (lang === 'en') expect(q.prompt).not.toMatch(CJK);
               if (s.exId === 'dictation') expect(q.answer.length).toBe(Number(s.options.len));
               if (s.exId === 'progressions') expect(q.answer.length).toBe(4);
+              if (s.exId === 'harmony') {
+                expect(q.answer.length).toBe(Number(s.options.len));
+                // 和声听写的每一步（含开头的 Ⅰ 与解决用的和弦）都在本部分的考点里
+                for (const it of q.stepItems ?? []) expect(pool.has(it), `${p.id} harmony ${it}`).toBe(true);
+              }
               if (q.answer.length === 1 && s.exId !== 'rhythm') expect(q.answer[0]).toBe(q.item);
             }
           });
         }
     });
+
+  it('和声听写：考级模拟只考原位，艺考模拟加入六和弦与属七及其转位', () => {
+    const harm = (id: string) => EXAM_PRESETS.find((p) => p.id === id)!.sections.find((s) => s.exId === 'harmony')!;
+    const grade = sectionItems(harm('grade'));
+    expect(grade.sort()).toEqual(['I', 'IV', 'V', 'ii', 'vi'].sort());
+    const conserv = sectionItems(harm('conserv'));
+    for (const it of ['I6', 'V6', 'V7', 'V65', 'V43', 'V42']) expect(conserv).toContain(it);
+    expect(conserv).not.toContain('I64');
+    expect(harm('grade').count).toBeLessThan(harm('conserv').count);
+    // 艺考的和声题选项超过 9 个时，也要能用键盘作答（见 ui/keys.ts 的 CHOICE_KEYS）
+    expect(conserv.length).toBeGreaterThan(9);
+  });
 
   it('考点抽取均匀、不连续重复', () => {
     let seed = 1;

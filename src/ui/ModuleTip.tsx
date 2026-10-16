@@ -14,7 +14,7 @@ type Keys = [string | MessageKey, MessageKey][];
 
 /** 选择题通用的快捷键（与 Quiz 的键盘处理一致）；键名若是词典键则翻译 */
 const CHOICE_KEYS: Keys = [
-  ['1–9', 'tip.key.answer'],
+  ['1–9 · 0 · Q–P', 'tip.key.answer'],
   ['common.space', 'tip.key.replay'],
   ['tip.key.shift', 'tip.key.preview'],
   ['tip.key.enterRight', 'tip.key.next'],

@@ -12,6 +12,11 @@ export interface Choice {
    * 附点四分 18、二分 24、全音符 48），负数表示同时值的休止。存在时选项按钮显示节奏谱代替 label。
    */
   rhythm?: number[];
+  /**
+   * 分组名称（可选，当前语言，如和声听写的「主 / 下属 / 属 / 副属」）。存在时选项区按组显示小标题，
+   * 同组的选项应当相邻（按出现顺序分段）。
+   */
+  group?: string;
 }
 
 export interface Question {

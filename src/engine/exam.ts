@@ -52,14 +52,16 @@ export const EXAM_PRESETS: ExamPreset[] = [
     title: 'exam.p.grade',
     desc: 'exam.p.grade.desc',
     icon: '📜',
-    minutes: 20,
+    minutes: 23,
     replays: 2,
     sections: [
-      { title: 'exam.sec.ivMix', exId: 'intervals', levels: [0, 1, 2, 3, 4], options: { dir: 'mix' }, count: 6, points: 25 },
-      { title: 'exam.sec.triadsInv', exId: 'chords', levels: [0, 1], options: { voicing: 'block', inv: 'any' }, count: 5, points: 20 },
-      { title: 'exam.sec.progMajor', exId: 'progressions', levels: [0, 1, 2], options: { mode: 'major', len: '4' }, count: 4, points: 20 },
-      { title: 'exam.sec.dictation', exId: 'dictation', levels: [0, 1, 2], options: { mode: 'major', len: '5' }, count: 3, points: 20 },
-      { title: 'exam.sec.rhythm', exId: 'rhythm', levels: [0, 1, 2], options: { speed: 'mid', bars: '1' }, count: 4, points: 15 },
+      { title: 'exam.sec.ivMix', exId: 'intervals', levels: [0, 1, 2, 3, 4], options: { dir: 'mix' }, count: 6, points: 22 },
+      { title: 'exam.sec.triadsInv', exId: 'chords', levels: [0, 1], options: { voicing: 'block', inv: 'any' }, count: 5, points: 18 },
+      { title: 'exam.sec.progMajor', exId: 'progressions', levels: [0, 1, 2], options: { mode: 'major', len: '4' }, count: 4, points: 17 },
+      // 四部和声听写：大调原位 Ⅰ Ⅳ Ⅴ ⅵ ⅱ，四个和弦（按和弦给分）
+      { title: 'exam.sec.harmony', exId: 'harmony', levels: [0, 1], options: { mode: 'major', len: '4' }, count: 2, points: 12 },
+      { title: 'exam.sec.dictation', exId: 'dictation', levels: [0, 1, 2], options: { mode: 'major', len: '5' }, count: 3, points: 18 },
+      { title: 'exam.sec.rhythm', exId: 'rhythm', levels: [0, 1, 2], options: { speed: 'mid', bars: '1' }, count: 4, points: 13 },
     ],
   },
   {
@@ -67,19 +69,21 @@ export const EXAM_PRESETS: ExamPreset[] = [
     title: 'exam.p.conserv',
     desc: 'exam.p.conserv.desc',
     icon: '🎓',
-    minutes: 30,
+    minutes: 35,
     replays: 2,
     sections: [
-      { title: 'exam.sec.ivHarm', exId: 'intervals', levels: [0, 1, 2, 3, 4, 5], options: { dir: 'harm' }, count: 6, points: 12 },
+      { title: 'exam.sec.ivHarm', exId: 'intervals', levels: [0, 1, 2, 3, 4, 5], options: { dir: 'harm' }, count: 6, points: 10 },
       // 复音程（九度至十五度）：intervals 的第 7–12 级
       { title: 'exam.sec.ivCompound', exId: 'intervals', levels: [6, 7, 8, 9, 10, 11], options: { dir: 'harm' }, count: 3, points: 8 },
       { title: 'exam.sec.triadsInv', exId: 'chords', levels: [0, 1], options: { voicing: 'block', inv: 'any' }, count: 4, points: 10 },
       { title: 'exam.sec.sevenths', exId: 'chords', levels: [3, 4], options: { voicing: 'block', inv: 'root' }, count: 4, points: 10 },
       // 转位辨认：三和弦与七和弦的全部位置
       { title: 'exam.sec.inversions', exId: 'inversions', levels: [0, 1, 2, 3], options: { qual: 'all', voicing: 'block' }, count: 4, points: 10 },
-      { title: 'exam.sec.progMinor', exId: 'progressions', levels: [0, 1, 2, 3, 4], options: { mode: 'minor', len: '4' }, count: 3, points: 15 },
-      { title: 'exam.sec.dictChrom', exId: 'dictation', levels: [0, 1, 2, 3], options: { mode: 'major', len: '6' }, count: 3, points: 20 },
-      { title: 'exam.sec.rhythmAdv', exId: 'rhythm', levels: [0, 1, 2, 3, 4], options: { speed: 'mid', bars: '2' }, count: 4, points: 15 },
+      { title: 'exam.sec.progMinor', exId: 'progressions', levels: [0, 1, 2, 3, 4], options: { mode: 'minor', len: '4' }, count: 3, points: 12 },
+      // 四部和声听写：含六和弦与属七及其转位（和声听写的第 1–4 级），四个和弦
+      { title: 'exam.sec.harmonyInv', exId: 'harmony', levels: [0, 1, 2, 3], options: { mode: 'major', len: '4' }, count: 3, points: 12 },
+      { title: 'exam.sec.dictChrom', exId: 'dictation', levels: [0, 1, 2, 3], options: { mode: 'major', len: '6' }, count: 3, points: 16 },
+      { title: 'exam.sec.rhythmAdv', exId: 'rhythm', levels: [0, 1, 2, 3, 4], options: { speed: 'mid', bars: '2' }, count: 4, points: 12 },
     ],
   },
 ];
