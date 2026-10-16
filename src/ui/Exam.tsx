@@ -27,6 +27,7 @@ import { exerciseById } from '../exercises';
 import { eventsEnd, shiftEvents } from '../exercises/common';
 import { joinList } from '../i18n';
 import { useLocale, useT } from '../i18n/react';
+import { keyForFocusedButton } from './keys';
 import { RhythmNotation } from './RhythmNotation';
 import { Staff } from './Staff';
 
@@ -416,6 +417,7 @@ function ExamRun({
         e.preventDefault();
         return;
       }
+      if (keyForFocusedButton(e)) return;
       if (e.key === ' ') {
         e.preventDefault();
         play();

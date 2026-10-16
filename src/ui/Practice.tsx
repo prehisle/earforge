@@ -18,6 +18,7 @@ import { optionsFor } from '../engine/planner';
 import type { ExerciseDef, Question } from '../engine/types';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
+import { keyForFocusedButton } from './keys';
 import { ModuleTip } from './ModuleTip';
 import { NotatePanel } from './NotatePanel';
 import { RhythmNotation } from './RhythmNotation';
@@ -279,6 +280,7 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
         e.preventDefault();
         return;
       }
+      if (keyForFocusedButton(e)) return;
       if (!q) {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
