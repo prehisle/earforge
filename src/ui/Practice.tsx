@@ -15,6 +15,7 @@ import {
   type Store,
 } from '../engine/progress';
 import { optionsFor } from '../engine/planner';
+import { withSeed } from '../engine/seeded';
 import type { ExerciseDef, Question } from '../engine/types';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
@@ -51,6 +52,8 @@ export interface Draw {
   item: string;
   items: string[];
   options: Record<string, string>;
+  /** 固定题目：出题时用这个 seed 代替 Math.random（见 engine/seeded.ts） */
+  seed?: number;
 }
 
 export interface QuizSource {
@@ -129,7 +132,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       latest.current.onComplete?.();
       return;
     }
-    const question = d.ex.generate(d.item, { settings: store.settings, items: d.items, options: d.options });
+    const gen = () => d.ex.generate(d.item, { settings: store.settings, items: d.items, options: d.options });
+    const question = d.seed === undefined ? gen() : withSeed(d.seed, gen);
     setCur({ ex: d.ex, q: question });
     // 随机音色：每道新题换一种乐器（本题的重听与选项试听沿用）
     setInst(audio.newQuestion());
