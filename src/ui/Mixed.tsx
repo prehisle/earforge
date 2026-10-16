@@ -87,6 +87,7 @@ export function Summary({
   onAgain,
   onBack,
   backLabel,
+  againLabel,
 }: {
   store: Store;
   results: QuizResult[];
@@ -94,6 +95,8 @@ export function Summary({
   onBack(): void;
   /** 返回按钮的文字，缺省为「返回首页」 */
   backLabel?: string;
+  /** 再练按钮的文字，缺省为「再来一组」 */
+  againLabel?: string;
 }) {
   const t = useT();
   const n = results.length;
@@ -185,7 +188,7 @@ export function Summary({
       <div className="summary-actions">
         <button onClick={onBack}>{backLabel ?? t('mix.home')}</button>
         <button className="primary" onClick={onAgain}>
-          {t('mix.again')}
+          {againLabel ?? t('mix.again')}
         </button>
       </div>
     </section>

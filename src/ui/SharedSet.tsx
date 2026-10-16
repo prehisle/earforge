@@ -55,6 +55,7 @@ export function SharedSetPage({ set, store, onStart, onSave, onHome }: Props) {
         <p className="muted">
           {t('share.count', { n: set.count })} · {set.seed !== undefined ? t('share.fixed') : t('share.random')}
         </p>
+        {set.seed !== undefined && <p className="muted set-fixed-note">{t('sets.fixedKeyNote')}</p>}
         <ul className="shared-parts">
           {set.parts.map((p, i) => {
             const ex = exerciseById[p.ex];

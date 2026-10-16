@@ -128,7 +128,6 @@ export const zh = {
   'sets.duplicate': '复制',
   'sets.delete': '删除',
   'sets.share': '分享',
-  'sets.shareNA': '暂时无法生成分享链接',
   'sets.deleteConfirm': '删除组合「{name}」？此操作不可撤销。',
   'sets.copySuffix': '{name}（副本）',
   'sets.untitled': '未命名组合',
@@ -174,6 +173,13 @@ export const zh = {
   'sets.progress': '第 {i}/{n} 题',
   'sets.notFound': '找不到这个组合（可能已被删除）。',
   'sets.backList': '返回组合列表',
+  'sets.againSame': '再练一次（同一组题）',
+  'sets.fixed': '固定题目（每次与每个打开链接的人题目相同）',
+  'sets.fixedHint': '适合老师给全班布置同一组题。关闭时每次随机出题。',
+  'sets.reseed': '换一套题',
+  'sets.reseeded': '已换一套题（保存后生效；之前分享的链接仍是原来的题）',
+  'sets.fixedKeyNote': '固定题目统一用随机调出题（不受「固定 C 调」设置影响），保证每个人的题目相同。',
+  'sets.sharedFixed': '这是固定题目的组合：打开链接的人题目与你完全相同。',
 
   // ───── 统计 ─────
   'stats.title': '统计',

@@ -16,7 +16,7 @@ import {
 } from '../engine/progress';
 import { optionsFor } from '../engine/planner';
 import { withSeed } from '../engine/seeded';
-import type { ExerciseDef, Question } from '../engine/types';
+import type { ExerciseDef, Question, Settings } from '../engine/types';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
 import { ChoiceGrid } from './ChoiceGrid';
@@ -83,9 +83,11 @@ interface QuizProps {
   onResult?(r: QuizResult): void;
   /** source 没有更多题目时调用 */
   onComplete?(): void;
+  /** 只用于出题的设置覆盖（固定题目用，见 engine/seeded.ts 的 SEEDED_GEN_SETTINGS）；显示仍按用户设置 */
+  genSettings?: Partial<Settings>;
 }
 
-export function Quiz({ store, update, source, intro, autoStart, showModule, onResult, onComplete }: QuizProps) {
+export function Quiz({ store, update, source, intro, autoStart, showModule, onResult, onComplete, genSettings }: QuizProps) {
   const t = useT();
   const [cur, setCur] = useState<{ ex: ExerciseDef; q: Question } | null>(null);
   const [step, setStep] = useState(0);
@@ -132,7 +134,8 @@ export function Quiz({ store, update, source, intro, autoStart, showModule, onRe
       latest.current.onComplete?.();
       return;
     }
-    const gen = () => d.ex.generate(d.item, { settings: store.settings, items: d.items, options: d.options });
+    const settings = genSettings ? { ...store.settings, ...genSettings } : store.settings;
+    const gen = () => d.ex.generate(d.item, { settings, items: d.items, options: d.options });
     const question = d.seed === undefined ? gen() : withSeed(d.seed, gen);
     setCur({ ex: d.ex, q: question });
     // 随机音色：每道新题换一种乐器（本题的重听与选项试听沿用）

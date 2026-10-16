@@ -17,7 +17,7 @@ interface Props {
   onRun(id: string): void;
 }
 
-/** 组合的分享链接；分享模块不可用（或出错）时为 null */
+/** 组合的分享链接；编码出错（不应发生：保存的组合都已规范化）时为 null */
 function setLink(set: PracticeSet): string | null {
   try {
     const { id, created, ...shared } = set;
@@ -107,18 +107,16 @@ export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props)
                   <button onClick={() => update((s) => void duplicateSet(s, set.id, t('sets.copySuffix', { name })))}>
                     {t('sets.duplicate')}
                   </button>
-                  <button
-                    onClick={url ? () => void share(set, url) : undefined}
-                    disabled={!url}
-                    title={url ? undefined : t('sets.shareNA')}
-                  >
+                  <button onClick={url ? () => void share(set, url) : undefined} disabled={!url}>
                     {t('sets.share')}
                   </button>
                   <button className="danger" onClick={() => remove(set)}>
                     {t('sets.delete')}
                   </button>
                 </div>
-                {shared?.id === set.id && <ShareNote url={shared.url} manual={shared.manual} onClose={() => setShared(null)} />}
+                {shared?.id === set.id && (
+                  <ShareNote url={shared.url} manual={shared.manual} fixed={set.seed !== undefined} onClose={() => setShared(null)} />
+                )}
               </li>
             );
           })}
@@ -140,7 +138,7 @@ export function SetsPage({ store, update, onBack, onNew, onEdit, onRun }: Props)
 }
 
 /** 分享结果：已复制的提示；复制失败时显示可全选的链接 */
-function ShareNote({ url, manual, onClose }: { url: string; manual: boolean; onClose(): void }) {
+function ShareNote({ url, manual, fixed, onClose }: { url: string; manual: boolean; fixed: boolean; onClose(): void }) {
   const t = useT();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -156,6 +154,7 @@ function ShareNote({ url, manual, onClose }: { url: string; manual: boolean; onC
       ) : (
         <span>{t('sets.copied')}</span>
       )}
+      {fixed && <span className="set-share-fixed">{t('sets.sharedFixed')}</span>}
       <button className="ghost" onClick={onClose}>
         {t('sets.close')}
       </button>

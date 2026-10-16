@@ -7,6 +7,15 @@
 //     : seededSource(setSource(set, mulberry32(set.seed)), set.seed);
 // seededSource 给每题的 Draw 加上 seed = questionSeed(set.seed, 第 k 题)，Quiz 出题时据此调用 withSeed。
 // 第 k 题的 seed 只取决于组合 seed 与题号，与作答结果无关。
+//
+// 出题还读取部分用户设置（固定 C 调 / 随机调、人声音区），这些设置决定 generate 消耗多少随机数、生成什么音高，
+// 不同设置的人会拿到不同的题。固定题目出题时用 SEEDED_GEN_SETTINGS 覆盖它们（SetRun 作为 Quiz 的 genSettings 传入，只用于出题；
+// 唱名体系、记谱方式等只影响显示的设置仍按用户自己的）。
+
+import type { Settings } from './types';
+
+/** 固定题目出题时统一使用的设置：随机调、低音区（与默认设置相同） */
+export const SEEDED_GEN_SETTINGS: Readonly<Pick<Settings, 'keyMode' | 'voice'>> = { keyMode: 'random', voice: 'low' };
 
 /** mulberry32：32 位状态的小型 PRNG，返回 [0, 1) */
 export function mulberry32(seed: number): () => number {
