@@ -2743,29 +2743,140 @@ input[type='range'] {
   width: 6em;
 }
 .set-noparts {
-  margin-top: -10px;
+  margin: 0;
+}
+/* 已选练习：标题行（右侧「添加练习」展开按钮）+ 添加列表 + 可折叠的练习卡片 */
+.set-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.set-parts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.set-parts-head .group-title {
+  margin: 0;
+}
+.set-add-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.set-add-toggle.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+/* 展开 / 收起的小三角（用边框画，跟随文字颜色） */
+.set-chev {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+}
+[aria-expanded='true'] > .set-chev {
+  transform: translateY(2px) rotate(-135deg);
+}
+.set-add-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.set-add-foot .set-excluded {
+  flex: 1 1 220px;
+  margin: 0;
+}
+.set-add-foot button {
+  padding: 6px 16px;
+}
+.set-part {
+  padding: 0;
+  gap: 0;
+}
+.set-part.bad {
+  border-color: var(--bad);
 }
 .set-part-head {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 4px;
+  padding: 4px 8px 4px 4px;
 }
 .set-part-head h3 {
   margin: 0;
   font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   flex: 1 1 auto;
+  min-width: 0;
+}
+.set-part-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+  padding: 8px 10px;
+}
+.set-part-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.set-part-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.set-part-sum {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.set-part-warn {
+  color: var(--bad);
+  font-weight: 600;
+}
+.set-part-toggle .set-chev {
+  color: var(--text-2);
+}
+.set-part-remove {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+.set-part-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.set-part-body[hidden],
+.set-add[hidden] {
+  display: none;
 }
 .set-heavy {
-  font-size: 0.8rem;
+  margin: 0;
+  font-size: 0.85rem;
 }
 .set-levels {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin-top: 4px;
 }
 .set-level {
@@ -2773,43 +2884,100 @@ input[type='range'] {
   align-items: flex-start;
   gap: 8px;
 }
+.set-levels .chip {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  min-height: 30px;
+}
 .set-level-btn {
   flex: none;
-  min-width: 5.5em;
+  min-width: 5em;
   white-space: nowrap;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: transparent;
+}
+/* 整级部分选中：虚线框 */
+.set-level-btn.some {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .set-level .chips {
   flex: 1 1 auto;
-}
-.set-add .chart-title {
-  margin: 0;
+  gap: 5px;
 }
 .set-excluded {
   font-size: 0.85rem;
 }
+/* 键盘 Tab 移动焦点时，浏览器滚动要给底部操作栏留出位置，焦点元素不被挡住 */
+html:has(.set-bar) {
+  scroll-padding-bottom: 150px;
+}
+/* 底部操作栏：滚动时固定在视口底部（贴着页面最后，不会挡住内容），留出 iPhone 底部安全区 */
+.set-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0 -16px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .set-errors {
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: 10px;
   background: var(--bad-soft);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  max-height: 30vh;
+  overflow-y: auto;
 }
 .set-errors ul {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   padding-left: 1.2em;
 }
 .set-save {
-  flex-wrap: wrap;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.set-save button:disabled {
+  opacity: 0.55;
+}
+.set-full {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--warn-soft);
+  font-size: 0.88rem;
+}
+/* 宽屏：级别排成两列，考点多的练习（如音程 12 级）不至于拉得很长 */
+@media (min-width: 700px) {
+  .set-levels {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 6px 16px;
+  }
 }
 @media (max-width: 520px) {
   .set-item {
     padding: 12px;
   }
-  .set-level {
-    flex-direction: column;
-    gap: 4px;
+  .set-save button {
+    flex: 1 1 auto;
+    padding: 10px 8px;
+  }
+  .set-save button.primary {
+    flex-grow: 2;
+  }
+  .set-part-body {
+    padding: 12px;
   }
   .set-level-btn {
-    min-width: 0;
+    min-width: 4.5em;
   }
 }
 .set-actions button:disabled {
