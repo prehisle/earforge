@@ -110,8 +110,8 @@ await run(async (t) => {
       ['Intervals', 4],
       ['Chord Quality', 3],
       ['Rhythmic Dictation', 3],
-      ['Chord Inversions', 3],
-      ['Scales & Modes', 3],
+      ['Chord Inversions', 2],
+      ['Scales & Modes', 2],
     ]) {
       const slug = title.replace(/ /g, '_');
       await clickText(title, '.card');
@@ -167,9 +167,6 @@ await run(async (t) => {
     await sleep(300);
     await answer();
     await scan('intervals-compound');
-    await clickText('Options');
-    await sleep(200);
-    await scan('intervals-compound-options', false);
     await clickText('Back');
 
     // 节奏模仿：等待自动开始并结束

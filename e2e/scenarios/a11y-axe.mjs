@@ -66,7 +66,7 @@ await run(async (t) => {
       await audit('practice-answered');
       await click(T.back);
       await sleep(200);
-      // 新练习：和弦转位、音阶与调式（出题与答完各审计一次）
+      // 新练习：和弦转位、音阶与调式
       for (const [id, title] of [
         ['inversions', T.inversions],
         ['scales', T.scales],
@@ -75,7 +75,7 @@ await run(async (t) => {
         await sleep(200);
         await click(T.start);
         await page.waitForSelector('.choice');
-        await audit(`${id}-question`);
+        // 出题状态与调内音级相同，只审计答完（选项标红 / 标绿、反馈与五线谱）
         await answerQuestion(page, false);
         await audit(`${id}-answered`);
         await click(T.back);
