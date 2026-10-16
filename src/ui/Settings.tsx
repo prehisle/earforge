@@ -123,8 +123,9 @@ export function SettingsPage({ store, update, onBack, onOnboard }: Props) {
           <SamplerStatus />
         </div>
         <div className="field">
-          <label>{t('settings.volume', { pct: Math.round(s.volume * 100) })}</label>
+          <label htmlFor="settings-vol">{t('settings.volume', { pct: Math.round(s.volume * 100) })}</label>
           <input
+            id="settings-vol"
             type="range"
             min={0}
             max={1}

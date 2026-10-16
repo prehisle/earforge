@@ -35,7 +35,7 @@ export function MidiSection({ on, onToggle }: { on: boolean; onToggle(v: boolean
               ['off', t('common.off')],
             ] as const
           ).map(([v, label]) => (
-            <button key={v} className={on === (v === 'on') ? 'on' : ''} onClick={() => onToggle(v === 'on')}>
+            <button key={v} className={on === (v === 'on') ? 'on' : ''} aria-pressed={on === (v === 'on')} onClick={() => onToggle(v === 'on')}>
               {label}
             </button>
           ))}

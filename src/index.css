@@ -6,13 +6,19 @@
   --border: #e0ded8;
   --text: #0b0b0b;
   --text-2: #52514e;
-  --muted: #7a7974;
-  --accent: #2a78d6;
+  /* 颜色对比度按 WCAG AA 校核：正文色在 bg/surface/surface-2/各 soft 底色上 ≥ 4.5 */
+  --muted: #66655f;
+  --accent: #1d62b8;
+  /* 实心强调底（主按钮等，上面是白字） */
+  --accent-bg: #1d62b8;
   --accent-soft: #d6e6f8;
   --accent-ink: #ffffff;
-  --good: #008300;
+  /* 键盘焦点环：外圈强调色、内圈底色，深浅背景上都清楚 */
+  --focus: #1d62b8;
+  --focus-gap: #ffffff;
+  --good: #007300;
   --good-soft: #e1f3e1;
-  --bad: #c43b3a;
+  --bad: #b3302f;
   --bad-soft: #fbe5e5;
   --warn-soft: #fdf1d6;
   --radius: 14px;
@@ -41,12 +47,15 @@
     --border: #33332f;
     --text: #f0efec;
     --text-2: #c3c2b7;
-    --muted: #8f8e86;
-    --accent: #3987e5;
+    --muted: #a3a29a;
+    --accent: #6aa6ee;
+    --accent-bg: #2b6dbf;
     --accent-soft: #1d3554;
-    --good: #3fae3f;
+    --focus: #8cbcf5;
+    --focus-gap: #121211;
+    --good: #4cbc4c;
     --good-soft: #17301a;
-    --bad: #e66767;
+    --bad: #ef7a7a;
     --bad-soft: #3a1c1c;
     --warn-soft: #3a2f14;
   }
@@ -89,13 +98,15 @@ button:active:not(:disabled) {
 button:disabled {
   cursor: default;
 }
-button:focus-visible {
-  outline: 2px solid var(--accent);
+/* 键盘焦点：所有可聚焦元素统一的双色焦点环（明暗主题都清楚） */
+:focus-visible {
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--focus-gap);
 }
 button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-bg);
+  border-color: var(--accent-bg);
   color: var(--accent-ink);
   font-weight: 600;
 }
@@ -119,8 +130,7 @@ kbd {
   font-size: 0.7em;
   padding: 1px 5px;
   border-radius: 4px;
-  border: 1px solid currentColor;
-  opacity: 0.6;
+  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
   margin-left: 6px;
 }
 
@@ -141,6 +151,57 @@ kbd {
   max-width: 820px;
   margin: 0 auto;
   padding: 12px 16px 48px;
+}
+
+/* ───── 应用外壳：出错兜底、存储提示、按需加载占位 ───── */
+.crash {
+  display: grid;
+  gap: 14px;
+  margin-top: 12vh;
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.crash h1 {
+  font-size: 1.3rem;
+}
+.crash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.crash pre {
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+.storage-notice {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: 0.9rem;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.15);
+}
+.storage-notice span {
+  flex: 1 1 240px;
+}
+.page-loading {
+  padding: 48px 0;
+  text-align: center;
 }
 
 .page {
@@ -174,7 +235,7 @@ kbd {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--accent);
+  background: var(--accent-bg);
   color: var(--accent-ink);
   font-size: 1.4rem;
   font-weight: 700;
@@ -663,8 +724,13 @@ input[type='range'] {
 .bar.hot {
   opacity: 1;
 }
+.bar-hit:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 .bar-hit:focus-visible .bar {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
 }
 .tooltip {
   position: absolute;
@@ -923,7 +989,6 @@ input[type='range'] {
 .choice.bad .choice-listen,
 .choice.good .choice-listen {
   color: inherit;
-  opacity: 0.8;
 }
 .choice.listen {
   border-style: dashed;
@@ -1062,6 +1127,9 @@ input[type='range'] {
   font-size: 1.35rem;
   outline: none;
 }
+.onboard-body h1:focus-visible {
+  box-shadow: none;
+}
 .onboard-body > p {
   color: var(--text-2);
 }
@@ -1139,7 +1207,7 @@ input[type='range'] {
   align-self: flex-start;
   padding: 2px 10px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--accent-bg);
   color: var(--accent-ink);
   font-size: 0.8rem;
   font-weight: 600;
@@ -1178,7 +1246,6 @@ input[type='range'] {
 }
 .module-tip-keys dt kbd {
   margin-left: 0;
-  opacity: 0.8;
 }
 .module-tip-keys dd {
   margin: 0;
