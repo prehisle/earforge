@@ -404,7 +404,19 @@ function ExamRun({
 
   useEffect(() => () => audio.stopAll(), []);
 
-  const next = () => dispatch({ type: 'next', now: Date.now() });
+  // 考试进行中关闭或刷新页面：浏览器弹出离开确认（作答只在交卷时保存，离开就全丢了）
+  useEffect(() => {
+    if (run.status !== 'running') return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // 旧版浏览器需要设置 returnValue 才会弹出确认
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [run.status]);
+
+  const next =() => dispatch({ type: 'next', now: Date.now() });
 
   // 键盘：数字作答、空格重听、回车下一题
   useEffect(() => {
@@ -426,7 +438,7 @@ function ExamRun({
         next();
       } else if (/^[1-9]$/.test(e.key) && !e.shiftKey) {
         const c = q.choices[Number(e.key) - 1];
-        if (c) dispatch({ type: 'answer', id: c.id });
+        if (c) dispatch({ type: 'answer', id: c.id, now: Date.now() });
       }
     };
     window.addEventListener('keydown', onKey);
@@ -514,7 +526,7 @@ function ExamRun({
               key={c.id}
               className={answers[run.cursor] === c.id ? 'choice picked' : 'choice'}
               aria-pressed={answers[run.cursor] === c.id}
-              onClick={() => dispatch({ type: 'answer', id: c.id })}
+              onClick={() => dispatch({ type: 'answer', id: c.id, now: Date.now() })}
             >
               {c.rhythm ? <RhythmNotation rhythm={c.rhythm} label={c.label} /> : <span className="choice-label">{c.label}</span>}
               {c.sub && <span className="choice-sub">{c.sub}</span>}
