@@ -67,7 +67,8 @@
 - **备份**：导出 / 导入 JSON 备份，换设备也不丢进度。
 
 ### 其他
-- **音色**：默认 Web Audio 实时合成（零下载）；可选真实采样钢琴（约 1.4 MB，按需下载后离线可用）。
+- **多种乐器音色**：钢琴、电钢琴、纯音、风琴、吉他（Karplus-Strong 拨弦）、弦乐、长笛、马林巴，全部 Web Audio 实时合成（零下载、离线可用，响度已互相平衡）；可选真实采样的钢琴、木吉他、小提琴、长笛（按需下载后离线可用）。
+- **每题随机换乐器**：每道新题随机换一种乐器（本题重听与选项试听沿用），练习在不同音色下识别音程与和弦，不只听得出钢琴。
 - **MIDI 键盘作答**：调内音级、旋律听写、音程、和弦转位与记谱编辑器都支持直接弹出答案。
 - **中英双语、浅色 / 深色**：跟随系统明暗；新用户按浏览器语言显示，设置里可切换。
 - **无障碍**：完整的键盘操作（快捷键见应用内「关于与帮助」）、读屏播报答题反馈、颜色对比度达到 WCAG AA，axe-core 审计 0 违规。
@@ -135,7 +136,7 @@ npm run e2e      # 浏览器端到端测试（puppeteer-core + 本机 Chrome）
 - 没有账号、没有服务器、没有统计追踪或第三方脚本。
 - 练习记录与设置只保存在浏览器的 localStorage 里，可在设置页导出或导入备份；清除浏览器数据会一并清除记录。
 - 麦克风的声音只在本机实时分析音高，不录音，也不上传。
-- 唯一的网络请求是可选的采样钢琴：选择该音色时，从 Tone.js 的公开托管地址下载一次音频文件。
+- 唯一的网络请求是可选的采样乐器：选择采样钢琴时从 Tone.js 的公开托管地址、选择采样木吉他 / 小提琴 / 长笛时从 tonejs-instruments 的 GitHub Pages 下载一次音频文件。合成音色无需联网。
 
 ## 浏览器支持
 
@@ -158,7 +159,7 @@ npm run e2e      # 浏览器端到端测试（puppeteer-core + 本机 Chrome）
 
 接下来的想法（欢迎在 Issue 里讨论）：
 
-- [ ] 更多采样音色（如吉他）
+- [x] 更多乐器音色（合成风琴 / 吉他 / 弦乐 / 长笛 / 马林巴，采样木吉他 / 小提琴 / 长笛）与每题随机换乐器
 - [ ] 和声听写（两声部、低音线条）
 - [ ] 更多公有领域视唱曲目
 - [ ] 自定义练习组合与可分享的练习链接
@@ -175,4 +176,5 @@ README 里的截图由 `scripts/screenshots.mjs` 生成（`npm run build && node
 
 - 代码以 [MIT 许可](LICENSE) 发布。
 - 采样钢琴音色使用 [Salamander Grand Piano](https://archive.org/details/SalamanderGrandPianoV3)，作者 Alexander Holm，许可 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)，由 [Tone.js](https://github.com/Tonejs/Tone.js) 托管。运行时按需下载，不随仓库分发。
+- 采样木吉他、小提琴、长笛来自 [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments)（Nicholaus P. Brosowsky 整理），采样许可 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)，由其 GitHub Pages 托管。运行时按需下载，不随仓库分发。
 - 视唱曲库中的歌曲均为公有领域旋律（传统民歌，或作者去世超过 70 年的作品），练习曲为耳锻原创。

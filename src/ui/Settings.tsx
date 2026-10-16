@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { audio, type Timbre } from '../audio/engine';
-import { SAMPLE_SIZE_MB } from '../audio/sampler';
+import { audio, type NoteEvent } from '../audio/engine';
+import { INSTRUMENTS } from '../audio/sampler';
+import { isSampled, SAMPLED_TIMBRES, SYNTH_TIMBRES, type TimbreSetting } from '../audio/timbres';
 import { importBackup, today, type Store } from '../engine/progress';
 import { type Notation, type Settings } from '../engine/types';
 import { useT } from '../i18n/react';
@@ -19,11 +20,41 @@ interface Props {
   onAbout(): void;
 }
 
+/** 音色分组：合成（离线）/ 采样（需下载）/ 随机 */
+const TIMBRE_GROUPS: ['synth' | 'sampled' | 'random', readonly TimbreSetting[]][] = [
+  ['synth', SYNTH_TIMBRES],
+  ['sampled', SAMPLED_TIMBRES],
+  ['random', ['random']],
+];
+
+/** 换音色时的试听：分解和弦后接一个四音和弦 */
+const PREVIEW: NoteEvent[] = [
+  { notes: [60], time: 0, dur: 0.28 },
+  { notes: [64], time: 0.3, dur: 0.28 },
+  { notes: [67], time: 0.6, dur: 0.28 },
+  { notes: [60, 64, 67, 72], time: 0.9, dur: 1.2 },
+];
+
 export function SettingsPage({ store, update, onBack, onOnboard, onAbout }: Props) {
   const t = useT();
   const s = store.settings;
   const file = useRef<HTMLInputElement>(null);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => update((st) => void (st.settings[k] = v));
+
+  const pickTimbre = (v: TimbreSetting) => {
+    set('timbre', v);
+    audio.timbre = v;
+    // 随机：先抽一种乐器试听
+    audio.newQuestion();
+    if (!isSampled(v) || audio.samplerStatus(v).state === 'ready') void audio.play(PREVIEW);
+    // 首次选采样乐器：趁用户手势启动音频，再下载，完成后试听（失败时回退合成音色试听）
+    else {
+      void audio.resume();
+      void audio.loadSampler(v).then(() => {
+        if (audio.timbre === v) void audio.play(PREVIEW);
+      });
+    }
+  };
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
@@ -97,30 +128,28 @@ export function SettingsPage({ store, update, onBack, onOnboard, onAbout }: Prop
           />
         </div>
         <div className="field">
-          <label>{t('settings.timbre')}</label>
-          <Seg<Timbre>
-            value={s.timbre}
-            options={[
-              ['piano', t('settings.timbre.piano')],
-              ['epiano', t('settings.timbre.epiano')],
-              ['sine', t('settings.timbre.sine')],
-              ['sampled', t('settings.timbre.sampled', { mb: SAMPLE_SIZE_MB })],
-            ]}
-            onChange={(v) => {
-              set('timbre', v);
-              audio.timbre = v;
-              const chord = [{ notes: [60, 64, 67], time: 0, dur: 1 }];
-              if (v !== 'sampled' || audio.sampler.state === 'ready') void audio.play(chord);
-              // 首次选采样：趁用户手势启动音频，再下载，完成后试听（失败时回退合成钢琴试听）
-              else {
-                void audio.resume();
-                void audio.loadSampler().then(() => {
-                  if (audio.timbre === 'sampled') void audio.play(chord);
-                });
-              }
-            }}
-          />
-          <SamplerStatus />
+          <label id="settings-timbre">{t('settings.timbre')}</label>
+          <div className="timbre-groups" role="group" aria-labelledby="settings-timbre">
+            {TIMBRE_GROUPS.map(([group, ids]) => (
+              <div key={group} className="timbre-group" role="group" aria-labelledby={`timbre-group-${group}`}>
+                <span id={`timbre-group-${group}`} className="muted timbre-group-label">
+                  {t(`settings.timbre.group.${group}`)}
+                </span>
+                <Seg<TimbreSetting>
+                  value={s.timbre}
+                  options={ids.map((id) => [
+                    id,
+                    isSampled(id)
+                      ? t('settings.timbre.size', { name: t(`settings.timbre.${id}`), mb: INSTRUMENTS[id].sizeMb })
+                      : t(`settings.timbre.${id}`),
+                  ])}
+                  onChange={pickTimbre}
+                />
+              </div>
+            ))}
+          </div>
+          {s.timbre === 'random' && <p className="muted onboard-note">{t('settings.timbre.randomNote')}</p>}
+          <SamplerStatus timbre={s.timbre} />
         </div>
         <div className="field">
           <label htmlFor="settings-vol">{t('settings.volume', { pct: Math.round(s.volume * 100) })}</label>

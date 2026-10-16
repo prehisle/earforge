@@ -396,6 +396,8 @@ function ExamRun({
     if (autoPlayed.current === run.idx) return;
     const id = window.setTimeout(() => {
       autoPlayed.current = run.idx;
+      // 随机音色：每题换一种乐器（本题的重听与选项试听沿用）
+      audio.newQuestion();
       dispatch({ type: 'play' });
       void audio.play(questionEvents(questions[run.idx].q));
     }, 150);

@@ -1,6 +1,7 @@
 // 本地存储的健壮性：设置枚举校验、多标签页同时练习不丢记录。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mergeSettings, SETTING_ENUMS } from '../engine/progress';
+import { SAMPLED_TIMBRES, SYNTH_TIMBRES, TIMBRE_SETTINGS } from '../audio/timbres';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/types';
 import { exerciseById } from '../exercises';
 
@@ -16,7 +17,7 @@ describe('设置校验', () => {
     const s = mergeSettings({
       lang: 'fr',
       naming: 'solfege',
-      timbre: 'organ',
+      timbre: 'harpsichord',
       keyMode: 'G',
       voice: 'mid',
       notation: 'tab',
@@ -27,6 +28,13 @@ describe('设置校验', () => {
   it('合法的枚举取值保留', () => {
     const raw: Partial<Settings> = { lang: 'en', naming: 'letter', timbre: 'sampled', keyMode: 'C', voice: 'high', notation: 'staff' };
     expect(mergeSettings(raw)).toMatchObject(raw);
+  });
+
+  it('音色：旧版保存的取值照常读取，新增的乐器与随机模式都合法', () => {
+    for (const timbre of ['piano', 'epiano', 'sine', 'sampled'] as const) expect(mergeSettings({ timbre }).timbre).toBe(timbre);
+    for (const timbre of TIMBRE_SETTINGS) expect(mergeSettings({ timbre }).timbre).toBe(timbre);
+    expect(SETTING_ENUMS.timbre).toEqual(expect.arrayContaining([...SYNTH_TIMBRES, ...SAMPLED_TIMBRES, 'random']));
+    expect(mergeSettings({ timbre: 'banjo' as never }).timbre).toBe(DEFAULT_SETTINGS.timbre);
   });
 
   it('回退到 base（导入备份时 base 带当前语言）', () => {

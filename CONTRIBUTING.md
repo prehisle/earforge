@@ -35,8 +35,9 @@ src/
     notation.ts     MIDI 音高 → 字母 + 升降号、调号、谱位、谱号
     rhythmLayout.ts 带时值记谱的排版：切小节、连音线、符杠分组、换行
   audio/        声音
-    engine.ts       Web Audio 合成音源与播放调度（NoteEvent）
-    sampler.ts      可选的采样钢琴（按需下载、离线缓存）
+    engine.ts       播放调度（NoteEvent）、总线、随机音色与采样乐器的加载
+    timbres.ts      各合成音色的描述数据与发声构建函数（钢琴、风琴、吉他、弦乐、长笛、马林巴……）
+    sampler.ts      可选的采样乐器（钢琴、木吉他、小提琴、长笛；按需下载、离线缓存）
     pitch.ts        YIN 音高检测 + 麦克风监听
     midi.ts         Web MIDI 输入
   engine/       学习逻辑（纯函数为主，有单元测试）
@@ -153,7 +154,7 @@ To deploy under a subpath (e.g. a GitHub Pages project site `https://<user>.gith
 ### 2. Architecture
 
 - `src/music/`: theory (intervals, chords, modes, solfège), notation spelling (`notation.ts`) and measured-rhythm layout (`rhythmLayout.ts`). These are pure functions.
-- `src/audio/`: Web Audio synth and scheduler (`engine.ts`), optional sampled piano (`sampler.ts`), YIN pitch detection (`pitch.ts`) and Web MIDI (`midi.ts`).
+- `src/audio/`: Web Audio scheduler (`engine.ts`), synthesized instrument timbres (`timbres.ts`), optional sampled instruments (`sampler.ts`), YIN pitch detection (`pitch.ts`) and Web MIDI (`midi.ts`).
 - `src/engine/`: core types (`types.ts`), mastery tracking, adaptive item selection and storage (`progress.ts`), daily training and weak-spot drills (`planner.ts`), and mock exams (`exam.ts`).
 - `src/exercises/`: one `ExerciseDef` per module, registered in `index.ts`.
 - `src/songs/`: the sight-singing library (`library.ts`), its jianpu-like melody format (`format.ts`), transposition (`realize.ts`) and sing-along scoring (`scoring.ts`).
