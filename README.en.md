@@ -2,57 +2,177 @@
 
 English | [中文](README.md)
 
-A free, open-source ear-training web app that works offline. The interface is available in English and Chinese: switch in Settings, and new users get the language of their browser.
+**Learn to hear notes in music: free, open-source, offline-ready ear training with movable do, right in your browser.**
+
+<!-- TODO: replace the link below with your GitHub Pages URL after deploying -->
+**[▶ Try it online](https://<your-username>.github.io/earforge/)** (TODO: replace with the real URL) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+
+![EarForge home: today's training, daily goal and exercises](docs/screenshots/home-en.webp)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/practice-en.webp" alt="Scale degrees exercise: after answering, the staff shows how the note resolves to do"></td>
+    <td width="50%"><img src="docs/screenshots/notate-en.webp" alt="Melody + rhythm dictation: write pitches and durations in the notation editor"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/song-result-en.webp" alt="Sight-singing library, Ode to Joy: sing-along score with per-note deviation in cents"></td>
+    <td><img src="docs/screenshots/stats-en.webp" alt="Stats: practice calendar and accuracy trend"></td>
+  </tr>
+</table>
+
+## Why EarForge
+
+- **Functional ear training**: every question first sets the key with a cadence, then asks you to hear what a note or chord *does* in that key. After you answer, you hear it resolve to do. You learn to hear notes in real music, not just isolated intervals.
+- **Movable do**: do is always the tonic, so the syllables stay the same in every key. This is the relative pitch you use to play by ear, sight-sing and improvise. You can also switch to scale-degree numbers, fixed do or letter names.
+- **Adaptive, with a plan**: spaced repetition builds "Today's Training". Weak items come up more often, levels unlock as you master them, and the Stats page drills your weak spots with one click.
+- **Free, open source, no sign-up**: MIT-licensed, with no accounts, ads or analytics. Your data stays in your browser.
+- **Works offline**: it is a PWA you can install on desktop or phone, and after the first visit you can practise without a connection.
+
+Compared with popular paid ear-training apps such as EarMaster or Tenuto: those apps offer mature curricula, more question types and features for teachers and schools, and are well worth a look. EarForge has a different focus. It is a free, open-source web app that runs from a URL, with nothing to install and no account to create, a Chinese-first bilingual interface, and a design built around movable do and hearing in a key.
+
+| | EarForge | Typical paid ear-training apps |
+|---|---|---|
+| Price | Free | One-time purchase or subscription |
+| Account | Not needed | Depends on the product |
+| Platforms | Any modern browser (desktop and mobile), installable as a PWA | Desktop or app-store apps |
+| Offline | Yes | Depends on the product |
+| Source code | Open (MIT) | Closed |
+| Data | Stays in your browser; exportable | Depends on the product; some sync to the cloud |
 
 ## Features
 
-- **Hearing in a key first**: every question starts with a cadence that sets the key, so you learn to hear notes *in music*, not just isolated intervals.
-- **Resolve to do**: after each answer the note resolves step by step to the tonic (e.g. fa → mi → re → do), which builds a feel for each scale degree's function.
-- **Today's Training**: one tap starts a mixed set. Spaced repetition picks the items you most need across exercises, and you get a summary at the end.
-- **Adaptive practice**: mastery is tracked per item. Weak items come up more often, older ones come back for review, and the next level unlocks automatically. The Stats page has one-click drills for weak spots.
-- **Modes**: major, natural minor, harmonic minor, Dorian and Mixolydian, each with its own progress.
-- **Sing it**: built-in YIN pitch detection for sight-singing and echo singing with a live tuner. Octaves are ignored, so it works for any voice.
-- **Note names your way**: movable do (do re mi), scale degrees (1 2 3, as in numbered notation / jianpu), fixed do, or letter names (C D E). Optional staff notation.
-- **Sight-singing library**: 48 graded pieces (original drills plus public-domain folk and classical melodies) on a real staff with rhythm, transposed to your range. Sing along with a metronome and get note-by-note pitch scoring.
-- **Trends**: accuracy over time, daily volume, a practice calendar and per-exercise sparklines.
-- **Guided start**: a short first-run setup picks starting levels from your background, and each exercise shows a quick how-to the first time.
+### Daily practice
+- **Today's Training**: one tap starts a mixed set (20 questions by default). Spaced repetition picks the items you most need across exercises, and you get a summary at the end.
+- **Adaptive practice**: mastery is tracked per item. Weak items come up more often, older ones come back for review, and the next level unlocks once you have mastered the current one.
 - **Compare when wrong**: a wrong answer plays what you chose. After answering, every option can be auditioned, and you can switch between "your answer" and "correct answer" with one click.
-- **MIDI keyboard input**: play your answers on a MIDI keyboard (scale degrees, melodic dictation, intervals).
-- **No sign-up**: data stays in your browser and can be exported or imported. Installable as a PWA.
-- **Sounds**: real-time Web Audio synthesis (no download), or an optional sampled piano (~1.4 MB, cached for offline use).
+- **Daily goal and streaks** on the home page.
+- **Guided start**: a short first-run setup picks starting levels from your background (beginner, instrumentalist, exam prep), and each exercise shows a quick how-to the first time.
+
+### Exam prep
+- **Mock exams**: three papers (quick check, graded exam, conservatory entrance). There is no feedback while you answer, with optional time and replay limits. Afterwards you get a report with section scores, weak items and a question-by-question review where you can replay and compare. Past results are kept.
+- **Melody + rhythm dictation**: a conservatory-style task. Write pitches and durations in a staff editor with the keyboard, on-screen buttons or a MIDI keyboard. Pitch and rhythm are graded separately.
+- **Staff notation**: correct key signatures and accidentals, with full rhythmic notation (time signatures, beams, dots, ties, triplets, automatic line breaks).
+
+![Mock exam report](docs/screenshots/exam-result-en.webp)
+
+### Sight-singing
+- **Sight-singing library**: 48 graded pieces, both original drills and public-domain folk and classical melodies. Transpose them to your range, sing along with a metronome and get note-by-note pitch scoring, or practise note by note.
+- **Sight-singing / echo exercise**: built-in YIN pitch detection with a live tuner. Octaves are ignored, so it works for any voice.
+
+![Sight-singing library](docs/screenshots/songs-en.webp)
+
+### Analytics
+- **Trends**: accuracy over time (with a 7-day average), questions per day, a practice calendar heatmap and per-exercise sparklines.
+- **Weak spots**: the items you most need to practise, with one-click drills.
+- **Backup**: export and import a JSON backup to move your progress between devices.
+
+### And more
+- **Sounds**: real-time Web Audio synthesis (no download), or an optional sampled piano (~1.4 MB, downloaded on demand and cached for offline use).
+- **MIDI keyboard input**: play your answers in scale degrees, melodic dictation, intervals, chord inversions and the notation editor.
+- **English and Chinese, light and dark**: follows your system's color scheme. New users get the language of their browser, and you can switch in Settings.
+- **Accessibility**: full keyboard control (see the shortcut list under "About & help" in the app), screen-reader announcements for answer feedback, WCAG AA color contrast, and 0 axe-core violations.
+- **Mobile-friendly**: designed for touch, with compact narrow-screen layouts.
+
+<p align="center">
+  <img src="docs/screenshots/mobile-en.webp" alt="Home page on a phone" width="300">
+  <img src="docs/screenshots/practice-dark-zh.webp" alt="Practice page in dark mode (Chinese interface)" width="520">
+</p>
 
 ## Exercises
 
-| Exercise | What you practice |
-|---|---|
-| Scale Degrees | Cadence + one note: name it as do re mi… (including chromatic notes), in 5 modes |
-| Chords in a Key | I IV V vi… / i iv V ♭VI…, as single chords or four-chord progressions |
-| Melodic Dictation | Short melodies of 3–8 notes; enter the notes in order |
-| Intervals | Ascending, descending or harmonic, with reference songs, 6 levels |
-| Chord Quality | Triads, suspended and 7th chords, with optional inversions and arpeggios |
-| Rhythmic Dictation | Count-in + a rhythm; pick it out from similar rhythms, from quarter notes up to syncopation and triplets |
-| Rhythm Tapping | Read & tap or listen & tap with Space, touch or clapping; a timeline shows each early, late or missed tap |
-| Sight-singing / Echo | Sing from note names or after listening, judged live through the microphone |
+| Exercise | What you practise | Levels |
+|---|---|---|
+| Scale Degrees | Cadence + one note: name it as do re mi… (including chromatic notes), in 5 modes | 5: do mi sol → re fa → la ti → chromatic |
+| Chords in a Key | Identify I IV V vi… in a key, as single chords or four-chord progressions, major and minor | 4: I IV V → vi → ii → iii vii° |
+| Melodic Dictation | Short melodies of 3–8 notes; enter the notes in order | 4: do re mi → … → chromatic |
+| Melody + Rhythm | Short melodies with rhythm; write pitches and durations in the staff editor | 9: quarters and halves → eighths → dotted → sixteenths → syncopation and ties → 6/8 → chromatic |
+| Intervals | Ascending, descending or harmonic, with reference songs, including compound intervals | 12: P5 and octave → … → 9ths to 15ths |
+| Chord Quality | Major, minor, diminished and augmented triads, suspended and 7th chords, with optional inversions and arpeggios | 5 |
+| Chord Inversions | Hear the bass: root position, first and second inversion, and all four positions of 7th chords | 4 |
+| Scales & Modes | All three forms of minor, church modes, pentatonic and blues scales, whole-tone | 7 |
+| Rhythmic Dictation | Count-in + a rhythm; pick it out from similar rhythms | 5: quarters → eighths → dotted → sixteenths → syncopation and triplets |
+| Rhythm Tapping | Read and tap, or listen and tap, with Space, touch or clapping; a timeline shows early, late and missed taps | 5 (same as rhythmic dictation) |
+| Sight-singing / Echo | Sing from note names or after listening, judged live through the microphone | 3: do mi sol → re fa → la ti |
 
-Exercise levels start gently and can be skipped ahead in the welcome tour. It offers presets for complete beginners, instrumentalists, and students preparing for graded exams (ABRSM / Trinity) or music school entrance exams.
+There is also the **sight-singing library** (48 pieces in 5 levels) and **mock exams** (3 papers).
 
-## Development
+## Quick start
+
+### Use it
+
+Open the **[online version](https://<your-username>.github.io/earforge/)** (TODO: replace with the real URL); there is nothing to sign up for. To use it like an app, choose "Install" or "Add to Home Screen" in your browser menu.
+
+### Local development
+
+Requires Node.js 22 or later.
 
 ```bash
+git clone https://github.com/<your-username>/earforge.git
+cd earforge
 npm install
-npm run dev      # dev server
+npm run dev      # dev server at http://localhost:5173
 npm test         # unit tests
-npm run build    # production build (outputs dist/, deployable to any static host; use BASE_PATH=/earforge/ for a subpath)
-npm run check    # lint + unit tests + build
+npm run build    # production build into dist/, deployable to any static host
+npm run check    # pre-commit check: lint (warnings fail) + unit tests + build
 npm run e2e      # browser end-to-end tests (puppeteer-core + local Chrome)
 ```
 
-Before contributing, please read [CONTRIBUTING.md](CONTRIBUTING.md). It covers the architecture, adding exercises and songs (including the public-domain policy), tests and commit style.
+Stack: Vite + React + TypeScript, with no runtime dependencies besides React and no backend.
 
-Stack: Vite + React + TypeScript, with no runtime dependencies besides React. UI strings live in `src/i18n/` (`zh.ts` is the source of truth; `en.ts` must have the same keys, enforced by TypeScript and a unit test).
+### Deploy to GitHub Pages
 
-## License
+The repository includes [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
 
-Code is released under the MIT license.
+1. Fork or push this repository to GitHub.
+2. In the repository's **Settings → Pages**, set **Source** to **GitHub Actions**.
+3. Push to `main` (or run "Deploy to GitHub Pages" from the Actions tab). The workflow runs the unit tests, builds with `BASE_PATH=/<repo-name>/` and publishes to `https://<your-username>.github.io/<repo-name>/`.
+4. If you use a custom domain (site at the root path), add a repository variable `PAGES_BASE_PATH` with the value `/` under **Settings → Secrets and variables → Actions → Variables**.
 
-The sampled piano uses [Salamander Grand Piano](https://archive.org/details/SalamanderGrandPianoV3) by Alexander Holm, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/), hosted by [Tone.js](https://github.com/Tonejs/Tone.js). It is downloaded on demand at runtime and is not distributed with this repository.
+For other static hosts, run `npm run build` to deploy at the root, or `BASE_PATH=/earforge/ npm run build` for a subpath. The manifest, service worker and precache list use relative paths, so offline mode works under a subpath too.
+
+## Privacy
+
+- No accounts, no server, no analytics and no third-party scripts.
+- Progress and settings are stored only in your browser's localStorage. You can export or import a backup in Settings. Clearing your browser data also clears your progress.
+- Microphone audio is analysed for pitch on your device in real time. It is never recorded or uploaded.
+- The only network request is the optional sampled piano: when you choose it, the audio files are downloaded once from the public Tone.js host.
+
+## Browser support
+
+- Use a current version of Chrome, Edge, Firefox or Safari, on desktop or mobile.
+- The **microphone** (sight-singing, sing-along, clap input for rhythm tapping) needs the page to be served over **HTTPS** or from `localhost`, and microphone permission.
+- **MIDI keyboards** need a browser with Web MIDI: Chrome, Edge and Firefox work. Safari and all browsers on iOS do not support it.
+- **iPhone / iPad**: turn off the silent switch on the side, or web pages make no sound. In Safari, "Share → Add to Home Screen" installs EarForge for offline use.
+
+## Roadmap
+
+Done (see [CHANGELOG.md](CHANGELOG.md)):
+
+- [x] Scale degrees, chords in a key, melodic dictation, intervals, chord quality, sight-singing / echo (0.1)
+- [x] Minor keys and modes, rhythmic dictation, Today's Training, weak-spot drills, daily goal (0.2)
+- [x] Sampled piano, compare-when-wrong, MIDI keyboard input, rhythm tapping (0.3)
+- [x] Staff notation, guided start, English interface (0.4)
+- [x] Rhythmic staff notation, sight-singing library, trend charts (0.5)
+- [x] Melody + rhythm dictation, mock exams, lazy loading and accessibility (0.6)
+- [x] Scales and modes, chord inversions, compound intervals, in-repo e2e and CI, GitHub Pages deployment, in-app help (0.7)
+
+Ideas for next steps (discussion welcome in Issues):
+
+- [ ] More sampled instruments (e.g. guitar)
+- [ ] Harmonic dictation (two voices, bass lines)
+- [ ] More public-domain sight-singing pieces
+- [ ] Custom exercise sets and shareable practice links
+
+## Contributing
+
+Issues and pull requests are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. It covers the architecture, adding exercises and songs, tests and commit style.
+
+The song library only accepts EarForge originals and **public-domain** melodies (traditional tunes, or works whose composer died more than 70 years ago). Transcribe the original melody yourself, and state the source and why it is in the public domain in your PR.
+
+The README screenshots are generated by `scripts/screenshots.mjs` (`npm run build && node scripts/screenshots.mjs`).
+
+## License and credits
+
+- Code is released under the [MIT license](LICENSE).
+- The sampled piano uses [Salamander Grand Piano](https://archive.org/details/SalamanderGrandPianoV3) by Alexander Holm, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and hosted by [Tone.js](https://github.com/Tonejs/Tone.js). It is downloaded on demand at runtime and is not distributed with this repository.
+- Songs in the sight-singing library are public-domain melodies (traditional tunes, or works whose composer died more than 70 years ago); the drills are EarForge originals.
