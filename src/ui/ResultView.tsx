@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { addToGradebook } from '../engine/gradebook';
 import type { PracticeSet } from '../engine/practiceSet';
 import type { Store } from '../engine/progress';
-import { resultDraws, type ResultData } from '../engine/resultLink';
+import { APP_VERSION, resultDraws, versionDiffers, type ResultData } from '../engine/resultLink';
 import { toPracticeSet } from '../engine/shareLink';
 import { exerciseById } from '../exercises';
 import { useT } from '../i18n/react';
@@ -91,10 +91,14 @@ export function ResultView({ result, code, store, update, onHome, onBack, backLa
           </span>
         </div>
         <p className="muted result-note">{t('result.notMine')}</p>
+        <p className="muted result-note">{t('result.selfReported')}</p>
       </section>
 
       <section className="panel">
         <h2 className="chart-title">{t('result.grid')}</h2>
+        {versionDiffers(result.version) && (
+          <p className="muted result-note">{t('result.versionNote', { v: result.version, cur: APP_VERSION })}</p>
+        )}
         <ol className="result-grid">
           {marks.map((m, i) => {
             const d = draws[i];

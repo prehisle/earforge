@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { activeClock } from '../engine/activeClock';
 import type { Store } from '../engine/progress';
 import type { PracticeSet } from '../engine/practiceSet';
 import { mulberry32, SEEDED_GEN_SETTINGS, seededSource } from '../engine/seeded';
@@ -44,9 +45,14 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
   const [shown, setShown] = useState(0);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [finished, setFinished] = useState(false);
-  // 成绩链接的用时与完成时间
-  const [started] = useState(() => Date.now());
-  const [finishedAt, setFinishedAt] = useState(0);
+  // 成绩链接的用时（不计页面在后台的时间）与完成时间
+  const [clock] = useState(() => activeClock());
+  const [timing, setTiming] = useState({ at: 0, ms: 0 });
+  useEffect(() => {
+    const h = () => clock.update();
+    document.addEventListener('visibilitychange', h);
+    return () => document.removeEventListener('visibilitychange', h);
+  }, [clock]);
   const back = backLabel ?? t('sets.backList');
 
   const quizSource = source && {
@@ -103,7 +109,7 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
         >
           {/* 固定题目：可把成绩发给老师（每个人题目相同，老师能对照每一题） */}
           {fixed && set && results.length === source?.total && (
-            <ResultShare set={set} results={results} started={started} finished={finishedAt} />
+            <ResultShare set={set} results={results} finished={timing.at} activeMs={timing.ms} />
           )}
         </Summary>
       ) : (
@@ -116,7 +122,7 @@ export function SetRun({ store, update, set, onBack, backLabel, onAgain }: Props
           genSettings={fixed ? SEEDED_GEN_SETTINGS : undefined}
           onResult={(r) => setResults((rs) => [...rs, r])}
           onComplete={() => {
-            setFinishedAt(Date.now());
+            setTiming({ at: Date.now(), ms: clock.activeMs() });
             setFinished(true);
           }}
         />

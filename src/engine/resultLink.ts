@@ -94,9 +94,23 @@ export function setFingerprint(set: SharedSet): string {
 
 const markOf = (steps: { ok: boolean }[]): ResultMark => {
   const n = Math.max(1, Math.min(MAX_STEPS, steps.length));
-  const c = Math.min(n, steps.filter((s) => s.ok).length);
-  return { ok: steps.length > 0 && steps.every((s) => s.ok), c, n };
+  const ok = steps.length > 0 && steps.every((s) => s.ok);
+  // 步数超过上限被截断时，没全对的题答对步数也要小于总步数（否则解码时「整题答对」与步数矛盾，链接打不开）
+  const c = Math.min(ok ? n : n - 1, steps.filter((s) => s.ok).length);
+  return { ok, c, n };
 };
+
+declare const __APP_VERSION__: string;
+/** 当前应用版本（构建时注入） */
+export const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
+
+/**
+ * 学生练习时的应用版本与当前不同：每题的考点由当前版本的出题程序重新推出，出题程序改过时可能与学生实际做的不完全一致。
+ * 链接里没有版本信息时无从判断，返回 false。
+ */
+export function versionDiffers(version: string, current: string = APP_VERSION): boolean {
+  return !!version && version !== current;
+}
 
 /** 成绩 → 链接参数；不是固定题目、题数与组合不符或组合无效时抛错 */
 export function encodeResult(input: ResultInput): string {

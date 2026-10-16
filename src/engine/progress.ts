@@ -262,7 +262,7 @@ export function sanitizeSongs(raw: unknown): Record<string, SongResult> {
 
 /**
  * 导入备份（就地修改 st）：格式不对时抛错、不做任何修改。
- * 备份里有的部分整体替换（进度、每日记录、曲库、考试、练习组合、设置），没有的部分（旧版本备份没有曲库/考试记录/组合）保留现有的；
+ * 备份里有的部分整体替换（进度、每日记录、曲库、考试、练习组合、设置），没有的部分（旧版本备份没有曲库/考试记录/组合）保留现有的；成绩单与现有的合并；
  * 旧备份没有界面语言时沿用当前语言。
  */
 export function importBackup(st: Store, raw: unknown): void {
@@ -272,7 +272,8 @@ export function importBackup(st: Store, raw: unknown): void {
   if (raw.songs !== undefined) st.songs = sanitizeSongs(raw.songs);
   if (raw.exams !== undefined) st.exams = sanitizeExams(raw.exams);
   if (raw.sets !== undefined) st.sets = sanitizeSets(raw.sets);
-  if (raw.gradebook !== undefined) st.gradebook = sanitizeGradebook(raw.gradebook);
+  // 成绩单合并而不替换：收到的成绩无法重新生成，导入较早的备份时不能丢掉之后才添加的
+  if (raw.gradebook !== undefined) st.gradebook = sanitizeGradebook([...(st.gradebook ?? []), ...sanitizeGradebook(raw.gradebook)]);
   st.settings = mergeSettings(raw.settings, { ...DEFAULT_SETTINGS, lang: st.settings.lang });
 }
 

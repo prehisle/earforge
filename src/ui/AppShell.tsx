@@ -5,6 +5,7 @@ import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from '
 import { backupJson, onStorageStatus, storageOk, today } from '../engine/progress';
 import { t } from '../i18n';
 import { useT } from '../i18n/react';
+import { isChunkError } from './chunkError';
 
 /** 把数据下载为 JSON 文件（与设置页的「导出备份」格式相同）。 */
 function downloadBackup(json: string): void {
@@ -15,12 +16,6 @@ function downloadBackup(json: string): void {
   a.download = `earforge-${today()}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-/** 按需加载的页面拉取失败（多半是离线且还没缓存，或刚发布了新版本）。 */
-function isChunkError(e: unknown): boolean {
-  const msg = e instanceof Error ? `${e.name} ${e.message}` : String(e);
-  return /dynamically imported module|Importing a module script failed|error loading dynamically|ChunkLoadError/i.test(msg);
 }
 
 interface BoundaryState {
