@@ -361,12 +361,18 @@ function ExamRun({
   // 计时
   useEffect(() => {
     if (run.deadline === null) return;
-    const id = window.setInterval(() => {
+    const tick = () => {
       const n = Date.now();
       setNow(n);
       dispatch({ type: 'tick', now: n });
-    }, 250);
-    return () => window.clearInterval(id);
+    };
+    const id = window.setInterval(tick, 250);
+    // 后台标签页的定时器会被大幅节流：切回来时立即按墙上时间检查一次，过了时限就先交卷，不能再作答
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
   }, [run.deadline]);
 
   // 交卷
