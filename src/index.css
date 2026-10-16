@@ -2487,3 +2487,16 @@ input[type='range'] {
     padding-inline: 14px;
   }
 }
+
+/* ───── 减少动态效果 ───── */
+/* 系统设置了「减少动态效果」：关闭抖动等动画与过渡（保留极短的时长，依赖 transitionend / animationend 的逻辑仍会触发） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
