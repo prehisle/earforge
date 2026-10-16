@@ -218,6 +218,7 @@ describe('固定题目：跨版本稳定', () => {
     out.plan = fnv(JSON.stringify(planSet(set, mulberry32(20261016))));
     expect(out).toMatchInlineSnapshot(`
       {
+        "bassLine": "ff88b637",
         "chords": "ca51f7f3",
         "degrees": "72ed7b5c",
         "dictation": "f7e17488",

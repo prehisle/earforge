@@ -21,13 +21,13 @@ export const BACKGROUNDS: { id: Background; readonly label: string; readonly des
 
 /**
  * 各背景的起始级别（0 起，即「已解锁到第几级」，前面各级的考点一并启用）。未列出的模块从第 1 级开始。
- * 学过乐器：跳过音级、和弦、转位、音阶的第 1 级与音程的前 2 级，和声听写从原位 Ⅰ Ⅳ Ⅴ ⅵ ⅱ 起；
- * 备考：再往前推一到两级，并覆盖七和弦（含转位）、旋律听写，和声听写直接到六和弦与属七（与艺考模拟一致）。
+ * 学过乐器：跳过音级、和弦、转位、音阶的第 1 级与音程的前 2 级，和声听写与低音线听写从原位 Ⅰ Ⅳ Ⅴ ⅵ ⅱ 起；
+ * 备考：再往前推一到两级，并覆盖七和弦（含转位）、旋律听写，和声听写直接到六和弦与属七（与艺考模拟一致），低音线听写到六和弦。
  */
 export const START_LEVELS: Record<Background, Record<string, number>> = {
   beginner: {},
-  player: { degrees: 1, intervals: 2, chords: 1, inversions: 1, scales: 1, progressions: 1, rhythm: 1, rhythmTap: 1, harmony: 1 },
-  exam: { degrees: 2, intervals: 3, chords: 3, inversions: 2, scales: 2, progressions: 2, rhythm: 2, rhythmTap: 2, dictation: 1, singing: 1, harmony: 3 },
+  player: { degrees: 1, intervals: 2, chords: 1, inversions: 1, scales: 1, progressions: 1, rhythm: 1, rhythmTap: 1, harmony: 1, bassLine: 1 },
+  exam: { degrees: 2, intervals: 3, chords: 3, inversions: 2, scales: 2, progressions: 2, rhythm: 2, rhythmTap: 2, dictation: 1, singing: 1, harmony: 3, bassLine: 2 },
 };
 
 /** 建议的每日目标题数 */

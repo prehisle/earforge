@@ -47,6 +47,7 @@ export const CODES: Record<string, string> = {
   rhythm: 'rh',
   rhythmTap: 'rt',
   singing: 'sg',
+  bassLine: 'bl',
 };
 const BY_CODE: Record<string, string> = Object.fromEntries(Object.entries(CODES).map(([id, c]) => [c, id]));
 
