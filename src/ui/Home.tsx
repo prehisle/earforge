@@ -28,11 +28,13 @@ interface Props {
   onSongs(): void;
   onExam(): void;
   onSets(): void;
+  /** 成绩单（有收到的成绩时才显示入口） */
+  onGradebook(): void;
 }
 
 const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
-export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onSets, onAbout }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onSets, onGradebook, onAbout }: Props) {
   const t = useT();
   const day = store.daily[today()];
   const days = streak(store);
@@ -160,6 +162,7 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
         <div className="cards">
           <ExamCard store={store} onOpen={onExam} />
           <SetsCard store={store} onOpen={onSets} />
+          {(store.gradebook?.length ?? 0) > 0 && <GradebookCard n={store.gradebook!.length} onOpen={onGradebook} />}
         </div>
       </section>
 
@@ -183,6 +186,21 @@ function SetsCard({ store, onOpen }: { store: Store; onOpen(): void }) {
         <span className="card-title">{t('group.sets')}</span>
         <span className="card-sub">{t('sets.cardSub')}</span>
         <span className="card-meta">{n > 0 ? t('sets.cardMeta', { n }) : t('sets.cardNone')}</span>
+      </span>
+    </button>
+  );
+}
+
+/** 成绩单入口卡片（老师端：添加过收到的成绩链接后才显示） */
+function GradebookCard({ n, onOpen }: { n: number; onOpen(): void }) {
+  const t = useT();
+  return (
+    <button className="card" onClick={onOpen}>
+      <span className="card-icon">📋</span>
+      <span className="card-body">
+        <span className="card-title">{t('grade.cardTitle')}</span>
+        <span className="card-sub">{t('grade.cardSub')}</span>
+        <span className="card-meta">{t('grade.cardMeta', { n })}</span>
       </span>
     </button>
   );

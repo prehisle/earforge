@@ -52,6 +52,8 @@ const about = lazyPage(() => import('./About').then((m) => m.AboutPage));
 const sets = lazyPage(() => import('./Sets').then((m) => m.SetsPage));
 const setBuilder = lazyPage(() => import('./SetBuilder').then((m) => m.SetBuilder));
 const setRun = lazyPage(() => import('./SetRun').then((m) => m.SetRun));
+const resultView = lazyPage(() => import('./ResultView').then((m) => m.ResultView));
+const gradebook = lazyPage(() => import('./Gradebook').then((m) => m.GradebookPage));
 
 export function StatsPage(props: PropsOf<typeof import('./Stats').StatsPage>) {
   return <Render page={stats} props={props} />;
@@ -82,9 +84,15 @@ export function SetBuilder(props: PropsOf<typeof import('./SetBuilder').SetBuild
 export function SetRun(props: PropsOf<typeof import('./SetRun').SetRun>) {
   return <Render page={setRun} props={props} />;
 }
+export function ResultView(props: PropsOf<typeof import('./ResultView').ResultView>) {
+  return <Render page={resultView} props={props} />;
+}
+export function GradebookPage(props: PropsOf<typeof import('./Gradebook').GradebookPage>) {
+  return <Render page={gradebook} props={props} />;
+}
 
 // 首屏之后在后台预取（失败无妨：真正打开页面时会再试，并由出错兜底提示）
 if (typeof window !== 'undefined')
   setTimeout(() => {
-    for (const p of [onboarding, stats, library, settings, songPractice, about, sets, setBuilder, setRun]) p.load().catch(() => {});
+    for (const p of [onboarding, stats, library, settings, songPractice, about, sets, setBuilder, setRun, resultView, gradebook]) p.load().catch(() => {});
   }, 0);

@@ -9,8 +9,21 @@ import { Practice } from './ui/Practice';
 import type { PracticeSet } from './engine/practiceSet';
 import { saveSet, findSet } from './engine/sets';
 import { hasSharedSet, readSharedSet, type SharedSet } from './engine/shareLink';
+import { decodeResult, hasResult, readResult, resultCode, type ResultData } from './engine/resultLink';
 import { SharedSetPage } from './ui/SharedSet';
-import { AboutPage, Onboarding, SetBuilder, SetRun, SetsPage, SettingsPage, SongLibrary, SongPractice, StatsPage } from './ui/lazyPages';
+import {
+  AboutPage,
+  GradebookPage,
+  Onboarding,
+  ResultView,
+  SetBuilder,
+  SetRun,
+  SetsPage,
+  SettingsPage,
+  SongLibrary,
+  SongPractice,
+  StatsPage,
+} from './ui/lazyPages';
 import { useMidiInput } from './ui/useMidi';
 import { useStore } from './ui/useStore';
 
@@ -29,23 +42,36 @@ type Route =
   | { page: 'setEdit'; id?: string; template?: string }
   | { page: 'setRun'; id?: string; set?: PracticeSet; round?: number }
   // 分享链接（set 为 null 表示链接无效）
-  | { page: 'shared'; set: SharedSet | null };
+  | { page: 'shared'; set: SharedSet | null }
+  // 成绩链接（result 为 null 表示链接无效；from 为从成绩单打开时所在的作业）与成绩单（fp 为打开的作业）
+  | { page: 'result'; code: string; result: ResultData | null; from?: string }
+  | { page: 'gradebook'; fp?: string };
 
 /** 网址带 #s= 时进入分享落地页 */
 function sharedRoute(): Route | null {
   return hasSharedSet(location.href) ? { page: 'shared', set: readSharedSet(location.href) } : null;
 }
 
+/** 网址带 #r= 时进入成绩页 */
+function resultRoute(): Route | null {
+  return hasResult(location.href) ? { page: 'result', code: resultCode(location.href) ?? '', result: readResult(location.href) } : null;
+}
+
 export default function App() {
   const [store, update] = useStore();
-  const [route, setRoute] = useState<Route>(() => sharedRoute() ?? { page: 'home' });
+  const [route, setRoute] = useState<Route>(() => sharedRoute() ?? resultRoute() ?? { page: 'home' });
   // 通过分享链接进来的新用户：先看分享的组合，回到首页时再显示新手引导
-  const [postponeOnboard, setPostponeOnboard] = useState(() => route.page === 'shared');
+  const [postponeOnboard, setPostponeOnboard] = useState(() => route.page === 'shared' || route.page === 'result');
   const home = () => {
     setPostponeOnboard(false);
     setRoute({ page: 'home' });
   };
   useShareLinks((r) => {
+    setPostponeOnboard(true);
+    setRoute(r);
+    window.scrollTo(0, 0);
+  });
+  useResultLinks((r) => {
     setPostponeOnboard(true);
     setRoute(r);
     window.scrollTo(0, 0);
@@ -86,6 +112,7 @@ export default function App() {
             onSongs={() => setRoute({ page: 'songs' })}
             onExam={() => setRoute({ page: 'exam' })}
             onSets={() => setRoute({ page: 'sets' })}
+            onGradebook={() => setRoute({ page: 'gradebook' })}
             onAbout={() => setRoute({ page: 'about', from: 'home' })}
           />
         )}
@@ -204,9 +231,57 @@ export default function App() {
             onSave={(set) => void saveSet(update, set)}
           />
         )}
+        {/* ───── 成绩链接与成绩单 ───── */}
+        {route.page === 'result' && (
+          <ResultView
+            key={route.code}
+            result={route.result}
+            code={route.code}
+            store={store}
+            update={update}
+            onHome={home}
+            onBack={route.from !== undefined ? () => setRoute({ page: 'gradebook', fp: route.from }) : undefined}
+            backLabel={route.from !== undefined ? translate(lang, 'grade.backList') : undefined}
+            onPractice={(set) => setRoute({ page: 'setRun', set })}
+            onGradebook={(fp) => {
+              setRoute({ page: 'gradebook', fp });
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
+        {route.page === 'gradebook' && (
+          <GradebookPage
+            key={route.fp ?? ''}
+            store={store}
+            update={update}
+            fp={route.fp}
+            onBack={route.fp ? () => setRoute({ page: 'gradebook' }) : home}
+            onOpen={(fp) => setRoute({ page: 'gradebook', fp })}
+            onView={(code) => {
+              setRoute({ page: 'result', code, result: decodeResult(code), from: route.fp });
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
       </div>
     </LocaleContext.Provider>
   );
+}
+
+/** 处理成绩链接（同 useShareLinks）：启动时与打开期间进入成绩页，并清掉 hash */
+function useResultLinks(open: (r: Route) => void) {
+  useEffect(() => {
+    const clear = () => history.replaceState(history.state, '', location.pathname + location.search);
+    if (hasResult(location.href)) clear();
+    const onHash = () => {
+      const r = resultRoute();
+      if (!r) return;
+      clear();
+      open(r);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** 处理分享链接：启动时与打开期间（粘贴新链接触发 hashchange）进入落地页，并清掉 hash，刷新或后退不再重复触发 */
