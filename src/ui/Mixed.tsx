@@ -64,7 +64,7 @@ export function MixedPractice({ store, update, onBack, onAgain }: Props) {
           </button>
         </section>
       ) : finished ? (
-        <Summary store={store} results={results} onAgain={onAgain} onBack={onBack} />
+        <Summary store={store} results={results} onAgain={onAgain} onBack={onBack} coach />
       ) : (
         <Quiz
           store={store}
@@ -88,6 +88,7 @@ export function Summary({
   onBack,
   backLabel,
   againLabel,
+  coach,
   children,
 }: {
   store: Store;
@@ -98,6 +99,8 @@ export function Summary({
   backLabel?: string;
   /** 再练按钮的文字，缺省为「再来一组」 */
   againLabel?: string;
+  /** 按正确率给一句建议（今日训练用：错题会更常出现、掌握后自动升级） */
+  coach?: boolean;
   /** 放在按钮上方的附加内容（如固定题目组合的「分享成绩」） */
   children?: ReactNode;
 }) {
@@ -134,15 +137,18 @@ export function Summary({
 
   const todayN = store.daily[today()]?.n ?? 0;
   const goal = store.settings.dailyGoal;
+  const acc = pct(c, n);
+  const tip = !coach ? null : acc < 50 ? t('mix.tipLow') : acc >= 90 ? t('mix.tipHigh') : null;
 
   return (
     <section className="summary">
       <div className="summary-hero">
-        <span className="summary-big">{pct(c, n)}%</span>
+        <span className="summary-big">{acc}%</span>
         <span className="muted">{t('mix.acc', { c, n })}</span>
         <span className={todayN >= goal ? 'summary-goal done' : 'summary-goal'}>
           {todayN >= goal ? t('mix.goalDone', { t: todayN, goal }) : t('mix.goalProgress', { t: todayN, goal })}
         </span>
+        {tip && <p className="summary-tip muted">{tip}</p>}
       </div>
 
       <div className="panel">

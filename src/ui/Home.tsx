@@ -126,12 +126,16 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
       {GROUPS.map((g) => (
         <section key={g}>
           <h2 className="group-title">{t(`group.${g}`)}</h2>
+          <p className="group-hint muted">{t(`group.${g}.hint`)}</p>
           <div className="cards">
             {ALL.filter((e) => e.group === g).map((ex) => {
               const p = getProgress(snapshot, ex);
               const m = mastery(p, activeItems(ex, p));
+              // 新手：标出今日训练起步的模块，单独练时知道先点哪个
+              const rec = newbie && STARTER_IDS.includes(ex.id);
               return (
-                <button key={ex.id} className="card" onClick={() => onOpen(ex.id)}>
+                <button key={ex.id} className={rec ? 'card recommended' : 'card'} onClick={() => onOpen(ex.id)}>
+                  {rec && <span className="card-badge">{t('home.recommended')}</span>}
                   <span className="card-icon">{ex.icon}</span>
                   <span className="card-body">
                     <span className="card-title">{ex.title}</span>
@@ -159,6 +163,7 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
 
       <section>
         <h2 className="group-title">{t('group.plans')}</h2>
+        <p className="group-hint muted">{t('group.plans.hint')}</p>
         <div className="cards">
           <ExamCard store={store} onOpen={onExam} />
           <SetsCard store={store} onOpen={onSets} />
@@ -168,8 +173,10 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
 
       <footer className="foot muted">
         {t('home.foot')}
-        <br />
-        {t('home.keys')}
+        <span className="keys-hint">
+          <br />
+          {t('home.keys')}
+        </span>
       </footer>
     </main>
   );

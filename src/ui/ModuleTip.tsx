@@ -64,7 +64,7 @@ const TIPS: Record<string, { how: MessageKey; keys?: Keys }> = {
   },
 };
 
-/** 首次打开某练习时的说明卡片。关闭后记入 settings.tipsSeen；已练过该模块的老用户不显示。 */
+/** 首次打开某练习时开始页上的说明卡片（开始答题后不再显示）。关闭后记入 settings.tipsSeen；已练过该模块的老用户不显示。 */
 export function ModuleTip({ ex, store, update }: Props) {
   const t = useT();
   const keyName = (k: string) => (k in MESSAGES.zh ? t(k as MessageKey) : k);

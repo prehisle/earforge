@@ -248,7 +248,7 @@ export function Onboarding({ store, update, onDone }: Props) {
               <strong>{t('onboard.suggestToday')}</strong>
               {t('onboard.suggest2')}
             </p>
-            <p className="muted">{t('home.keys')}</p>
+            <p className="muted keys-hint">{t('home.keys')}</p>
           </>
         )}
       </section>

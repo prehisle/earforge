@@ -59,11 +59,15 @@ export const zh = {
   'home.custom': '自选考点',
   'home.levelMeta': '第 {level}/{total} 级 · {name}',
   'home.masteryTitle': '当前级别掌握度 {pct}%',
-  'home.foot': '建议从「调内音级」开始：它训练的是在调性中听音的能力，对扒歌、即兴、视唱帮助最大。',
+  'home.recommended': '推荐起步',
+  'home.foot': '想单项练习？建议先练「调内音级」：它训练的是在调性中听音的能力，对扒歌、即兴、视唱帮助最大。',
   'home.keys': '快捷键：数字键作答 · 空格重听 · 回车下一题',
   'group.tonal': '调性听觉',
   'group.basics': '基础',
   'group.sing': '视唱练耳',
+  'group.tonal.hint': '先听终止式定调，再判断音或和弦在调里的位置',
+  'group.basics.hint': '不依赖调性，单独辨认音程、和弦、音阶与节奏',
+  'group.sing.hint': '需要麦克风：对着唱，实时判断音准',
 
   // ───── 练习页 / 答题 ─────
   'practice.options': '选项',
@@ -114,9 +118,12 @@ export const zh = {
   'mix.weakest': '最需要加强的考点',
   'mix.weakVal': '本组 {c}/{n} · 掌握度 {pct}%',
   'mix.again': '再来一组',
+  'mix.tipLow': '刚开始错得多很正常。每次答错都听一遍正确答案，比多做几题更有用；答错的考点之后会更常出现。',
+  'mix.tipHigh': '很稳！当前级别的考点都掌握后，会自动升到下一级。',
 
   // ───── 练习组合 ─────
   'group.plans': '考试与组合',
+  'group.plans.hint': '多个练习组成一套：按考试题型模拟，或自己搭配后分享',
   'group.sets': '自定义练习',
   'sets.title': '🧩 练习组合',
   'sets.cardSub': '自己搭配几个练习的考点与选项，混合出题；可保存、分享',
@@ -342,7 +349,7 @@ export const zh = {
   'onboard.suggestToday': '「今日训练」',
   'onboard.suggest2': '开始：它会自动混合几个练习，挑出最需要练的考点。',
   'onboard.prev': '← 上一步',
-  'onboard.finish': '去首页 · 开始今日训练',
+  'onboard.finish': '进入首页 →',
   'onboard.skipStep': '先不选，下一步',
   'onboard.next': '下一步 →',
   'bg.beginner': '零基础',
