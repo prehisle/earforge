@@ -18,6 +18,7 @@ export const STARTER_IDS = ['degrees', 'intervals'];
 const MAX_MODULES = 4; // 一组最多混合几个模块
 const MAX_ITEMS_PER_MODULE = 4; // 每个模块最多抽几个考点
 const MIN_PER_MODULE = 2; // 入选模块至少出几题
+const HEAVY_SHARE = 0.15; // 耗时长的模块最多占一组的比例
 
 export interface PlanEntry {
   exId: string;
@@ -149,6 +150,7 @@ export function planSession(store: Store, exercises: ExerciseDef[], opts: PlanOp
     mods.map(([, cs]) => need(cs) + 0.2),
     MIN_PER_MODULE,
   );
+  capHeavy(modSlots, mods.map(([exId]) => !!exercises.find((e) => e.id === exId)?.heavy), size);
 
   const list: PlanEntry[] = [];
   mods.forEach(([exId, cs], i) => {
@@ -163,6 +165,21 @@ export function planSession(store: Store, exercises: ExerciseDef[], opts: PlanOp
     });
   });
   return shuffleNoRepeat(list, rng);
+}
+
+/** 耗时长的模块限额，多出的题分给其他模块（全是耗时长的模块时不限）。 */
+export function capHeavy(slots: number[], heavy: boolean[], size: number): void {
+  const light = heavy.map((h, i) => (h ? -1 : i)).filter((i) => i >= 0);
+  if (light.length === 0) return;
+  const cap = Math.max(MIN_PER_MODULE, Math.round(size * HEAVY_SHARE));
+  let freed = 0;
+  heavy.forEach((h, i) => {
+    if (h && slots[i] > cap) {
+      freed += slots[i] - cap;
+      slots[i] = cap;
+    }
+  });
+  allocate(freed, light.map((i) => slots[i])).forEach((k, j) => (slots[light[j]] += k));
 }
 
 const same = (a: PlanEntry, b: PlanEntry) => a.exId === b.exId && a.item === b.item;

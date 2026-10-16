@@ -394,6 +394,7 @@ export const rhythmDictation: ExerciseDef = {
   },
   icon: '♫',
   group: 'tonal',
+  heavy: true,
   levels: rdictLevels(modeOf({})),
   levelsFor: (options) => rdictLevels(modeOf(options)),
   options: [

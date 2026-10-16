@@ -152,4 +152,6 @@ export interface ExerciseDef {
   mic?: boolean;
   /** 需要手动输入（如打节奏），不进今日训练 */
   manual?: boolean;
+  /** 单题耗时长（如写整段旋律），今日训练里限制它的题数 */
+  heavy?: boolean;
 }

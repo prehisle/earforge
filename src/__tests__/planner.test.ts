@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { activeItems, levelsOf, type ExerciseProgress, type ItemStat, type Store } from '../engine/progress';
 import {
   allocate,
+  capHeavy,
   optionsFor,
   peekProgress,
   planSession,
@@ -217,5 +218,20 @@ describe('调式与节奏', () => {
     const plan = planSession(s, EXERCISES, { size: 20, now: NOW, rng: seeded() });
     expect(plan.some((e) => e.exId === 'rhythm')).toBe(true);
     expectUnlocked(s, plan);
+  });
+});
+
+describe('capHeavy', () => {
+  it('耗时长的模块限额，多出的题分给其他模块', () => {
+    const slots = [10, 6, 4];
+    capHeavy(slots, [true, false, false], 20);
+    expect(slots[0]).toBe(3);
+    expect(slots.reduce((a, b) => a + b, 0)).toBe(20);
+    expect(slots[1]).toBeGreaterThan(slots[2]);
+  });
+  it('全是耗时长的模块时不限', () => {
+    const slots = [12, 8];
+    capHeavy(slots, [true, true], 20);
+    expect(slots).toEqual([12, 8]);
   });
 });
