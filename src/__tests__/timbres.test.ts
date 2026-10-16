@@ -11,10 +11,14 @@ import {
   karplusStrong,
   malletDecay,
   pickRandomTimbre,
+  PLUCK_CACHE_MAX,
+  pluckBuffer,
+  pluckCacheSize,
   pluckDelay,
   pluckT60,
   seededRandom,
   softClipCurve,
+  sustainEnvelope,
   voiceTail,
   type SampledTimbre,
 } from '../audio/timbres';
@@ -182,6 +186,58 @@ describe('Karplus-Strong 拨弦', () => {
     const period = bestLag + (0.5 * (a - c)) / (a - 2 * b + c);
     expect(period).toBeCloseTo(pluckDelay(f, sr) + 0.5, 1);
     expect(Math.abs(1200 * Math.log2(((sr / period) * rate) / f))).toBeLessThan(1);
+  });
+});
+
+describe('持续音包络', () => {
+  const sustainDefs = SYNTH_TIMBRES.map((id) => SYNTH_DEFS[id]).filter((d) => d.model === 'sustain');
+
+  it.each([0, 0.001, 0.005, 0.008, 0.012, 0.02, 0.1, 0.5, 2])('时值 %f 秒：先升到峰值再淡出，不会满音量保持到被切断', (dur) => {
+    for (const d of sustainDefs) {
+      const { attack, hold } = sustainEnvelope(d.attack, dur);
+      expect(attack).toBeGreaterThan(0);
+      expect(attack).toBeLessThanOrEqual(d.attack);
+      // 起音结束不晚于开始淡出（否则淡出被起音斜坡盖掉）
+      expect(attack).toBeLessThanOrEqual(hold);
+      expect(hold).toBeGreaterThanOrEqual(dur);
+      expect(hold).toBeLessThanOrEqual(Math.max(dur, 0.002));
+    }
+  });
+
+  it('正常时值的音不变：起音用音色自己的设定', () => {
+    for (const d of sustainDefs) expect(sustainEnvelope(d.attack, 1)).toEqual({ attack: d.attack, hold: 1 });
+  });
+});
+
+describe('拨弦波形缓存', () => {
+  it('有上限（LRU）：最近用过的不重建，最久未用的被淘汰后按原样重建', () => {
+    let built = 0;
+    const ctx = {
+      sampleRate: 48000,
+      createBuffer: (_c: number, len: number) => {
+        built++;
+        const d = new Float32Array(len);
+        return { getChannelData: () => d };
+      },
+    } as unknown as BaseAudioContext;
+    const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
+    const play = (m: number) => pluckBuffer(ctx, m, hz(m)).buf;
+    const first = play(40);
+    // 吉他整个音域（每个音的延迟线长度都不同）
+    for (let m = 41; m <= 88; m++) play(m);
+    expect(built).toBe(49);
+    expect(pluckCacheSize()).toBe(PLUCK_CACHE_MAX);
+    // 最近的仍在缓存里
+    const n = built;
+    play(88);
+    play(88 - PLUCK_CACHE_MAX + 1);
+    expect(built).toBe(n);
+    // 最早的已被淘汰：重建（同一种子，内容相同）
+    const again = play(40);
+    expect(built).toBe(n + 1);
+    expect(again).not.toBe(first);
+    expect(again.getChannelData(0)).toEqual(first.getChannelData(0));
+    expect(pluckCacheSize()).toBe(PLUCK_CACHE_MAX);
   });
 });
 

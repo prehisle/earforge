@@ -222,6 +222,18 @@ describe('答题流程 reducer', () => {
     expect(s.plays).toEqual([3, 0]);
   });
 
+  it('随机音色：记下每题自动播放时的乐器，重听不改写，交卷后回顾按题取用', () => {
+    let s = initRun([1, 1, 1], 2, null, T0);
+    expect(s.timbres).toEqual([null, null, null]);
+    s = run(s, { type: 'play', timbre: 'organ' }, { type: 'play' }, { type: 'play', timbre: 'flute' });
+    expect(s.timbres[0]).toBe('organ');
+    s = run(s, { type: 'next', now: T0 }, { type: 'play', timbre: 'marimba' });
+    // 不是随机模式：不记（回顾时跟随设置）
+    s = run(s, { type: 'next', now: T0 }, { type: 'play', timbre: null }, { type: 'submit', now: T0 });
+    expect(s.status).toBe('done');
+    expect(s.timbres).toEqual(['organ', 'marimba', null]);
+  });
+
   it('作答可修改；多步题自动跳到下一个空格', () => {
     let s = initRun([3], 0, null, T0);
     s = run(s, { type: 'answer', id: 'a', now: T0 });

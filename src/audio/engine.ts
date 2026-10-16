@@ -208,22 +208,25 @@ class AudioEngine {
 
   // ───── 播放 ─────
 
-  /** 播放一组事件，返回总时长（秒）。会先停止正在播放的声音。 */
-  async play(events: NoteEvent[]): Promise<number> {
+  /**
+   * 播放一组事件，返回总时长（秒）。会先停止正在播放的声音。
+   * timbre：指定乐器（如考试回顾重放某题当时的乐器）；默认用当前音色。
+   */
+  async play(events: NoteEvent[], timbre: Timbre = this.current): Promise<number> {
     this.stopAll();
     const gen = this.gen;
     await this.resume();
     // 等待期间又调用了 play / stopAll（如离开页面）：这次播放作废
     if (gen !== this.gen) return 0;
-    return this.schedule(this.bus(), events, this.context.currentTime + 0.05, this.current);
+    return this.schedule(this.bus(), events, this.context.currentTime + 0.05, timbre);
   }
 
   /** 叠加播放一组事件（不停止正在播放的声音），返回总时长（秒）。stopAll 同样能停止它。 */
-  async playExtra(events: NoteEvent[]): Promise<number> {
+  async playExtra(events: NoteEvent[], timbre: Timbre = this.current): Promise<number> {
     const gen = this.gen;
     await this.resume();
     if (gen !== this.gen) return 0;
-    return this.schedule(this.bus(), events, this.context.currentTime + 0.05, this.current);
+    return this.schedule(this.bus(), events, this.context.currentTime + 0.05, timbre);
   }
 
   /**

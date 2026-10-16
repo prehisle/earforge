@@ -193,6 +193,25 @@ describe('音频引擎', () => {
     }
   });
 
+  it('指定乐器播放（考试回顾重放当时的乐器）：用指定的乐器，不改本题抽到的音色', async () => {
+    const audio = await freshEngine();
+    const count = async (p: Promise<number>) => {
+      resumeGate?.();
+      await p;
+      const n = sources.length;
+      sources = [];
+      return n;
+    };
+    audio.timbre = 'guitar';
+    const guitar = await count(audio.play(NOTE));
+    audio.timbre = 'organ';
+    const organ = await count(audio.play(NOTE));
+    expect(guitar).not.toBe(organ);
+    expect(await count(audio.play(NOTE, 'guitar'))).toBe(guitar);
+    expect(await count(audio.playExtra(NOTE, 'guitar'))).toBe(guitar);
+    expect(audio.current).toBe('organ');
+  });
+
   it('未下载的采样乐器：先用同类合成音色发声并开始下载', async () => {
     const urls: string[] = [];
     vi.stubGlobal('OfflineAudioContext', class {});
