@@ -144,6 +144,12 @@ export function AboutPage({ onBack }: Props) {
         <h2 id="about-license">{t('about.license')}</h2>
         <p>{t('about.version', { v: APP_VERSION })}</p>
         <p>{t('about.license.body')}</p>
+        <p>
+          {t('about.source')}{' '}
+          <a href="https://github.com/prehisle/earforge" target="_blank" rel="noopener noreferrer">
+            github.com/prehisle/earforge
+          </a>
+        </p>
         <ul>
           <li>
             {t('about.credits.piano')}{' '}

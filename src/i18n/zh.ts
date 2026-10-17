@@ -922,6 +922,7 @@ export const zh = {
   'about.license': '版本、许可与致谢',
   'about.version': '版本 {v}',
   'about.license.body': 'EarForge 耳锻是开源软件，代码以 MIT 许可发布，欢迎提 Issue 与 PR。',
+  'about.source': '源代码与问题反馈：',
   'about.credits.piano': '采样钢琴音色：',
   'about.credits.songs': '视唱曲库只收录耳锻原创练习与公有领域旋律（传统民歌，或作者去世超过 70 年的作品）。',
 

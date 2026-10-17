@@ -5,7 +5,7 @@ English | [中文](README.md)
 **Learn to hear notes in music: free, open-source, offline-ready ear training with movable do, right in your browser.**
 
 <!-- TODO: replace the link below with your GitHub Pages URL after deploying -->
-**[▶ Try it online](https://<your-username>.github.io/earforge/)** (TODO: replace with the real URL) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+**[▶ Try it online](https://prehisle.github.io/earforge/)** · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
 ![EarForge home: today's training, daily goal and exercises](docs/screenshots/home-en.webp)
 
@@ -130,14 +130,14 @@ There is also the **sight-singing library** (48 pieces in 5 levels) and **mock e
 
 ### Use it
 
-Open the **[online version](https://<your-username>.github.io/earforge/)** (TODO: replace with the real URL); there is nothing to sign up for. To use it like an app, choose "Install" or "Add to Home Screen" in your browser menu.
+Open the **[online version](https://prehisle.github.io/earforge/)**; there is nothing to sign up for. To use it like an app, choose "Install" or "Add to Home Screen" in your browser menu.
 
 ### Local development
 
 Requires Node.js 22 or later.
 
 ```bash
-git clone https://github.com/<your-username>/earforge.git
+git clone https://github.com/prehisle/earforge.git
 cd earforge
 npm install
 npm run dev      # dev server at http://localhost:5173

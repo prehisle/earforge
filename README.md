@@ -5,7 +5,7 @@
 **在音乐里听出音来：开源、免费、离线可用的首调练耳训练，打开浏览器就能练。**
 
 <!-- TODO: 部署 GitHub Pages 后把下面的链接换成你的地址 -->
-**[▶ 在线试用](https://<your-username>.github.io/earforge/)**（TODO：替换为实际地址）· [更新日志](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md)
+**[▶ 在线试用](https://prehisle.github.io/earforge/)**· [更新日志](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md)
 
 ![耳锻首页：今日训练、每日目标与各练习模块](docs/screenshots/home-zh.webp)
 
@@ -130,14 +130,14 @@
 
 ### 直接使用
 
-打开 **[在线版](https://<your-username>.github.io/earforge/)**（TODO：替换为实际地址），不需要注册。想像 App 一样使用，可以在浏览器菜单里选择「安装」或「添加到主屏幕」。
+打开 **[在线版](https://prehisle.github.io/earforge/)**，不需要注册。想像 App 一样使用，可以在浏览器菜单里选择「安装」或「添加到主屏幕」。
 
 ### 本地开发
 
 需要 Node.js 22 及以上。
 
 ```bash
-git clone https://github.com/<your-username>/earforge.git
+git clone https://github.com/prehisle/earforge.git
 cd earforge
 npm install
 npm run dev      # 开发服务器 http://localhost:5173

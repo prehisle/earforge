@@ -934,6 +934,7 @@ export const en: Record<MessageKey, string> = {
   'about.license': 'Version, license and credits',
   'about.version': 'Version {v}',
   'about.license.body': 'EarForge is open-source software released under the MIT license. Issues and pull requests are welcome.',
+  'about.source': 'Source code and issue tracker:',
   'about.credits.piano': 'Sampled piano:',
   'about.credits.songs': 'The sight-singing library contains only EarForge originals and public-domain melodies (traditional tunes, or works whose composer died more than 70 years ago).',
 
