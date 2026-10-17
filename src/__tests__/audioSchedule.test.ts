@@ -7,7 +7,6 @@ import type { NoteEvent, Timbre } from '../audio/engine';
 type Rec = { kind: string; at?: number; info: string; created: number; started?: number; stopped?: number };
 
 let ctxs: RecContext[] = [];
-let resumeGate: (() => void) | null = null;
 const r6 = (x: number) => Math.round(x * 1e6) / 1e6;
 
 class RecContext {
@@ -20,17 +19,11 @@ class RecContext {
     ctxs.push(this);
   }
   resume() {
-    return new Promise<void>((r) => {
-      resumeGate = () => {
-        this.state = 'running';
-        r();
-      };
-    });
+    return Promise.resolve();
   }
   private param(owner: Rec, name: string) {
-    const ctx = this;
     const log = (op: string) => (v: number, t: number, c?: number) => {
-      ctx.recs.push({ kind: `param:${owner.kind}.${name}`, at: r6(t), info: `${op}(${r6(v)}${c === undefined ? '' : `,${r6(c)}`})`, created: ctx.currentTime });
+      this.recs.push({ kind: `param:${owner.kind}.${name}`, at: r6(t), info: `${op}(${r6(v)}${c === undefined ? '' : `,${r6(c)}`})`, created: this.currentTime });
     };
     let value = 0;
     return {
@@ -147,7 +140,6 @@ const CASES: [string, Timbre, NoteEvent[]][] = [
 describe('排程时间基准（快照）', () => {
   beforeEach(() => {
     ctxs = [];
-    resumeGate = null;
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
     vi.stubGlobal('AudioContext', RecContext);
     // 气声的随机起点：固定下来便于比较
@@ -197,5 +189,79 @@ describe('排程时间基准（快照）', () => {
     drain(ctx);
     const osc = ctx.recs.find((r) => r.kind === 'osc')!;
     expect(osc.started).toBeCloseTo(t0 + 0.5, 9);
+  });
+});
+
+const LONG: NoteEvent[] = Array.from({ length: 12 }, (_, i) => ({ notes: [48 + (i % 5), 60, 64, 67], time: i * 0.5, dur: 0.5 }));
+const sourcesOf = (ctx: RecContext, from = 0) => ctx.recs.slice(from).filter((r) => r.kind === 'osc' || r.kind === 'bufsrc');
+
+describe('边播边排程', () => {
+  beforeEach(() => {
+    ctxs = [];
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    vi.stubGlobal('AudioContext', RecContext);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  async function start(events: NoteEvent[], timbre: Timbre = 'piano') {
+    const audio = await freshEngine();
+    audio.warmUp();
+    const ctx = ctxs[0];
+    const from = ctx.recs.length;
+    const t0 = ctx.currentTime + 0.05;
+    await audio.play(events, timbre);
+    return { audio, ctx, from, t0 };
+  }
+
+  it('开始时只建最近的音，其余随播放推进再建；每个声源都在发声之前建好', async () => {
+    const { audio, ctx, from, t0 } = await start(LONG);
+    const first = sourcesOf(ctx, from);
+    expect(first.length).toBeGreaterThan(0);
+    expect(Math.max(...first.map((r) => r.started!))).toBeLessThan(t0 + 0.2 + 1e-9);
+    expect(audio.pendingVoices).toBeGreaterThan(0);
+    drain(ctx);
+    expect(audio.pendingVoices).toBe(0);
+    const all = sourcesOf(ctx, from);
+    expect(new Set(all.map((r) => r.started)).size).toBe(12);
+    for (const r of all) expect(r.created).toBeLessThanOrEqual(r.started!);
+  });
+
+  it('播到一半 stopAll：已建的全部停止，没建的不再建', async () => {
+    const { audio, ctx, from } = await start(LONG);
+    for (let i = 0; i < 40; i++) {
+      ctx.currentTime += 0.025;
+      vi.advanceTimersByTime(25);
+    }
+    audio.stopAll();
+    const n = ctx.recs.length;
+    expect(audio.pendingVoices).toBe(0);
+    drain(ctx);
+    expect(ctx.recs.length).toBe(n);
+    expect(sourcesOf(ctx, from).every((r) => r.stopped === -1)).toBe(true);
+  });
+
+  it('重播（再次 play）：上一次没建的音不再建，只剩这一次的', async () => {
+    const { audio, ctx } = await start(LONG);
+    const t1 = ctx.currentTime + 0.05;
+    await audio.play([{ notes: [72], time: 0, dur: 0.5 }]);
+    const from = ctx.recs.length;
+    drain(ctx);
+    expect(sourcesOf(ctx, from)).toHaveLength(0); // 第二次只有一个音，开始时就建好了
+    const started = sourcesOf(ctx).filter((r) => r.stopped !== -1);
+    expect(started.every((r) => Math.abs(r.started! - t1) < 1e-9)).toBe(true);
+  });
+
+  it('叠加播放（playExtra）与 play 各自排程，stopAll 两个都取消', async () => {
+    const { audio, ctx } = await start(LONG);
+    await audio.playExtra(LONG);
+    expect(audio.pendingVoices).toBeGreaterThan(LONG.length * 4);
+    audio.stopAll();
+    expect(audio.pendingVoices).toBe(0);
+    const n = ctx.recs.length;
+    drain(ctx);
+    expect(ctx.recs.length).toBe(n);
   });
 });
