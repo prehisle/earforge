@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-17
+
+### Changed
+- 首页对新手做减法：新用户只突出 3 个入门练习（调内音级、音程识别、和弦性质；引导里选「学过乐器」加级数和弦，选「备考」加旋律听写），其余收进可折叠的「更多练习（N）」，展开状态会记住。练过的练习一律排在前面；累计答满 50 题解锁和弦转位、音阶与调式、级数和弦、节奏听写、旋律听写，满 150 题全部显示。老用户练过的练习不会消失。规则见 `src/engine/homeLayout.ts`。
+- 音频改为边播边排程（`src/audio/scheduler.ts`）：开始时只建未来 0.2 秒内的音，之后每 25 毫秒继续排程；页面转入后台时一次建完。CPU 降速 4 倍时，每题开头最长的长任务从约 110 毫秒（和声听写约 215 毫秒）降到 0。发声时刻逐一不变，已有快照测试锁定；停止、切题、重播时不会有残留的音。
+
+### Fixed
+- 采样木吉他逐个采样校音：按实测基频（FFT，能量加权）修正，改前偏差 −7.3～+5.5 音分，改后全部在 ±0.7 以内。
+- 采样是否就绪改为在排程时就定下来，播到一半采样下载完成时，不会出现前半句合成、后半句采样。
+
+### Added
+- e2e 场景 `home-simple`。
+
 ## [0.11.0] - 2026-10-16
 
 ### Added
@@ -214,15 +227,16 @@
 - Web Audio 合成钢琴音色；YIN 实时音高检测。
 - 首调唱名、简谱、固定调唱名、字母音名四种显示方式；深色模式；PWA 离线可用。
 
-[Unreleased]: https://github.com/<your-username>/earforge/compare/v0.11.0...HEAD
-[0.11.0]: https://github.com/<your-username>/earforge/compare/v0.10.0...v0.11.0
-[0.10.0]: https://github.com/<your-username>/earforge/compare/v0.9.0...v0.10.0
-[0.9.0]: https://github.com/<your-username>/earforge/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/<your-username>/earforge/compare/v0.7.0...v0.8.0
-[0.7.0]: https://github.com/<your-username>/earforge/compare/v0.6.0...v0.7.0
-[0.6.0]: https://github.com/<your-username>/earforge/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/<your-username>/earforge/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/<your-username>/earforge/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/<your-username>/earforge/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/<your-username>/earforge/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/<your-username>/earforge/releases/tag/v0.1.0
+[Unreleased]: https://github.com/prehisle/earforge/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/prehisle/earforge/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/prehisle/earforge/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/prehisle/earforge/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/prehisle/earforge/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/prehisle/earforge/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/prehisle/earforge/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/prehisle/earforge/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/prehisle/earforge/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/prehisle/earforge/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/prehisle/earforge/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/prehisle/earforge/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/prehisle/earforge/releases/tag/v0.1.0
