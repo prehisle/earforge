@@ -4,7 +4,7 @@
 import { writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { answerQuestion, run, sleep } from '../lib/harness.mjs';
+import { answerQuestion, expandMore, run, sleep } from '../lib/harness.mjs';
 
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 const LEVELS = ['minor', 'moderate', 'serious', 'critical'];
@@ -24,9 +24,13 @@ await run(async (t) => {
           : { start: 'Start', back: 'Back', stats: 'Stats', settings: 'Settings', lib: 'Sight-Singing Library', degrees: 'Scale Degrees', inversions: 'Chord Inversions', scales: 'Scales & Modes', intervals: 'Intervals', harmony: 'Harmonic Dictation', bassLine: 'Bass-Line Dictation', about: 'Guide & shortcuts', sets: 'Custom practice', tpl: 'Intervals + chord qualities', save: 'Save' };
       // 按文字或 aria-label 匹配
       const click = async (text, sel = 'button') => {
-        for (const el of await page.$$(sel)) {
-          const s = await el.evaluate((e) => (e.textContent + ' ' + (e.getAttribute('aria-label') ?? '')).trim());
-          if (s.includes(text)) return el.click();
+        for (let pass = 0; pass < 2; pass++) {
+          for (const el of await page.$$(sel)) {
+            const s = await el.evaluate((e) => (e.textContent + ' ' + (e.getAttribute('aria-label') ?? '')).trim());
+            if (s.includes(text)) return el.click();
+          }
+          // 首页卡片可能收在「更多练习」里
+          if (pass > 0 || !sel.includes('card') || !(await expandMore(page))) break;
         }
         throw new Error(`${tag}: no ${sel} "${text}"`);
       };

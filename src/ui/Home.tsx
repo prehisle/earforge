@@ -10,6 +10,7 @@ import {
 } from '../engine/progress';
 import { NEWBIE_QUESTIONS, totalAnswered } from '../engine/onboarding';
 import { STARTER_IDS, peekProgress, planModules, rankItems } from '../engine/planner';
+import { SONGS_ID, homeLayout } from '../engine/homeLayout';
 import { EXERCISES as ALL, exerciseById } from '../exercises';
 import { joinList } from '../i18n';
 import { useT } from '../i18n/react';
@@ -31,11 +32,13 @@ interface Props {
   onSets(): void;
   /** 成绩单（有收到的成绩时才显示入口） */
   onGradebook(): void;
+  /** 展开 / 收起「更多练习」（记在设置里） */
+  onToggleMore(open: boolean): void;
 }
 
 const GROUPS: ExerciseDef['group'][] = ['tonal', 'basics', 'sing'];
 
-export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onSets, onGradebook, onAbout }: Props) {
+export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExam, onSets, onGradebook, onAbout, onToggleMore }: Props) {
   const t = useT();
   const day = store.daily[today()];
   const days = streak(store);
@@ -58,6 +61,44 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
     const ex = exerciseById[id];
     return t('home.starter', { title: ex.title, level: peekProgress(store, ex).level + 1 });
   }).join(t('home.starterJoin'));
+
+  // 首页卡片：新手只突出入门练习，其余收进「更多练习」（规则见 engine/homeLayout）
+  const byGroup = Object.fromEntries(
+    GROUPS.map((g) => [g, [...ALL.filter((e) => e.group === g).map((e) => e.id), ...(g === 'sing' ? [SONGS_ID] : [])]]),
+  ) as Record<ExerciseDef['group'], string[]>;
+  const layout = homeLayout(store, GROUPS.flatMap((g) => byGroup[g]));
+  const titleOf = (id: string) => (id === SONGS_ID ? t('songs.title') : exerciseById[id].title);
+
+  const card = (id: string) => {
+    if (id === SONGS_ID) return <SongsCard key={id} store={store} onOpen={onSongs} />;
+    const ex = exerciseById[id];
+    const p = getProgress(snapshot, ex);
+    const m = mastery(p, activeItems(ex, p));
+    // 新手：标出今日训练起步的模块，单独练时知道先点哪个
+    const rec = newbie && STARTER_IDS.includes(ex.id);
+    return (
+      <button key={ex.id} className={rec ? 'card recommended' : 'card'} onClick={() => onOpen(ex.id)}>
+        {rec && <span className="card-badge">{t('home.recommended')}</span>}
+        <span className="card-icon">{ex.icon}</span>
+        <span className="card-body">
+          <span className="card-title">{ex.title}</span>
+          <span className="card-sub">{ex.subtitle}</span>
+          <span className="card-meta">
+            {p.custom
+              ? t('home.custom')
+              : t('home.levelMeta', {
+                  level: p.level + 1,
+                  total: levelsOf(ex, p.options).length,
+                  name: levelLabel(currentLevel(ex, p).name, t),
+                })}
+          </span>
+          <span className="meter" title={t('home.masteryTitle', { pct: Math.round(m * 100) })}>
+            <span className="meter-fill" style={{ width: `${m * 100}%` }} />
+          </span>
+        </span>
+      </button>
+    );
+  };
 
   return (
     <main className="page">
@@ -124,43 +165,59 @@ export function Home({ store, onOpen, onMix, onStats, onSettings, onSongs, onExa
         </div>
       </section>
 
-      {GROUPS.map((g) => (
-        <section key={g}>
-          <h2 className="group-title">{t(`group.${g}`)}</h2>
-          <p className="group-hint muted">{t(`group.${g}.hint`)}</p>
-          <div className="cards">
-            {ALL.filter((e) => e.group === g).map((ex) => {
-              const p = getProgress(snapshot, ex);
-              const m = mastery(p, activeItems(ex, p));
-              // 新手：标出今日训练起步的模块，单独练时知道先点哪个
-              const rec = newbie && STARTER_IDS.includes(ex.id);
-              return (
-                <button key={ex.id} className={rec ? 'card recommended' : 'card'} onClick={() => onOpen(ex.id)}>
-                  {rec && <span className="card-badge">{t('home.recommended')}</span>}
-                  <span className="card-icon">{ex.icon}</span>
-                  <span className="card-body">
-                    <span className="card-title">{ex.title}</span>
-                    <span className="card-sub">{ex.subtitle}</span>
-                    <span className="card-meta">
-                      {p.custom
-                        ? t('home.custom')
-                        : t('home.levelMeta', {
-                            level: p.level + 1,
-                            total: levelsOf(ex, p.options).length,
-                            name: levelLabel(currentLevel(ex, p).name, t),
-                          })}
-                    </span>
-                    <span className="meter" title={t('home.masteryTitle', { pct: Math.round(m * 100) })}>
-                      <span className="meter-fill" style={{ width: `${m * 100}%` }} />
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-            {g === 'sing' && <SongsCard store={store} onOpen={onSongs} />}
-          </div>
+      {layout.more.length > 0 ? (
+        // 还有收起的练习：前面的卡片不分组，放在一个网格里（几张卡片分到三组里显得零散）
+        <section>
+          <h2 className="group-title">{t('home.front')}</h2>
+          <p className="group-hint muted">{t('home.frontHint')}</p>
+          <div className="cards">{layout.front.map(card)}</div>
         </section>
-      ))}
+      ) : (
+        GROUPS.map((g) => (
+          <section key={g}>
+            <h2 className="group-title">{t(`group.${g}`)}</h2>
+            <p className="group-hint muted">{t(`group.${g}.hint`)}</p>
+            <div className="cards">{byGroup[g].map(card)}</div>
+          </section>
+        ))
+      )}
+
+      {layout.more.length > 0 && (
+        <section className={store.settings.homeMore ? 'more-ex open' : 'more-ex'}>
+          <button
+            className="more-toggle"
+            aria-expanded={store.settings.homeMore}
+            aria-controls="more-ex-body"
+            onClick={() => onToggleMore(!store.settings.homeMore)}
+          >
+            <span className="more-arrow" aria-hidden="true">
+              ▸
+            </span>
+            <span className="more-title">{t('home.more', { n: layout.more.length })}</span>
+            <span className="more-action">{store.settings.homeMore ? t('home.moreHide') : t('home.moreShow')}</span>
+          </button>
+          <p className="group-hint muted more-hint">
+            {layout.next
+              ? t('home.moreUnlock', { n: layout.next.left, names: joinList(layout.next.ids.map(titleOf)) })
+              : t('home.moreHint')}
+          </p>
+          {store.settings.homeMore && (
+            <div id="more-ex-body" className="more-body">
+              {GROUPS.map((g) => {
+                const ids = byGroup[g].filter((id) => layout.more.includes(id));
+                return (
+                  ids.length > 0 && (
+                    <div key={g} className="more-group">
+                      <h3 className="group-title">{t(`group.${g}`)}</h3>
+                      <div className="cards">{ids.map(card)}</div>
+                    </div>
+                  )
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       <section>
         <h2 className="group-title">{t('group.plans')}</h2>

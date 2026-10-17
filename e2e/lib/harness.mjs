@@ -34,11 +34,26 @@ export const config = {
   headful: process.env.E2E_HEADFUL === '1',
 };
 
-/** 按文字点击：在 sel 匹配的元素里找 textContent 包含（exact 时等于）text 的第一个，点击。 */
+/** 首页「更多练习」若是收起的就展开（展开状态会记在设置里）；返回是否点了展开 */
+export async function expandMore(page) {
+  const btn = await page.$('.more-toggle[aria-expanded="false"]');
+  if (!btn) return false;
+  await btn.click();
+  await page.waitForSelector('.more-body');
+  return true;
+}
+
+/**
+ * 按文字点击：在 sel 匹配的元素里找 textContent 包含（exact 时等于）text 的第一个，点击。
+ * 找卡片（sel 含 card）时，首页没显示出来的先展开「更多练习」再找一次。
+ */
 export async function clickText(page, text, sel = 'button', exact = false) {
-  for (const el of await page.$$(sel)) {
-    const s = (await el.evaluate((e) => e.textContent ?? '')).trim();
-    if (exact ? s === text : s.includes(text)) return el.click();
+  for (let pass = 0; pass < 2; pass++) {
+    for (const el of await page.$$(sel)) {
+      const s = (await el.evaluate((e) => e.textContent ?? '')).trim();
+      if (exact ? s === text : s.includes(text)) return el.click();
+    }
+    if (pass > 0 || !sel.includes('card') || !(await expandMore(page))) break;
   }
   throw new Error(`找不到 ${sel}「${text}」 / no ${sel} "${text}"`);
 }

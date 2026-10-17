@@ -29,7 +29,7 @@ await run(async (t) => {
   await clickText(page, '返回');
 
   // 旋律听写（多步）：5 题
-  await clickText(page, '旋律听写');
+  await clickText(page, '旋律听写', '.card');
   await clickText(page, '开始练习');
   for (let k = 0; k < 5; k++) {
     for (let g = 0; g < 50 && !(await page.$('.feedback')); g++) {
@@ -47,7 +47,7 @@ await run(async (t) => {
   await clickText(page, '返回');
 
   // 视唱（Chrome 假麦克风）
-  await clickText(page, '视唱');
+  await clickText(page, '视唱', '.card');
   await clickText(page, '开始练习');
   await sleep(1500);
   await t.shot(page, '5-sing', { fullPage: false });

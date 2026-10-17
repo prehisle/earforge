@@ -62,6 +62,13 @@ export const en: Record<MessageKey, string> = {
   'home.levelMeta': 'Level {level}/{total} · {name}',
   'home.masteryTitle': 'Current level mastery: {pct}%',
   'home.recommended': 'Start here',
+  'home.front': 'Exercises',
+  'home.frontHint': 'Starter exercises and the ones you have practised; the rest are under More exercises below',
+  'home.more': 'More exercises ({n})',
+  'home.moreShow': 'Show',
+  'home.moreHide': 'Hide',
+  'home.moreUnlock': 'Answer {n} more {n:question|questions} and {names} will move up here. Any exercise you practise moves up too.',
+  'home.moreHint': 'Any exercise you practise moves up here.',
   'home.foot':
     'Practicing one exercise? Start with Scale Degrees: it trains you to hear notes within a key, which helps most with playing by ear, improvising and sight-singing.',
   'home.keys': 'Shortcuts: number keys to answer · Space to replay · Enter for next',
