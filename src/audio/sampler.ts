@@ -13,6 +13,12 @@ export interface SampledInstrument {
   notes: readonly number[];
   /** 最大移调幅度（半音）：超出时回退到合成音色 */
   maxShift: number;
+  /**
+   * 各采样实测的音高偏差（音分，正为偏高），播放时反向校正。缺省为 0。
+   * 测法：解码后从起音后 0.05 s 到 1.2 s，每 50 ms 取一帧（≥ 0.12 s）用补零 FFT 找基频峰，按帧能量加权平均——
+   * 拨弦起音时会略偏高再回落，按能量加权最接近听感；只看基频，不受高次分音非谐性的影响。
+   */
+  tune?: Readonly<Record<number, number>>;
   /** 合计下载量（MB，设置页显示） */
   sizeMb: number;
   /** 力度为 1 时的增益：与合成钢琴响度相当 */
@@ -66,6 +72,8 @@ export const INSTRUMENTS: Record<SampledTimbre, SampledInstrument> = {
   'sampled-guitar': {
     base: `${INSTRUMENTS_BASE}guitar-acoustic/`,
     notes: every(40, 73, 3),
+    // 实测：低、中音区普遍偏低 4–7 音分，E4 偏高约 5.6；校正后各音在 ±1 音分内
+    tune: { 40: -4.2, 43: -3.8, 46: -4.2, 49: -5.6, 52: -4.9, 55: -7.2, 58: 1.6, 61: -0.2, 64: 5.6, 67: 0.5, 70: 1.9, 73: -1.1 },
     maxShift: 3,
     sizeMb: 2.2,
     gain: 2,
@@ -94,7 +102,7 @@ export const INSTRUMENTS: Record<SampledTimbre, SampledInstrument> = {
   },
 };
 
-/** 给定音高，返回最近的采样与播放速率；超出覆盖范围（移调超过 maxShift）时返回 null */
+/** 给定音高，返回最近的采样与播放速率（含该采样的音高校正）；超出覆盖范围（移调超过 maxShift）时返回 null */
 export function pickSample(
   midi: number,
   inst: SampledInstrument = INSTRUMENTS.sampled,
@@ -103,7 +111,8 @@ export function pickSample(
   let sample = inst.notes[0];
   for (const n of inst.notes) if (Math.abs(n - midi) <= Math.abs(sample - midi)) sample = n;
   if (Math.abs(midi - sample) > inst.maxShift) return null;
-  return { sample, file: noteFile(sample)!, rate: 2 ** ((midi - sample) / 12) };
+  const cents = inst.tune?.[sample] ?? 0;
+  return { sample, file: noteFile(sample)!, rate: 2 ** ((midi - sample - cents / 100) / 12) };
 }
 
 /** 并行下载并解码某个乐器的全部采样；每完成一个回调一次进度（0..1）。任一失败则整体失败。 */
