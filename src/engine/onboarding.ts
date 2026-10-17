@@ -1,10 +1,10 @@
 // 新手引导：按用户背景设定各模块的起始级别与每日目标。纯函数（applyBackground 只修改传入的 store）。
 
-import type { ExerciseDef } from './types';
+import type { Background, ExerciseDef } from './types';
 import { t } from '../i18n';
 import { getProgress, levelsOf, type Store } from './progress';
 
-export type Background = 'beginner' | 'player' | 'exam';
+export type { Background };
 
 /** 背景选项；label / desc 按当前语言取值 */
 export const BACKGROUNDS: { id: Background; readonly label: string; readonly desc: string }[] = (
@@ -40,7 +40,7 @@ export function startLevel(bg: Background, ex: ExerciseDef, options: Record<stri
 }
 
 /**
- * 应用背景：提升各模块的起始级别并设定每日目标。只升不降，已有的练习记录与自选考点保持不变
+ * 应用背景：提升各模块的起始级别、设定每日目标并记下所选背景（首页据此突出入门练习）。只升不降，已有的练习记录与自选考点保持不变
  * （重新查看引导时不会把用户已解锁的级别调低）。
  */
 export function applyBackground(store: Store, bg: Background, exercises: ExerciseDef[]): void {
@@ -50,6 +50,7 @@ export function applyBackground(store: Store, bg: Background, exercises: Exercis
     p.level = Math.max(p.level, startLevel(bg, ex, p.options));
   }
   store.settings.dailyGoal = DAILY_GOALS[bg];
+  store.settings.background = bg;
 }
 
 /** 累计作答题数（首页「从这里开始」提示用） */

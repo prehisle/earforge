@@ -220,6 +220,7 @@ export const SETTING_ENUMS = {
   keyMode: ['C', 'random'],
   voice: ['low', 'high'],
   notation: ['jianpu', 'staff', 'both'],
+  background: ['', 'beginner', 'player', 'exam'],
 } as const satisfies { [K in keyof Settings]?: readonly Settings[K][] };
 
 /** 规范化各练习的进度（读取本地数据与导入备份时用）：补全缺失的字段，丢弃格式不对的条目，避免出题与统计时报错。 */

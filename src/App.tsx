@@ -139,6 +139,7 @@ export default function App() {
             onSets={() => setRoute({ page: 'sets' })}
             onGradebook={() => setRoute({ page: 'gradebook' })}
             onAbout={() => setRoute({ page: 'about', from: 'home' })}
+            onToggleMore={(open) => update((s) => void (s.settings.homeMore = open))}
           />
         )}
         {route.page === 'practice' && (

@@ -5,7 +5,7 @@ import { clickText, run, sleep } from '../lib/harness.mjs';
 await run(async (t) => {
   await t.launch({ fakeMic: 'wav' });
   const page = await t.open({ lang: 'en-US', tag: 'pitch' });
-  await clickText(page, 'Sight-Singing Library');
+  await clickText(page, 'Sight-Singing Library', '.card');
   await sleep(200);
   await clickText(page, 'Hot Cross Buns', '.song-card');
   await sleep(300);

@@ -27,7 +27,7 @@ await run(async (t) => {
     };
 
     await shot('0-home');
-    await click(T.lib);
+    await click(T.lib, '.card');
     await sleep(200);
     await shot('1-library');
     await click('4', '.songs-filter .seg button');

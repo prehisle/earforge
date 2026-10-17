@@ -1,7 +1,7 @@
 // 英文界面：新手引导、各练习（出题 / 反馈 / 选项，含和弦转位、音阶与调式、和声听写、复音程）、节奏模仿、视唱、今日训练、练习组合、统计、设置、关于与帮助，
 // 在 375 / 1024 × 浅色 / 深色下扫描漏翻的中文与溢出；最后切回中文再切回英文。原 i18n.mjs
 // 可选：E2E_FILTER=375-light 只跑一个配置。
-import { CJK, run, sleep } from '../lib/harness.mjs';
+import { CJK, expandMore, run, sleep } from '../lib/harness.mjs';
 
 const only = process.env.E2E_FILTER;
 
@@ -59,12 +59,16 @@ await run(async (t) => {
     };
 
     const clickText = async (text, sel = 'button') => {
-      for (const el of await page.$$(sel)) {
-        if ((await el.evaluate((e) => e.textContent)).includes(text)) {
-          await el.click();
-          await sleep(150);
-          return;
+      for (let pass = 0; pass < 2; pass++) {
+        for (const el of await page.$$(sel)) {
+          if ((await el.evaluate((e) => e.textContent)).includes(text)) {
+            await el.click();
+            await sleep(150);
+            return;
+          }
         }
+        // 首页卡片可能收在「更多练习」里
+        if (pass > 0 || !sel.includes('card') || !(await expandMore(page))) break;
       }
       throw new Error(`${tag}: no ${sel} "${text}"`);
     };

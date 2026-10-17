@@ -113,7 +113,14 @@ export interface Settings {
   onboarded: boolean;
   /** 已关闭首次使用提示的练习 id */
   tipsSeen: string[];
+  /** 新手引导里选的背景（'' 表示没选或旧数据）；决定首页突出哪几个入门练习 */
+  background: '' | Background;
+  /** 首页「更多练习」折叠区是否展开 */
+  homeMore: boolean;
 }
+
+/** 新手引导的背景选项：零基础 / 学过乐器 / 备考 */
+export type Background = 'beginner' | 'player' | 'exam';
 
 export type Notation = 'jianpu' | 'staff' | 'both';
 
@@ -131,6 +138,8 @@ export const DEFAULT_SETTINGS: Settings = {
   notation: 'both',
   onboarded: true,
   tipsSeen: [],
+  background: '',
+  homeMore: false,
 };
 
 export interface GenContext {
