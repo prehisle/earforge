@@ -3,6 +3,7 @@
 
 import { midiToFreq } from '../music/theory';
 import { INSTRUMENTS, loadSamples, pickSample } from './sampler';
+import { Pump, type Job } from './scheduler';
 import {
   buildVoice,
   isSampled,
@@ -73,6 +74,8 @@ class AudioEngine {
   private gestureWait = false;
   private master: GainNode | null = null;
   private active = new Set<AudioScheduledSourceNode>();
+  /** 正在边播边排程的播放（stopAll 取消，页面转入后台时一次建完） */
+  private pumps = new Set<Pump>();
   /** 每次 play / stopAll 加一：等待 resume 期间被取代或被停止的播放不再安排 */
   private gen = 0;
   /** 设置里的音色（可为 'random'） */
@@ -92,7 +95,10 @@ class AudioEngine {
       this.active.clear();
       // 先新建（可能抛错）再注册前台回调：失败后重试时不会重复注册
       this.ctx = new AudioContext({ latencyHint: 'interactive' });
-      if (first) watchVisibility(() => this.wake());
+      if (first) {
+        watchVisibility(() => this.wake());
+        watchHidden(() => this.flushPumps());
+      }
       this.master = masterChain(this.ctx, this.volume);
     }
     return this.ctx;
@@ -140,6 +146,7 @@ class AudioEngine {
 
   stopAll(): void {
     this.gen++;
+    for (const p of [...this.pumps]) p.cancel();
     for (const src of this.active) {
       try {
         src.stop();
@@ -234,7 +241,7 @@ class AudioEngine {
     await this.resume();
     // 等待期间又调用了 play / stopAll（如离开页面）：这次播放作废
     if (gen !== this.gen) return 0;
-    return this.schedule(this.bus(), events, this.context.currentTime + 0.05, timbre);
+    return this.scheduleLive(events, timbre);
   }
 
   /** 叠加播放一组事件（不停止正在播放的声音），返回总时长（秒）。stopAll 同样能停止它。 */
@@ -242,7 +249,32 @@ class AudioEngine {
     const gen = this.gen;
     await this.resume();
     if (gen !== this.gen) return 0;
-    return this.schedule(this.bus(), events, this.context.currentTime + 0.05, timbre);
+    return this.scheduleLive(events, timbre);
+  }
+
+  /**
+   * 实时播放：零点为此刻的 currentTime + 0.05（节奏练习的预备拍与敲击判定以「调用 play 时的 currentTime + 0.05」为准，不能变）。
+   * 节点边播边建（见 scheduler.ts），各音的发声时刻在这里就已算定。
+   */
+  private scheduleLive(events: NoteEvent[], timbre: Timbre): number {
+    const ctx = this.context;
+    const { jobs, end } = this.jobs(this.bus(), events, ctx.currentTime + 0.05, timbre);
+    const pump = new Pump(jobs, () => ctx.currentTime, (p) => this.pumps.delete(p));
+    this.pumps.add(pump);
+    pump.start();
+    return end;
+  }
+
+  /** 页面转入后台：定时器会被节流，把还没建的音一次建完 */
+  private flushPumps(): void {
+    for (const p of [...this.pumps]) p.flush();
+  }
+
+  /** 尚未建好节点的音数（测试用） */
+  get pendingVoices(): number {
+    let n = 0;
+    for (const p of this.pumps) n += p.pending;
+    return n;
   }
 
   /**
@@ -258,7 +290,8 @@ class AudioEngine {
     }
     const ctx = new OfflineAudioContext(1, Math.ceil((end + 0.3) * sampleRate), sampleRate);
     const out = masterChain(ctx, this.volume);
-    this.schedule({ ctx, out, track: () => {} }, events, 0, timbre);
+    // 离线渲染没有实时性要求：一次全建好
+    for (const job of this.jobs({ ctx, out, track: () => {} }, events, 0, timbre).jobs) job.run();
     return ctx.startRendering();
   }
 
@@ -267,37 +300,58 @@ class AudioEngine {
     return { ctx: this.context, out: this.master!, track: (src) => this.track(src) };
   }
 
-  private schedule(bus: VoiceBus, events: NoteEvent[], start: number, timbre: Timbre): number {
+  /**
+   * 把一组事件展开成待建的音（按音头时刻排序），并算出总时长。只算时刻、不建节点。
+   * start 为零点的 AudioContext 时刻。
+   */
+  private jobs(bus: VoiceBus, events: NoteEvent[], start: number, timbre: Timbre): { jobs: Job[]; end: number } {
     const strum = strumOf(isSampled(timbre) ? INSTRUMENTS[timbre].fallback : timbre);
+    // 采样是否就绪在排程时就定下：播到一半采样下载完成，也不会前半句合成、后半句采样
+    let samples: Map<number, AudioBuffer> | null = null;
+    if (isSampled(timbre)) {
+      const bank = this.banks.get(timbre)!;
+      samples = bank.samples;
+      // 采样未就绪：先用同类合成音色，后台继续加载（失败过则不自动重试，等用户在设置里重选）
+      if (!samples && bank.status.state === 'idle' && events.some((ev) => !ev.kind || ev.kind === 'note')) void this.loadSampler(timbre);
+    }
+    const jobs: Job[] = [];
     let end = 0;
     for (const ev of events) {
       const vel = ev.velocity ?? 0.7;
+      const t = start + ev.time;
       // 节拍器与节奏音不随音色变化
-      if (ev.kind === 'click') click(bus, start + ev.time, ev.accent ?? false, vel);
-      else if (ev.kind === 'perc') {
-        perc(bus, start + ev.time, vel);
-        percSustain(bus, start + ev.time, ev.dur, vel);
-      } else if (strum && ev.notes.length > 1)
+      if (ev.kind === 'click') jobs.push({ t, run: () => click(bus, t, ev.accent ?? false, vel) });
+      else if (ev.kind === 'perc')
+        jobs.push({
+          t,
+          run: () => {
+            perc(bus, t, vel);
+            percSustain(bus, t, ev.dur, vel);
+          },
+        });
+      else if (strum && ev.notes.length > 1)
         // 吉他和弦：从低到高依次拨响
-        [...ev.notes].sort((a, b) => a - b).forEach((n, i) => this.voice(bus, timbre, n, start + ev.time + i * strum, ev.dur, vel));
-      else for (const n of ev.notes) this.voice(bus, timbre, n, start + ev.time, ev.dur, vel);
+        [...ev.notes]
+          .sort((a, b) => a - b)
+          .forEach((n, i) => {
+            const tn = t + i * strum;
+            jobs.push({ t: tn, run: () => this.voice(bus, timbre, samples, n, tn, ev.dur, vel) });
+          });
+      else for (const n of ev.notes) jobs.push({ t, run: () => this.voice(bus, timbre, samples, n, t, ev.dur, vel) });
       end = Math.max(end, ev.time + ev.dur);
     }
-    return end;
+    // 稳定排序：同一时刻的音保持原顺序
+    jobs.sort((a, b) => a.t - b.t);
+    return { jobs, end };
   }
 
-  private voice(bus: VoiceBus, timbre: Timbre, midi: number, t: number, dur: number, vel: number): void {
+  private voice(bus: VoiceBus, timbre: Timbre, samples: Map<number, AudioBuffer> | null, midi: number, t: number, dur: number, vel: number): void {
     const f = midiToFreq(midi);
     if (!isSampled(timbre)) return buildVoice(bus, timbre, midi, f, t, dur, vel);
     const inst = INSTRUMENTS[timbre];
-    const bank = this.banks.get(timbre)!;
-    // 采样未就绪：先用同类合成音色，后台继续加载（失败过则不自动重试，等用户在设置里重选）
-    if (!bank.samples) {
-      if (bank.status.state === 'idle') void this.loadSampler(timbre);
-      return buildVoice(bus, inst.fallback, midi, f, t, dur, vel);
-    }
+    if (!samples) return buildVoice(bus, inst.fallback, midi, f, t, dur, vel);
     const pick = pickSample(midi, inst);
-    const buf = pick && bank.samples.get(pick.sample);
+    const buf = pick && samples.get(pick.sample);
     if (!pick || !buf) return buildVoice(bus, inst.fallback, midi, f, t, dur, vel);
 
     const { ctx } = bus;
@@ -325,6 +379,14 @@ class AudioEngine {
       src.disconnect();
     };
   }
+}
+
+/** 页面转入后台时回调 */
+function watchHidden(fn: () => void): void {
+  if (typeof document === 'undefined') return;
+  const h = () => document.visibilityState === 'hidden' && fn();
+  document.addEventListener('visibilitychange', h);
+  window.addEventListener('pagehide', fn);
 }
 
 const clipCurve = softClipCurve(4097, SOFT_CLIP_RANGE);
